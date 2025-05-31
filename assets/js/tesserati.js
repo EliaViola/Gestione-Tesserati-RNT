@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tesserato = {
       nome: formData.get('nome'),
       cognome: formData.get('cognome'),
-      dataNascita: formData.get('data_nascita'),
-      luogoNascita: formData.get('luogo_nascita'),
-      codiceFiscale: formData.get('codice_fiscale'),
+      data_nascita: formData.get('data_nascita'),
+      luogo_nascita: formData.get('luogo_nascita'),
+      codice_fiscale: formData.get('codice_fiscale'),
       genere: formData.get('genere'),
       indirizzo: formData.get('indirizzo'),
       cap: formData.get('cap'),
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
       telefono: formData.get('telefono'),
       email: formData.get('email'),
       tessera: formData.get('tessera'),
-      dataInserimento: new Date().toISOString()
+      timestamp: new Date()
     };
 
     try {
