@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inserimento Tesserato - Rari Nantes Trento</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-container">
+      <a href="inserimento-dati-tesserati.html" class="active">Anagrafica</a>
+      <a href="inserimento-dati-corsi.html">Corsi</a>
+      <a href="pagamenti.html">Pagamenti</a>
+      <a href="ricerca-dati.html">Ricerca</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="form-container">
+      <h1 class="corsi-title">Dati Anagrafici Tesserato</h1>
+
+      <form id="tesseratoForm" class="form-grid">
+        <div class="form-group required-field">
+          <label for="nome">Nome</label>
+          <input type="text" id="nome" name="nome" class="form-control" required />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="cognome">Cognome</label>
+          <input type="text" id="cognome" name="cognome" class="form-control" required />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="data_nascita">Data di Nascita</label>
+          <input type="date" id="data_nascita" name="data_nascita" class="form-control" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="luogo_nascita">Luogo di Nascita</label>
+          <input type="text" id="luogo_nascita" name="luogo_nascita" class="form-control" />
+        </div>
+        
+        <div class="form-group">
+          <label for="codice_fiscale">Codice Fiscale</label>
+          <input type="text" id="codice_fiscale" name="codice_fiscale" class="form-control" />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="genere">Genere</label>
+          <select id="genere" name="genere" class="form-control" required>
+            <option value="">-- Seleziona --</option>
+            <option value="M">Maschio</option>
+            <option value="F">Femmina</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+        
+        <div class="form-group full-width">
+          <label for="indirizzo">Indirizzo</label>
+          <input type="text" id="indirizzo" name="indirizzo" class="form-control" />
+        </div>
+        
+        <div class="form-group">
+          <label for="cap">CAP</label>
+          <input type="text" id="cap" name="cap" class="form-control" />
+        </div>
+        
+        <div class="form-group">
+          <label for="citta">Città</label>
+          <input type="text" id="citta" name="citta" class="form-control" />
+        </div>
+        
+        <div class="form-group">
+          <label for="provincia">Provincia</label>
+          <input type="text" id="provincia" name="provincia" class="form-control" />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="telefono">Telefono</label>
+          <input type="tel" id="telefono" name="telefono" class="form-control" required />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" class="form-control" required />
+        </div>
+        
+        <div class="form-group required-field">
+          <label for="tessera">Tessera Socio</label>
+          <input type="text" id="tessera" name="tessera" class="form-control" required />
+        </div>
+
+        <div class="form-actions full-width">
+          <button type="submit" class="btn btn-primary">Salva Tesserato</button>
+          <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>&copy; 2023 Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
+  </footer>
+  <!-- Firebase App (core SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // Configurazione Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
+    authDomain: "rari-nantes-tesserati.firebaseapp.com",
+    projectId: "rari-nantes-tesserati",
+    storageBucket: "rari-nantes-tesserati.firebasestorage.app",
+    messagingSenderId: "435337228811",
+    appId: "1:435337228811:web:a5f1fd0fb9e17bfbc00d0e",
+    measurementId: "G-558LQEWD8Z"
+  };
+
+  // Inizializza Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // Inizializza Firestore
+  const db = firebase.firestore();
+</script>
+
+  <script src="../assets/js/tesserati.js"></script>
+</body>
+</html>
