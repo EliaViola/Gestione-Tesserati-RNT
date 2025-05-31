@@ -8,9 +8,49 @@
     ],
     "rewrites": [
       {
+        "source": "/inserimento-dati-tesserati",
+        "destination": "/inserimento-dati-tesserati.html"
+      },
+      {
+        "source": "/inserimento-dati-corsi",
+        "destination": "/inserimento-dati-corsi.html"
+      },
+      {
+        "source": "/pagamenti",
+        "destination": "/pagamenti.html"
+      },
+      {
+        "source": "/ricerca-dati",
+        "destination": "/ricerca-dati.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=3600"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|ico)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=86400"
+          }
+        ]
+      }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }
