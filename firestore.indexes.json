@@ -1,0 +1,12 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "tesserati",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cognome", "order": "ASCENDING" },
+        { "fieldPath": "nome", "order": "ASCENDING" }
+      ]
+    }
+  ]
+}
