@@ -1,140 +1,150 @@
-// gestione-corsi.js (riscritto completamente per usare backend e file JSON)
+// gestione-corsi.js
 
-const CORSI_ENDPOINT = "/api/corsi";
-const PACCHETTI_ENDPOINT = "/pacchetti.json";
-
-function formatDate(date) {
-  return new Date(date).toLocaleDateString("it-IT");
-}
-
-function showError(message) {
-  alert(`Errore: ${message}`);
-}
-
-function showSuccess(message) {
-  alert(`Successo: ${message}`);
-}
-
+// Funzioni per gestire i corsi con Firebase
 async function loadTesserati() {
   try {
-    return JSON.parse(localStorage.getItem("tesserati") || "[]");
-  } catch (e) {
-    console.error("Errore nel caricamento dei tesserati:", e);
+    const snapshot = await db.collection("tesserati").orderBy("cognome").get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Errore nel caricamento dei tesserati:", error);
     return [];
   }
 }
 
 async function loadPacchetti() {
   try {
-    const res = await fetch(PACCHETTI_ENDPOINT);
-    if (!res.ok) throw new Error("Impossibile caricare i pacchetti.");
-    return await res.json();
-  } catch (e) {
-    console.error("Errore nel caricamento dei pacchetti:", e);
+    const snapshot = await db.collection("pacchetti").get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error("Errore nel caricamento dei pacchetti:", error);
     return [];
   }
 }
 
-async function populateTesseratiSelect() {
-  const select = document.getElementById("tesserato");
-  const tesserati = await loadTesserati();
-  select.innerHTML = '<option value="">-- Seleziona --</option>';
-  tesserati.forEach(t => {
-    const option = document.createElement("option");
-    option.value = t.id;
-    option.textContent = `${t.nome} ${t.cognome} (${t.id})`;
-    select.appendChild(option);
-  });
-}
-
-async function populatePacchettiSelect() {
-  const select = document.getElementById("pacchettiSelect");
-  const pacchetti = await loadPacchetti();
-  select.innerHTML = '';
-  pacchetti.forEach(p => {
-    const option = document.createElement("option");
-    option.value = p.nome;
-    option.textContent = p.nome;
-    select.appendChild(option);
-  });
-}
-
-function validateForm(data) {
-  if (!data.tesserato) return showError("Seleziona un tesserato.");
-  if (!data.tipo_corso) return showError("Seleziona il tipo di corso.");
-  if (!data.livello) return showError("Seleziona il livello.");
-  if (!data.istruttore.trim()) return showError("Inserisci l'istruttore.");
-  if (!data.pacchetti.length) return showError("Seleziona almeno un pacchetto.");
-  if (!data.orario) return showError("Seleziona un orario.");
-  return true;
-}
-
 async function salvaIscrizione(data) {
   try {
-    const res = await fetch(CORSI_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+    await db.collection("iscrizioni_corsi").add({
+      ...data,
+      data_iscrizione: new Date(),
+      stato: "attivo"
     });
-    const result = await res.json();
-    if (res.ok) {
-      showSuccess("Iscrizione salvata con successo.");
-      return true;
-    } else {
-      showError(result.message || "Errore salvataggio.");
-      return false;
-    }
-  } catch (e) {
-    console.error("Errore salvataggio corso:", e);
-    showError("Errore nella comunicazione con il server.");
+    showSuccess("Iscrizione al corso salvata con successo!");
+    return true;
+  } catch (error) {
+    console.error("Errore salvataggio corso:", error);
+    showError("Errore durante il salvataggio dell'iscrizione");
     return false;
   }
 }
 
+async function caricaIscrizioniCorso(corso, pacchetti) {
+  try {
+    const snapshot = await db.collection("iscrizioni_corsi")
+      .where("tipo_corso", "==", corso)
+      .where("pacchetti", "array-contains-any", pacchetti)
+      .where("stato", "==", "attivo")
+      .get();
+    
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Errore caricamento iscrizioni:", error);
+    return [];
+  }
+}
+
+// Funzione per popolare il select dei tesserati
+async function populateTesseratiSelect() {
+  const select = document.getElementById("tesserato");
+  select.innerHTML = '<option value="">-- Seleziona --</option>';
+  
+  const tesserati = await loadTesserati();
+  tesserati.forEach(tesserato => {
+    const option = document.createElement("option");
+    option.value = tesserato.id;
+    option.textContent = `${tesserato.cognome} ${tesserato.nome} (${tesserato.tessera})`;
+    select.appendChild(option);
+  });
+}
+
+// Funzione per popolare il select dei pacchetti
+async function populatePacchettiSelect() {
+  const select = document.getElementById("pacchettiSelect");
+  select.innerHTML = '';
+  
+  const pacchetti = await loadPacchetti();
+  pacchetti.forEach(pacchetto => {
+    const option = document.createElement("option");
+    option.value = pacchetto.id;
+    option.textContent = `${pacchetto.nome} (€${pacchetto.prezzo})`;
+    select.appendChild(option);
+  });
+}
+
+// Funzione per aggiornare l'anteprima degli iscritti
 async function aggiornaAnteprima() {
   const corso = document.getElementById("tipo_corso").value;
-  const pacchetti = Array.from(document.getElementById("pacchettiSelect").selectedOptions).map(o => o.value);
+  const pacchettiSelezionati = Array.from(document.getElementById("pacchettiSelect").selectedOptions)
+    .map(opt => opt.value);
   const container = document.getElementById("anteprimaContainer");
 
-  if (!corso || pacchetti.length === 0) {
+  if (!corso || pacchettiSelezionati.length === 0) {
     container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto</p>';
     return;
   }
 
   try {
-    const res = await fetch("/corsi.json");
-    const corsi = await res.json();
-    const iscritti = corsi.filter(c => c.tipo_corso === corso && c.pacchetti.some(p => pacchetti.includes(p)));
-
-    if (iscritti.length === 0) {
-      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato</p>';
+    const iscrizioni = await caricaIscrizioniCorso(corso, pacchettiSelezionati);
+    
+    if (iscrizioni.length === 0) {
+      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato per questa combinazione</p>';
       return;
     }
 
-    container.innerHTML = '';
-    iscritti.forEach(i => {
-      const div = document.createElement("div");
-      div.classList.add("iscritto-card");
-      div.textContent = `Tesserato: ${i.tesserato}, Corso: ${i.tipo_corso}, Pacchetti: ${i.pacchetti.join(", ")}, Orario: ${i.orario}`;
-      container.appendChild(div);
-    });
-  } catch (e) {
-    console.error("Errore anteprima:", e);
-    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento.</p>';
+    // Carica i dettagli dei tesserati
+    const tesseratiPromises = iscrizioni.map(iscrizione => 
+      db.collection("tesserati").doc(iscrizione.tesserato).get().then(doc => ({
+        ...doc.data(),
+        id: doc.id
+      }))
+    );
+    
+    const tesserati = await Promise.all(tesseratiPromises);
+    
+    // Crea la visualizzazione
+    container.innerHTML = iscrizioni.map((iscrizione, index) => {
+      const tesserato = tesserati.find(t => t.id === iscrizione.tesserato);
+      return `
+        <div class="iscritto-card">
+          <h3>${tesserato.cognome} ${tesserato.nome}</h3>
+          <p>Tessera: ${tesserato.tessera}</p>
+          <p>Corso: ${iscrizione.tipo_corso} (Livello ${iscrizione.livello})</p>
+          <p>Pacchetti: ${iscrizione.pacchetti.join(', ')}</p>
+          <p>Orario: ${iscrizione.orario}</p>
+          <p>Istruttore: ${iscrizione.istruttore}</p>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error("Errore durante il caricamento dell'anteprima:", error);
+    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento dei dati</p>';
   }
 }
 
 // Inizializzazione
-
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Imposta l'anno corrente nel footer
   document.getElementById("currentYear").textContent = new Date().getFullYear();
-  populateTesseratiSelect();
-  populatePacchettiSelect();
+  
+  // Popola i select
+  await populateTesseratiSelect();
+  await populatePacchettiSelect();
 
+  // Gestione del form
   const form = document.getElementById("corsoForm");
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
+    
     const formData = {
       tesserato: form.tesserato.value,
       tipo_corso: form.tipo_corso.value,
@@ -149,11 +159,31 @@ document.addEventListener("DOMContentLoaded", () => {
       const success = await salvaIscrizione(formData);
       if (success) {
         form.reset();
-        aggiornaAnteprima();
+        await aggiornaAnteprima();
       }
     }
   });
 
+  // Aggiungi event listener per l'aggiornamento automatico dell'anteprima
   document.getElementById("tipo_corso").addEventListener("change", aggiornaAnteprima);
   document.getElementById("pacchettiSelect").addEventListener("change", aggiornaAnteprima);
 });
+
+// Funzione di validazione (rimane uguale)
+function validateForm(data) {
+  if (!data.tesserato) return showError("Seleziona un tesserato.");
+  if (!data.tipo_corso) return showError("Seleziona il tipo di corso.");
+  if (!data.livello) return showError("Seleziona il livello.");
+  if (!data.istruttore.trim()) return showError("Inserisci l'istruttore.");
+  if (!data.pacchetti.length) return showError("Seleziona almeno un pacchetto.");
+  if (!data.orario) return showError("Seleziona un orario.");
+  return true;
+}
+
+function showError(message) {
+  alert(`Errore: ${message}`);
+}
+
+function showSuccess(message) {
+  alert(`Successo: ${message}`);
+}
