@@ -1,0 +1,1355 @@
+/* ======================
+   VARIABILI & RESET
+   ====================== */
+:root {
+  --primary: #1a3e72;
+  --primary-dark: #0d2a56;
+  --secondary: #ffd700;
+  --white: #ffffff;
+  --light-gray: #f5f5f5;
+  --medium-gray: #e0e0e0;
+  --dark-gray: #333333;
+  --error: #dc3545;
+  --success: #28a745;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ======================
+   BASE & TIPOGRAFIA
+   ====================== */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3 {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+/* ======================
+   LAYOUT PRINCIPALE
+   ====================== */
+.header-container,
+.nav-container,
+.main-container,
+.footer-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ======================
+   HEADER
+   ====================== */
+header {
+  background: var(--secondary);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.header-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80px;
+  gap: 1rem; /* spazio tra logo e eventuali altri elementi */  
+  position: relative;
+  
+}
+
+.logo {
+  height: 120px;
+  width: auto;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+/* ======================
+   NAVIGAZIONE
+   ====================== */
+nav {
+  background: var(--primary);
+  padding: 0.6rem 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+nav a {
+  color: var(--white);
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+nav a:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+
+.login-btn-nav {
+  background: var(--secondary);
+  color: var(--dark-gray);
+}
+
+/* ======================
+   CONTENUTO PRINCIPALE
+   ====================== */
+main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ======================
+   COMPONENTI COMUNI
+   ====================== */
+/* Card/Box */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 2rem;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 2rem;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 62, 114, 0.1);
+}
+
+/* Bottoni */
+.btn {
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: var(--medium-gray);
+  color: var(--dark-gray);
+}
+
+.btn-secondary:hover {
+  background: #d1d1d1;
+}
+
+/* Messaggi */
+.alert {
+  padding: 0.8rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  font-weight: 500;
+  display: none;
+}
+
+.alert-error {
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--error);
+  border-left: 3px solid var(--error);
+}
+
+.alert-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: var(--success);
+  border-left: 3px solid var(--success);
+}
+
+/* ======================
+   PAGINA LOGIN
+   ====================== */
+.login-box {
+  max-width: 500px;
+}
+
+.login-header {
+  border-left: 4px solid var(--primary);
+  padding-left: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* ======================
+   PAGINA ADMIN
+   ====================== */
+/* Tabella */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.table th {
+  background: var(--primary);
+  color: var(--white);
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-secretary { background: var(--secondary); color: var(--dark-gray); }
+.badge-admin { background: var(--error); color: var(--white); }
+
+/* ======================
+   PAGINA INSERIMENTO TESSERATI
+   ====================== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+/* ======================
+   FOOTER
+   ====================== */
+footer {
+  background: var(--primary);
+  color: var(--white);
+  padding: 1rem 0;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+.footer-container {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* ======================
+   UTILITY CLASSES
+   ====================== */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 1rem; }
+.hidden { display: none; }
+
+/* ======================
+   RESPONSIVE
+   ====================== */
+@media (max-width: 768px) {
+  .header-container {
+    height: 70px;
+  }
+  
+  .logo {
+    height: 50px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+}
+/* ======================
+   STILI PAGINA INSERIMENTO TESSERATI
+   ====================== */
+
+.form-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.form-title {
+    color: #1a3e72;
+    border-bottom: 2px solid #ffd700;
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #1a3e72;
+}
+
+.required-field label::after {
+    content: " *";
+    color: red;
+    margin-left: 4px;
+  }
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary {
+    background-color: #1a3e72;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0d2a56;
+}
+
+.btn-secondary {
+    background-color: #ced4da;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background-color: #adb5bd;
+}
+
+/* Sezioni aggiuntive */
+.form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.section-title {
+    color: #1a3e72;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+/* Responsive Inserimento */
+@media (max-width: 600px) {
+    .form-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+.logout-btn {
+  background-color: #e63946;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%)
+}
+/* ======================
+   PAGINA INSERIMENTO CORSI
+   ====================== */
+
+/* Container principale */
+.corsi-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Form stile */
+.corsi-form {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.corsi-title {
+    color: #1a3e72;
+    border-bottom: 2px solid #ffd700;
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+/* Griglia form */
+.corsi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Gruppo checkbox giorni */
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+/* Riepilogo lezioni */
+.lezioni-summary {
+    background: #f8f9fa;
+    border-left: 4px solid #1a3e72;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.lezioni-summary h4 {
+    color: #1a3e72;
+    margin-bottom: 0.8rem;
+}
+
+.lezioni-summary p {
+    margin-bottom: 0.5rem;
+}
+
+/* Anteprima iscritti */
+.anteprima-corsi {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.anteprima-title {
+    color: #1a3e72;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.anteprima-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.anteprima-table th {
+    background: #1a3e72;
+    color: white;
+    padding: 0.8rem;
+    text-align: left;
+}
+
+.anteprima-table td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #eee;
+}
+
+.anteprima-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.info-posti {
+    background: #f8f9fa;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.info-posti strong {
+    color: #1a3e72;
+    margin-right: 0.3rem;
+}
+
+/* Badge per tipi corso */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-blue {
+    background: #1a3e72;
+    color: white;
+}
+
+.badge-gold {
+    background: #ffd700;
+    color: #1a1a1a;
+}
+
+/* Messaggi */
+.nessun-risultato {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .corsi-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .checkbox-group {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    .anteprima-table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Stile per select e textarea */
+select, textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background-color: white;
+}
+
+select:focus, textarea:focus {
+    border-color: #1a3e72;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 62, 114, 0.1);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Ottimizzazione per i gruppi di optgroup */
+optgroup {
+    font-weight: 600;
+    color: #1a3e72;
+}
+
+optgroup option {
+    font-weight: normal;
+    color: #333;
+    padding-left: 1rem;
+}
+.form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #1a3e8c;
+        }
+        
+        .form-group input, 
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #1a3e8c;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(26, 62, 140, 0.2);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .backup-buttons {
+    margin: 20px 0;
+}
+
+.backup-buttons button {
+    margin: 0 5px;
+    padding: 8px 15px;
+}
+.filtri-anteprima {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 5px;
+}
+
+.filtri-anteprima .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+#btnCerca {
+    height: fit-content;
+    margin-bottom: 0;
+}
+/* ======================
+   PAGINA INSERIMENTO CORSI (MANTENENDO STILE ESISTENTE)
+   ====================== */
+
+/* Container principale - mantenuto */
+.corsi-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Form stile - migliorato */
+.corsi-form {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    padding: 2.5rem;
+    margin-bottom: 3rem;
+    border: 1px solid #e0e0e0;
+}
+
+/* Titolo - migliorato */
+.corsi-title {
+    color: #1a3e72;
+    border-bottom: 3px solid #ffd700;
+    padding-bottom: 1rem;
+    margin-bottom: 2.5rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Griglia form - mantenuto con miglioramenti */
+.corsi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Gruppo checkbox giorni - migliorato */
+.checkbox-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.checkbox-group fieldset {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 0.8rem;
+}
+
+.checkbox-group legend {
+  padding: 0 0.5rem;
+  font-weight: 600;
+  color: #1a3e72;
+}
+
+.checkbox-group label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+/* Riepilogo lezioni - migliorato */
+.lezioni-summary {
+    background: #f8fafc;
+    border-left: 5px solid #1a3e72;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.lezioni-summary h4 {
+    color: #1a3e72;
+    margin-bottom: 1.2rem;
+    font-size: 1.3rem;
+}
+
+.lezioni-summary p {
+    margin-bottom: 0.8rem;
+    line-height: 1.6;
+}
+
+/* Anteprima iscritti - migliorato */
+.anteprima-corsi {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    padding: 2rem;
+    margin-top: 3rem;
+    border: 1px solid #e0e0e0;
+}
+
+.anteprima-title {
+    color: #1a3e72;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #eee;
+}
+
+.anteprima-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.anteprima-table th {
+    background: #1a3e72;
+    color: white;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.anteprima-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+.anteprima-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.anteprima-table tr:hover {
+    background-color: #f1f5f9 !important;
+}
+
+.info-posti {
+    background: #f8fafc;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    border-left: 3px solid #1a3e72;
+}
+
+.info-posti strong {
+    color: #1a3e72;
+    margin-right: 0.5rem;
+    font-weight: 600;
+}
+
+/* Badge per tipi corso - mantenuto */
+.badge {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge-blue {
+    background: #1a3e72;
+    color: white;
+}
+
+.badge-gold {
+    background: #ffd700;
+    color: #1a1a1a;
+}
+
+/* Messaggi - mantenuto */
+.nessun-risultato {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 1rem 0;
+}
+
+/* Filtri anteprima - migliorato */
+.filtri-anteprima {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.filtri-anteprima .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.filtri-anteprima label {
+    font-weight: 600;
+    color: #1a3e72;
+    margin-bottom: 0.8rem;
+    display: block;
+}
+
+#btnCerca {
+    height: fit-content;
+    margin-bottom: 0;
+    padding: 0.8rem 1.8rem;
+    background-color: #1a3e72;
+    color: white;
+    border: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+#btnCerca:hover {
+    background-color: #142e6d;
+    transform: translateY(-1px);
+}
+
+/* Responsive - mantenuto con miglioramenti */
+@media (max-width: 768px) {
+    .corsi-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .checkbox-group {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .filtri-anteprima {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.2rem;
+    }
+    
+    #btnCerca {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .corsi-form {
+        padding: 1.8rem;
+    }
+}
+
+/* Stile per select e textarea - migliorato */
+select, textarea {
+    width: 100%;
+    padding: 0.9rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background-color: white;
+    font-family: inherit;
+}
+
+select:focus, textarea:focus {
+    border-color: #1a3e72;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 62, 114, 0.15);
+}
+
+textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* Ottimizzazione per i gruppi di optgroup */
+optgroup {
+    font-weight: 600;
+    color: #1a3e72;
+    font-size: 0.95rem;
+}
+
+optgroup option {
+    font-weight: normal;
+    color: #333;
+    padding: 0.5rem;
+}
+
+/* Pulsanti form - migliorati */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.2rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    padding: 0.9rem 1.8rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background-color: #1a3e72;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #142e6d;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-secondary {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.btn-secondary:hover {
+    background-color: #dee2e6;
+    transform: translateY(-2px);
+}
+
+/* Campi obbligatori - migliorato */
+.required-field label::after {
+    content: " *";
+    color: #e63946;
+    font-weight: bold;
+    margin-left: 3px;
+}
+.pacchetto-header {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+.pacchetto-header td {
+    padding: 8px;
+    border-bottom: 2px solid #ccc;
+}
+
+.anteprima-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.anteprima-table th, .anteprima-table td {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+}
+
+.anteprima-table th {
+    background-color: #1a3e72;
+}
+
+.header-orario td {
+    background-color: #e6f3ff;
+    font-weight: bold;
+}
+
+
+.feedback-msg.successo {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 8px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+.feedback-msg.errore {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 8px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+/* Stili per le info utente */
+        .info-utente {
+            background: #f8f8f8;
+            padding: 1.5rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #1a3e8c;
+        }
+        
+        .info-utente h3 {
+            color: #1a3e8c;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .info-utente p {
+            margin: 0.5rem 0;
+        }
+        
+        .info-utente strong {
+            color: #1a3e8c;
+            margin-right: 0.5rem;
+        }
+        
+        /* Stili per il calendario lezioni */
+        .calendario-lezioni {
+            margin-top: 1.5rem;
+        }
+        
+        .lista-lezioni {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .lezione-item {
+            background: #f8f8f8;
+            padding: 0.8rem;
+            border-radius: 4px;
+            border-left: 3px solid #1a3e8c;
+        }
+        
+        .lezione-pagata {
+            border-left-color: #28a745;
+            background-color: #f0fff0;
+        }
+        
+        .lezione-da-pagare {
+            border-left-color: #dc3545;
+        }
+/* Stili per le tabelle e i contenitori */
+        .table-container {
+            margin-top: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+        
+        .table-title {
+            color: #1a3e8c;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th {
+            background: #1a3e8c;
+            color: white;
+            padding: 0.8rem 1rem;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .nessun-risultato {
+            text-align: center;
+            color: #666;
+            padding: 1.5rem;
+            font-style: italic;
+        }
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .nav-left, .nav-right {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            
+            .logout-btn {
+                position: static;
+                transform: none;
+                margin-top: 1rem;
+                width: 100%;
+            }
+            
+            .lista-lezioni {
+                grid-template-columns: 1fr;
+            }
+        }
+        .feedback-msg {
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.feedback-msg.success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.feedback-msg.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.anteprima-pacchetto {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.anteprima-pacchetto h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.anteprima-content p {
+    margin: 8px 0;
+}
+
+.date-lezioni {
+    margin-top: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.date-lezioni ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.date-lezioni li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  margin: 0 2px;
+}
+
+.btn-modifica {
+  background-color: #ffc107;
+  border-color: #ffc107;
+}
+
+.btn-elimina {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th, .table td {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  text-align: left;
+}
+
+.table th {
+  background-color: #1a3e8c;
+}
+/* Stili per select multiplo */
+select[multiple] {
+  min-height: 120px;
+  padding: 0.5rem;
+}
+
+select[multiple] option {
+  padding: 0.3rem 0.5rem;
+  margin: 2px 0;
+  border-radius: 3px;
+}
+
+select[multiple] option:checked {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Miglioramenti alla tabella */
+.anteprima-table {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border-collapse: collapse;
+}
+
+.anteprima-table th, .anteprima-table td {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  text-align: left;
+}
+
+.anteprima-table th {
+  background-color: #f8f9fa;
+}
+
+.orario-header td {
+  background-color: #e9ecef;
+  font-weight: bold;
+}
+
+.pacchetto-info {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid #007bff;
+}
