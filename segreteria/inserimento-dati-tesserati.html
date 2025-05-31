@@ -111,12 +111,14 @@
       <p>&copy; 2023 Rari Nantes Trento. Tutti i diritti riservati.</p>
     </div>
   </footer>
-  <!-- Firebase Core + Firestore -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+  <!-- Firebase App (core SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Inizializzazione Firebase
+  // Configurazione Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
     authDomain: "rari-nantes-tesserati.firebaseapp.com",
@@ -127,7 +129,10 @@
     measurementId: "G-558LQEWD8Z"
   };
 
-  const app = firebase.initializeApp(firebaseConfig);
+  // Inizializza Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // Inizializza Firestore
   const db = firebase.firestore();
 </script>
 
