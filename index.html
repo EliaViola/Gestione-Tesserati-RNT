@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login Segreteria - Rari Nantes Trento</title>
   <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- Aggiungi Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase-config.js"></script>
 </head>
 <body>
   <header>
@@ -38,7 +43,9 @@
               class="form-control"
               placeholder="Inserisci il tuo username"
               required
+              autocomplete="username"
             />
+            <small class="form-hint">Non includere @rari-nantes.tn.it</small>
           </div>
 
           <div class="form-group">
@@ -50,15 +57,28 @@
               class="form-control"
               placeholder="Inserisci la tua password"
               required
+              autocomplete="current-password"
             />
           </div>
 
-          <button type="submit" class="btn btn-primary">Accedi</button>
+          <button type="submit" class="btn btn-primary" id="loginButton">
+            <span class="button-text">Accedi</span>
+            <span class="spinner hidden" id="spinner"></span>
+          </button>
 
           <div class="alert alert-error mt-2 hidden" id="errorMessage">
-            Credenziali non valide. Si prega di riprovare.
+            <!-- Messaggio verrà inserito via JavaScript -->
+          </div>
+
+          <div class="login-links">
+            <a href="recupera-password.html" class="text-link">Password dimenticata?</a>
           </div>
         </form>
+      </div>
+      
+      <!-- Sezione solo per admin -->
+      <div class="admin-login-hint mt-3 hidden" id="adminHint">
+        <p>Accesso amministratore: usa username <strong>admin</strong></p>
       </div>
     </div>
   </main>
@@ -66,13 +86,20 @@
   <footer>
     <div class="footer-container">
       <p>&copy; <span id="currentYear">2023</span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+      <p class="app-version">Versione 2.1 (Firebase)</p>
     </div>
   </footer>
 
   <script>
     // Aggiorna automaticamente l'anno corrente nel footer
     document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Mostra hint per admin se la pagina è caricata da localhost
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      document.getElementById('adminHint').classList.remove('hidden');
+    }
   </script>
+  
   <script src="assets/js/auth.js"></script>
 </body>
 </html>
