@@ -1,9 +1,7 @@
 // assets/js/auth.js
-import { firebaseApp, db } from './firebase-config.js'; // percorso relativo
-
+// assets/js/auth.js
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const auth = firebaseApp.auth();
     // Verifica che Firebase sia inizializzato
     if (!firebase.apps.length) {
       throw new Error("Firebase non è stato inizializzato correttamente");
