@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login Segreteria - Rari Nantes Trento</title>
+  <title>Login - Rari Nantes Trento</title>
   <link rel="stylesheet" href="assets/css/style.css" />
-  <!-- Aggiungi Firebase -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="assets/js/firebase-config.js"></script>
 </head>
 <body>
@@ -18,88 +17,47 @@
     </div>
   </header>
 
-  <nav>
-    <div class="nav-container">
-      <a href="modifica-password.html">Modifica Password</a>
-      <a href="login.html" class="login-btn-nav">Login</a>
-    </div>
-  </nav>
-
   <main>
     <div class="main-container">
       <div class="login-box card">
         <div class="login-header">
-          <h2>Accesso Segreteria</h2>
-          <p>Area riservata al personale autorizzato</p>
+          <h2>Accesso al Sistema</h2>
+          <p>Seleziona il tuo ruolo</p>
         </div>
 
-        <form id="secretaryLoginForm">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              class="form-control"
-              placeholder="Inserisci il tuo username"
-              required
-              autocomplete="username"
-            />
-            <small class="form-hint">Non includere @rari-nantes.tn.it</small>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="form-control"
-              placeholder="Inserisci la tua password"
-              required
-              autocomplete="current-password"
-            />
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="loginButton">
-            <span class="button-text">Accedi</span>
-            <span class="spinner hidden" id="spinner"></span>
+        <div class="role-selection">
+          <button class="btn btn-role" id="adminBtn">
+            <img src="assets/images/admin-icon.png" alt="Admin">
+            Amministratore
           </button>
+          
+          <button class="btn btn-role" id="secretaryBtn">
+            <img src="assets/images/secretary-icon.png" alt="Segreteria">
+            Segreteria
+          </button>
+        </div>
 
-          <div class="alert alert-error mt-2 hidden" id="errorMessage">
-            <!-- Messaggio verrà inserito via JavaScript -->
-          </div>
-
-          <div class="login-links">
-            <a href="recupera-password.html" class="text-link">Password dimenticata?</a>
-          </div>
-        </form>
-      </div>
-      
-      <!-- Sezione solo per admin -->
-      <div class="admin-login-hint mt-3 hidden" id="adminHint">
-        <p>Accesso amministratore: usa username <strong>admin</strong></p>
+        <div class="login-form hidden" id="loginForm">
+          <form id="authForm">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" class="form-control" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Accedi</button>
+          </form>
+          
+          <a href="recupero-password.html" class="text-link">Password dimenticata?</a>
+        </div>
       </div>
     </div>
   </main>
 
-  <footer>
-    <div class="footer-container">
-      <p>&copy; <span id="currentYear">2023</span> Rari Nantes Trento. Tutti i diritti riservati.</p>
-      <p class="app-version">Versione 2.1 (Firebase)</p>
-    </div>
-  </footer>
-
-  <script>
-    // Aggiorna automaticamente l'anno corrente nel footer
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
-    
-    // Mostra hint per admin se la pagina è caricata da localhost
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      document.getElementById('adminHint').classList.remove('hidden');
-    }
-  </script>
-  
   <script src="assets/js/auth.js"></script>
 </body>
 </html>
