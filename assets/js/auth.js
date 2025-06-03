@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             window.location.href = 'segreteria/inserimento-dati-tesserati.html';
                             break;
                         case 'admin':
-                            window.location.href = '../admin/gestione-password.html';
+                            window.location.href = 'admin/gestione-password.html';
                             break;
                         default:
                             window.location.href = 'dashboard.html';
