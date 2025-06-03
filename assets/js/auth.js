@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (username === 'segreteria1' || username === 'segreteria2') {
                     window.location.href = 'segreteria/inserimento-dati-tesserati.html';
                 } else {
-                    window.location.href = '../admin/gestione-password.html';
+                    window.location.href = 'admin/gestione-password.html';
                 }
             } else {
                 document.getElementById('errorMessage').style.display = 'block';
