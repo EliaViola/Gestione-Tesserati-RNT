@@ -9,4 +9,9 @@ const firebaseConfig = {
   measurementId: "G-558LQEWD8Z"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Inizializza Firebase solo una volta
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+export { app, auth, db };
