@@ -22,38 +22,24 @@
       <div class="login-box card">
         <div class="login-header">
           <h2>Accesso al Sistema</h2>
-          <p>Seleziona il tuo ruolo</p>
+          <p>Area riservata al personale autorizzato</p>
         </div>
 
-        <div class="role-selection">
-          <button class="btn btn-role" id="adminBtn">
-            <img src="assets/images/admin-icon.png" alt="Admin">
-            Amministratore
-          </button>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" class="form-control" placeholder="Inserisci username" required>
+          </div>
           
-          <button class="btn btn-role" id="secretaryBtn">
-            <img src="assets/images/secretary-icon.png" alt="Segreteria">
-            Segreteria
-          </button>
-        </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" class="form-control" placeholder="Inserisci password" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Accedi</button>
 
-        <div class="login-form hidden" id="loginForm">
-          <form id="authForm">
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input type="text" id="username" class="form-control" required>
-            </div>
-            
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input type="password" id="password" class="form-control" required>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Accedi</button>
-          </form>
-          
-          <a href="recupero-password.html" class="text-link">Password dimenticata?</a>
-        </div>
+          <div class="alert alert-error hidden" id="errorMessage"></div>
+        </form>
       </div>
     </div>
   </main>
