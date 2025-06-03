@@ -1,219 +1,117 @@
-/**
- * Sistema di Autenticazione Rari Nantes Trento - Versione Firebase
- * Integrazione completa con Firestore per la gestione degli account
- */
-
-const AuthSystem = (() => {
-    // Configurazione ruoli e permessi
-    const ROLES_CONFIG = {
-        secretary: ["insert", "view", "edit"],
-        coordinator: ["view", "edit", "approve", "reports"],
-        director: ["view", "reports", "finance"],
-        admin: ["full_access"]
-    };
-
-    // Riferimento al database Firestore
-    const accountsRef = firebase.firestore().collection('accounts');
-
-    // API Pubblica
-    return {
-        initialize: async () => {
-            // Verifica se esistono account, altrimenti crea quelli predefiniti
-            const snapshot = await accountsRef.get();
-            if (snapshot.empty) {
-                await this._createDefaultAccounts();
-            }
-        },
-
-        login: async (username, password) => {
-            try {
-                // Converti username in email (aggiungendo il dominio)
-                const email = `${username}@rari-nantes.tn.it`;
-                
-                // Autenticazione con Firebase
-                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                
-                // Recupera i dati aggiuntivi da Firestore
-                const accountDoc = await accountsRef.doc(username).get();
-                if (!accountDoc.exists) {
-                    await firebase.auth().signOut();
-                    return { success: false, error: "Account non trovato nel database" };
-                }
-                
-                const accountData = accountDoc.data();
-                
-                return {
-                    success: true,
-                    session: {
-                        username,
-                        name: accountData.name,
-                        role: accountData.role,
-                        permissions: accountData.permissions || ROLES_CONFIG[accountData.role],
-                        lastLogin: new Date().toISOString()
-                    }
-                };
-            } catch (error) {
-                console.error("Login error:", error);
-                let errorMessage = "Credenziali non valide";
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = "Utente non registrato";
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = "Password errata";
-                }
-                return { success: false, error: errorMessage };
-            }
-        },
-
-        logout: async () => {
-            try {
-                await firebase.auth().signOut();
-                return { success: true };
-            } catch (error) {
-                return { success: false, error: error.message };
-            }
-        },
-
-        getSession: async () => {
-            const user = firebase.auth().currentUser;
-            if (!user) return null;
-            
-            const username = user.email.split('@')[0];
-            const accountDoc = await accountsRef.doc(username).get();
-            if (!accountDoc.exists) return null;
-            
-            const accountData = accountDoc.data();
-            
-            return {
-                username,
-                name: accountData.name,
-                role: accountData.role,
-                permissions: accountData.permissions || ROLES_CONFIG[accountData.role],
-                lastLogin: new Date().toISOString()
-            };
-        },
-
-        changePassword: async (username, newPassword) => {
-            try {
-                const user = firebase.auth().currentUser;
-                
-                // Verifica che l'utente loggato corrisponda all'username
-                if (!user || user.email !== `${username}@rari-nantes.tn.it`) {
-                    return { success: false, error: "Non autorizzato" };
-                }
-                
-                await user.updatePassword(newPassword);
-                return { success: true };
-            } catch (error) {
-                return { success: false, error: error.message };
-            }
-        },
-
-        // Metodo privato per creare account predefiniti
-        _createDefaultAccounts: async () => {
-            const defaultAccounts = {
-                "segreteria1": {
-                    name: "Segreteria 1",
-                    password: "Segretaria1!2023", // Verrà sovrascritto dopo
-                    role: "secretary",
-                    permissions: ["insert", "view", "edit"],
-                    email: "segreteria1@rari-nantes.tn.it"
-                },
-                "segreteria2": {
-                    name: "Segreteria 2",
-                    password: "Segretaria2!2023",
-                    role: "secretary",
-                    permissions: ["insert", "view", "edit"],
-                    email: "segreteria2@rari-nantes.tn.it"
-                },
-                "coordinatore": {
-                    name: "Coordinatore",
-                    password: "Coordinatore!2023",
-                    role: "coordinator",
-                    permissions: ["view", "edit", "approve", "reports"],
-                    email: "coordinatore@rari-nantes.tn.it"
-                },
-                "direttore": {
-                    name: "Direttore",
-                    password: "Direttore!2023",
-                    role: "director",
-                    permissions: ["view", "reports", "finance"],
-                    email: "direttore@rari-nantes.tn.it"
-                },
-                "admin": {
-                    name: "Amministratore",
-                    password: "AdminMaster!2023",
-                    role: "admin",
-                    permissions: ["full_access"],
-                    email: "admin@rari-nantes.tn.it"
-                }
-            };
-
-            const batch = db.batch();
-            
-            for (const [username, accountData] of Object.entries(defaultAccounts)) {
-                const accountRef = accountsRef.doc(username);
-                batch.set(accountRef, {
-                    name: accountData.name,
-                    role: accountData.role,
-                    permissions: accountData.permissions,
-                    email: accountData.email
-                });
-                
-                // Crea l'utente in Firebase Authentication
-                try {
-                    await firebase.auth().createUserWithEmailAndPassword(
-                        accountData.email,
-                        accountData.password
-                    );
-                } catch (error) {
-                    console.warn(`User ${username} may already exist:`, error.message);
-                }
-            }
-            
-            await batch.commit();
-            console.log("Account predefiniti creati con successo");
-        }
-    };
-})();
-
-// Gestione del form di login
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        await AuthSystem.initialize();
+  // Elementi del form
+  const form = document.getElementById('passwordChangeForm');
+  const currentPassword = document.getElementById('currentPassword');
+  const newPassword = document.getElementById('newPassword');
+  const confirmPassword = document.getElementById('confirmPassword');
+  const errorElement = document.getElementById('errorMessage');
+  const successElement = document.getElementById('successMessage');
+  const spinner = document.getElementById('spinner');
+  const submitButton = document.getElementById('submitButton');
 
-        const loginForm = document.getElementById('secretaryLoginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = loginForm.username.value.trim();
-                const password = loginForm.password.value;
-
-                const result = await AuthSystem.login(username, password);
-
-                const errorElement = document.getElementById('errorMessage');
-                if (result.success) {
-                    // Reindirizzamento basato sul ruolo
-                    switch(result.session.role) {
-                        case 'secretary':
-                            window.location.href = 'segreteria/inserimento-dati-tesserati.html';
-                            break;
-                        case 'admin':
-                            window.location.href = 'admin/visualizza-password.html';
-                            break;
-                        default:
-                            window.location.href = 'dashboard.html';
-                    }
-                } else {
-                    errorElement.textContent = result.error || "Errore durante il login";
-                    errorElement.classList.remove('hidden');
-                    setTimeout(() => {
-                        errorElement.classList.add('hidden');
-                    }, 5000);
-                }
-            });
-        }
-    } catch (error) {
-        console.error("Initialization error:", error);
+  // Verifica autenticazione
+  firebase.auth().onAuthStateChanged((user) => {
+    if (!user) {
+      window.location.href = 'login.html';
     }
+  });
+
+  // Submit form
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Reset messaggi
+    hideMessages();
+    
+    // Validazione
+    if (newPassword.value !== confirmPassword.value) {
+      showError('Le nuove password non coincidono');
+      return;
+    }
+
+    if (!isPasswordValid(newPassword.value)) {
+      showError('La password deve contenere almeno 8 caratteri, includendo una maiuscola, un numero e un carattere speciale');
+      return;
+    }
+
+    try {
+      showLoading();
+      
+      const user = firebase.auth().currentUser;
+      const email = user.email;
+      const credential = firebase.auth.EmailAuthProvider.credential(
+        email,
+        currentPassword.value
+      );
+
+      // Verifica password corrente
+      await user.reauthenticateWithCredential(credential);
+      
+      // Aggiorna password
+      await user.updatePassword(newPassword.value);
+      
+      showSuccess('Password aggiornata con successo!');
+      
+      // Reindirizza al login dopo 2 secondi
+      setTimeout(() => {
+        firebase.auth().signOut();
+        window.location.href = 'login.html';
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error changing password:', error);
+      
+      let errorMessage = 'Errore durante l\'aggiornamento della password';
+      switch (error.code) {
+        case 'auth/wrong-password':
+          errorMessage = 'La password attuale non è corretta';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'La password è troppo debole';
+          break;
+        case 'auth/requires-recent-login':
+          errorMessage = 'La sessione è scaduta, effettua il login nuovamente';
+          setTimeout(() => {
+            firebase.auth().signOut();
+            window.location.href = 'login.html';
+          }, 3000);
+          break;
+      }
+      
+      showError(errorMessage);
+    } finally {
+      hideLoading();
+    }
+  });
+
+  // Funzioni di supporto
+  function isPasswordValid(password) {
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  }
+
+  function showError(message) {
+    errorElement.textContent = message;
+    errorElement.classList.remove('hidden');
+  }
+
+  function showSuccess(message) {
+    successElement.textContent = message;
+    successElement.classList.remove('hidden');
+  }
+
+  function hideMessages() {
+    errorElement.classList.add('hidden');
+    successElement.classList.add('hidden');
+  }
+
+  function showLoading() {
+    submitButton.disabled = true;
+    spinner.classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    submitButton.disabled = false;
+    spinner.classList.add('hidden');
+  }
 });
