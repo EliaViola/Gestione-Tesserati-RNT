@@ -306,3 +306,95 @@ nav a.active {
     height: auto;
   }
 }
+
+/* Aggiungi queste regole al tuo file CSS esistente */
+
+/* Tabella admin */
+.table-container {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.admin-table th {
+  background: var(--primary);
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  position: sticky;
+  top: 0;
+}
+
+.admin-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.admin-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.admin-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Badge ruoli */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-admin {
+  background: var(--error);
+  color: white;
+}
+
+.badge-secretary {
+  background: var(--secondary);
+  color: var(--dark-gray);
+}
+
+.badge-default {
+  background: var(--medium-gray);
+  color: var(--dark-gray);
+}
+
+/* Pulsanti piccoli */
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset {
+  background: var(--primary);
+  color: white;
+  border: none;
+}
+
+.btn-reset:hover {
+  background: var(--primary-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-table {
+    font-size: 0.85rem;
+  }
+  
+  .admin-table th,
+  .admin-table td {
+    padding: 0.6rem;
+  }
+}
