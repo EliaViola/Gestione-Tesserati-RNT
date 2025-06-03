@@ -1,4 +1,4 @@
-// assets/js/firebase-config.js
+// firebase-config.js (versione corretta)
 const firebaseConfig = {
   apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
   authDomain: "rari-nantes-tesserati.firebaseapp.com",
@@ -9,9 +9,9 @@ const firebaseConfig = {
   measurementId: "G-558LQEWD8Z"
 };
 
-// Inizializza Firebase solo una volta
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Inizializza Firebase
+firebase.initializeApp(firebaseConfig);
 
-export { app, auth, db };
+// Rendi disponibili le variabili globalmente (senza export)
+const db = firebase.firestore();
+const auth = firebase.auth();
