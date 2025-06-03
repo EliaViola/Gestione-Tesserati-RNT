@@ -11,6 +11,7 @@
   --medium-gray: #e0e0e0;
   --dark-gray: #333333;
   --error: #dc3545;
+  --error-light: #f8d7da;
   --success: #28a745;
   
   /* Spaziatura */
@@ -329,20 +330,19 @@ nav a.active {
 .admin-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
   font-size: 0.95rem;
 }
 
 .admin-table th {
-  background: var(--primary);
+  background-color: var(--primary);
   color: white;
-  padding: 1rem;
+  padding: 0.8rem;
   text-align: left;
-  position: sticky;
-  top: 0;
 }
 
 .admin-table td {
-  padding: 0.8rem 1rem;
+  padding: 0.6rem 0.8rem;
   border-bottom: 1px solid var(--medium-gray);
 }
 
@@ -436,6 +436,30 @@ nav a.active {
   border-left-color: var(--error);
 }
 
+/* Card del profilo */
+.profile-box {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-box h3 {
+  color: var(--primary);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* Messaggi di stato */
+.alert-info {
+  background-color: #e7f5ff;
+  color: #004085;
+  border-left: 4px solid #004085;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  border-radius: 4px;
+}
 /* Sezioni del Form */
 .form-section {
   margin-bottom: 2rem;
