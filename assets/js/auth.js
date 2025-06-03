@@ -1,117 +1,51 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  // Elementi del form
-  const form = document.getElementById('passwordChangeForm');
-  const currentPassword = document.getElementById('currentPassword');
-  const newPassword = document.getElementById('newPassword');
-  const confirmPassword = document.getElementById('confirmPassword');
-  const errorElement = document.getElementById('errorMessage');
-  const successElement = document.getElementById('successMessage');
-  const spinner = document.getElementById('spinner');
-  const submitButton = document.getElementById('submitButton');
+document.addEventListener('DOMContentLoaded', () => {
+  const adminBtn = document.getElementById('adminBtn');
+  const secretaryBtn = document.getElementById('secretaryBtn');
+  const loginForm = document.getElementById('loginForm');
+  const authForm = document.getElementById('authForm');
+  let currentRole = null;
 
-  // Verifica autenticazione
-  firebase.auth().onAuthStateChanged((user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-    }
+  // Selezione ruolo
+  adminBtn.addEventListener('click', () => {
+    currentRole = 'admin';
+    loginForm.classList.remove('hidden');
+    document.querySelector('.login-header h2').textContent = 'Accesso Amministratore';
   });
 
-  // Submit form
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Reset messaggi
-    hideMessages();
-    
-    // Validazione
-    if (newPassword.value !== confirmPassword.value) {
-      showError('Le nuove password non coincidono');
-      return;
-    }
+  secretaryBtn.addEventListener('click', () => {
+    currentRole = 'secretary';
+    loginForm.classList.remove('hidden');
+    document.querySelector('.login-header h2').textContent = 'Accesso Segreteria';
+  });
 
-    if (!isPasswordValid(newPassword.value)) {
-      showError('La password deve contenere almeno 8 caratteri, includendo una maiuscola, un numero e un carattere speciale');
-      return;
-    }
+  // Login
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const email = `${username}@rari-nantes.tn.it`;
 
     try {
-      showLoading();
-      
-      const user = firebase.auth().currentUser;
-      const email = user.email;
-      const credential = firebase.auth.EmailAuthProvider.credential(
-        email,
-        currentPassword.value
-      );
+      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+      const idToken = await user.getIdTokenResult();
 
-      // Verifica password corrente
-      await user.reauthenticateWithCredential(credential);
-      
-      // Aggiorna password
-      await user.updatePassword(newPassword.value);
-      
-      showSuccess('Password aggiornata con successo!');
-      
-      // Reindirizza al login dopo 2 secondi
-      setTimeout(() => {
-        firebase.auth().signOut();
-        window.location.href = 'login.html';
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Error changing password:', error);
-      
-      let errorMessage = 'Errore durante l\'aggiornamento della password';
-      switch (error.code) {
-        case 'auth/wrong-password':
-          errorMessage = 'La password attuale non è corretta';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'La password è troppo debole';
-          break;
-        case 'auth/requires-recent-login':
-          errorMessage = 'La sessione è scaduta, effettua il login nuovamente';
-          setTimeout(() => {
-            firebase.auth().signOut();
-            window.location.href = 'login.html';
-          }, 3000);
-          break;
+      // Verifica ruolo
+      if ((currentRole === 'admin' && !idToken.claims.admin) || 
+          (currentRole === 'secretary' && !idToken.claims.secretary)) {
+        await firebase.auth().signOut();
+        throw new Error('Non hai i permessi per questo ruolo');
       }
-      
-      showError(errorMessage);
-    } finally {
-      hideLoading();
+
+      // Reindirizzamento
+      if (currentRole === 'admin') {
+        window.location.href = 'admin/gestione-password.html';
+      } else {
+        window.location.href = 'segreteria/gestione-tesserati.html';
+      }
+
+    } catch (error) {
+      alert(`Errore di accesso: ${error.message}`);
     }
   });
-
-  // Funzioni di supporto
-  function isPasswordValid(password) {
-    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return regex.test(password);
-  }
-
-  function showError(message) {
-    errorElement.textContent = message;
-    errorElement.classList.remove('hidden');
-  }
-
-  function showSuccess(message) {
-    successElement.textContent = message;
-    successElement.classList.remove('hidden');
-  }
-
-  function hideMessages() {
-    errorElement.classList.add('hidden');
-    successElement.classList.add('hidden');
-  }
-
-  function showLoading() {
-    submitButton.disabled = true;
-    spinner.classList.remove('hidden');
-  }
-
-  function hideLoading() {
-    submitButton.disabled = false;
-    spinner.classList.add('hidden');
-  }
 });
