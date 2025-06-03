@@ -135,6 +135,11 @@ main {
   margin-bottom: 2rem;
 }
 
+.login-box {
+  max-width: 450px;
+  margin: 0 auto;
+}
+
 /* ======================
    FORM ELEMENTI
    ====================== */
