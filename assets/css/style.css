@@ -483,11 +483,11 @@ nav a.active {
 }
 
 .form-control:invalid:not(:placeholder-shown) {
-  border-color: var(--error);
+  border-color: var(--primary);
 }
 
 .form-control:valid:not(:placeholder-shown) {
-  border-color: var(--success);
+  border-color: var(--primary);
 }
 
 /* Pulsanti disabilitati */
