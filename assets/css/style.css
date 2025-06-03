@@ -2,6 +2,7 @@
    VARIABILI & RESET
    ====================== */
 :root {
+  /* Colori esistenti */
   --primary: #1a3e72;
   --primary-dark: #0d2a56;
   --secondary: #ffd700;
@@ -11,9 +12,11 @@
   --dark-gray: #333333;
   --error: #dc3545;
   --success: #28a745;
+  
+  /* Spaziatura */
+  --radius: 8px;
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
   --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --radius: 8px;
 }
 
 * {
