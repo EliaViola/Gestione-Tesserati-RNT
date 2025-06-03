@@ -1,59 +1,145 @@
-// assets/js/auth.js
-import { auth, db } from './firebase-config.js';
+const AuthSystem = (() => {
+    const CONFIG = {
+        SESSION_KEY: 'rn_auth_v2',
+        ACCOUNTS_KEY: 'rn_accounts_v2',
+        ADMIN_PASSWORD: 'AdminMaster!2023'
+    };
 
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    if (!firebase.apps.length) {
-      throw new Error("Firebase non è stato inizializzato correttamente");
-    }
+    const DEFAULT_ACCOUNTS = {
+        "segreteria1": {
+            name: "Segreteria 1",
+            password: "Segretaria1!2023",
+            permissions: ["insert", "view", "edit"],
+            role: "secretary"
+        },
+        "segreteria2": {
+            name: "Segreteria 2",
+            password: "Segretaria2!2023",
+            permissions: ["insert", "view", "edit"],
+            role: "secretary"
+        },
+        "coordinatore": {
+            name: "Coordinatore",
+            password: "Coordinatore!2023",
+            permissions: ["view", "edit", "approve", "reports"],
+            role: "coordinator"
+        },
+        "direttore": {
+            name: "Direttore",
+            password: "Direttore!2023",
+            permissions: ["view", "reports", "finance"],
+            role: "director"
+        },
+        "admin": {
+            name: "Amministratore",
+            password: CONFIG.ADMIN_PASSWORD,
+            permissions: ["full_access"],
+            role: "admin"
+        }
+    };
+
+    const initialize = () => {
+        if (!localStorage.getItem(CONFIG.ACCOUNTS_KEY)) {
+            localStorage.setItem(CONFIG.ACCOUNTS_KEY, JSON.stringify(DEFAULT_ACCOUNTS));
+        }
+    };
+
+    return {
+        initialize,
+
+        login: (username, password) => {
+            const accounts = JSON.parse(localStorage.getItem(CONFIG.ACCOUNTS_KEY)) || {};
+            const account = accounts[username];
+
+            if (!account || account.password !== password) {
+                return { success: false };
+            }
+
+            const session = {
+                username,
+                name: account.name,
+                role: account.role,
+                permissions: account.permissions,
+                lastLogin: new Date().toISOString()
+            };
+
+            sessionStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+            return { success: true, session };
+        },
+
+        logout: () => {
+            sessionStorage.removeItem(CONFIG.SESSION_KEY);
+        },
+
+        getSession: () => {
+            return JSON.parse(sessionStorage.getItem(CONFIG.SESSION_KEY));
+        },
+
+        getAllAccounts: (adminPassword) => {
+            if (adminPassword !== CONFIG.ADMIN_PASSWORD) return null;
+            return JSON.parse(localStorage.getItem(CONFIG.ACCOUNTS_KEY));
+        },
+
+        changePassword: (username, oldPass, newPass) => {
+            const accounts = JSON.parse(localStorage.getItem(CONFIG.ACCOUNTS_KEY)) || {};
+            if (!accounts[username] || accounts[username].password !== oldPass) {
+                return false;
+            }
+            accounts[username].password = newPass;
+            localStorage.setItem(CONFIG.ACCOUNTS_KEY, JSON.stringify(accounts));
+            return true;
+        },
+
+        renderProfile: () => {
+            const profileContainer = document.getElementById('userProfile');
+            const session = AuthSystem.getSession();
+            if (!profileContainer || !session) return;
+
+            const date = new Date(session.lastLogin).toLocaleString('it-IT');
+            profileContainer.innerHTML = `
+                <div class="profile-box">
+                    <h3>Profilo Utente</h3>
+                    <p><strong>Nome:</strong> ${session.name}</p>
+                    <p><strong>Username:</strong> ${session.username}</p>
+                    <p><strong>Ruolo:</strong> ${session.role}</p>
+                    <p><strong>Permessi:</strong> ${session.permissions.join(', ')}</p>
+                    <p><strong>Ultimo accesso:</strong> ${date}</p>
+                    <button id="logoutBtn" class="btn btn-danger mt-2">Esci</button>
+                </div>
+            `;
+
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                AuthSystem.logout();
+                window.location.href = 'login.html';
+            });
+        }
+    };
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+    AuthSystem.initialize();
 
     const loginForm = document.getElementById('secretaryLoginForm');
     if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = loginForm.username.value.trim();
-        const password = loginForm.password.value;
-        const errorElement = document.getElementById('errorMessage');
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = loginForm.username.value.trim();
+            const password = loginForm.password.value;
 
-        try {
-          const email = `${username}@rari-nantes.tn.it`;
-          const userCredential = await auth.signInWithEmailAndPassword(email, password);
-          const userDoc = await db.collection('accounts').doc(username).get();
+            const result = AuthSystem.login(username, password);
 
-          if (!userDoc.exists) {
-            await auth.signOut();
-            throw new Error('Account non trovato nel database');
-          }
-
-          const userData = userDoc.data();
-
-          if (userData.role === 'admin') {
-            window.location.href = 'admin/gestione-password.html';
-          } else if (userData.role === 'secretary') {
-            window.location.href = 'segreteria/inserimento-dati-tesserati.html';
-          } else {
-            throw new Error('Ruolo non autorizzato');
-          }
-
-        } catch (error) {
-          console.error('Login error:', error);
-          let errorMessage = 'Errore durante il login';
-
-          if (error.code === 'auth/wrong-password') {
-            errorMessage = 'Password errata';
-          } else if (error.code === 'auth/user-not-found') {
-            errorMessage = 'Utente non trovato';
-          } else if (error.message.includes('Firebase non è stato inizializzato')) {
-            errorMessage = 'Errore di configurazione del sistema';
-          }
-
-          errorElement.textContent = errorMessage;
-          errorElement.classList.remove('hidden');
-        }
-      });
+            if (result.success) {
+                if (username === 'segreteria1' || username === 'segreteria2') {
+                    window.location.href = 'segreteria/inserimento-dati-tesserati.html';
+                } else {
+                    window.location.href = 'admin/visualizza-password.html';
+                }
+            } else {
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
     }
-  } catch (error) {
-    console.error('Initialization error:', error);
-    alert('Errore critico nel sistema di autenticazione');
-  }
+
+    // Se siamo in una pagina con profilo, lo renderizziamo
+    AuthSystem.renderProfile();
 });
