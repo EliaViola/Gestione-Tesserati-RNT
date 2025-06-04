@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ricerca - Rari Nantes Trento</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-container">
+      <a href="inserimento-dati-tesserati.html">Anagrafica</a>
+      <a href="inserimento-dati-corsi.html">Corsi</a>
+      <a href="pagamenti.html">Pagamenti</a>
+      <a href="ricerca-dati.html" class="active">Ricerca</a>
+    </div>
+  </nav>
+
+  <main>
+  <div class="form-container">
+    <h2 class="form-title">Ricerca Tesserati e Corsi</h2>
+
+    <div class="filtri-ricerca">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="filtro-nome">Nome</label>
+          <input type="text" id="filtro-nome" placeholder="Cerca per nome" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="filtro-cognome">Cognome</label>
+          <input type="text" id="filtro-cognome" placeholder="Cerca per cognome" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="filtro-codice-fiscale">Codice Fiscale</label>
+          <input type="text" id="filtro-codice-fiscale" placeholder="Cerca per CF" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="filtro-corso">Tipo Corso</label>
+          <select id="filtro-corso" class="form-control">
+            <option value="">Tutti i corsi</option>
+            <option value="avviamento">Avviamento</option>
+            <option value="principianti">Principianti</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="perfezionamento">Perfezionamento</option>
+            <option value="cuffiegb">Cuffie Giallo Blu</option>
+            <option value="calottegb">Calottine Giallo Blu</option>
+            <option value="propaganda">Propaganda</option>
+            <option value="agonisti">Agonisti</option>
+            <option value="pallanuoto">Pallanuoto</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="eseguiRicerca()">Cerca</button>
+        <button type="button" class="btn btn-secondary" onclick="resetRicerca()">Azzera Filtri</button>
+      </div>
+    </div>
+
+    <div class="risultati-ricerca">
+      <div id="risultatiTesserati" class="tabella-risultati">
+        <h3>Tesserati</h3>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th>Codice Fiscale</th>
+                <th>Data Nascita</th>
+                <th>Telefono</th>
+                <th>Email</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabellaTesserati">
+              <!-- Risultati verranno inseriti qui -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="risultatiCorsi" class="tabella-risultati">
+        <h3>Corsi</h3>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tesserato</th>
+                <th>Tipo Corso</th>
+                <th>Livello</th>
+                <th>Giorni</th>
+                <th>Orario</th>
+                <th>Istruttore</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabellaCorsi">
+              <!-- Risultati verranno inseriti qui -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+
+  <footer>
+    <div class="footer-container">
+      <p>&copy; 2023 Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Carica i dati al caricamento della pagina
+    document.addEventListener('DOMContentLoaded', function() {
+      eseguiRicerca();
+    });
+
+    // Funzione principale di ricerca
+    function eseguiRicerca() {
+      const filtroNome = document.getElementById('filtro-nome').value.toLowerCase();
+      const filtroCognome = document.getElementById('filtro-cognome').value.toLowerCase();
+      const filtroCodiceFiscale = document.getElementById('filtro-codice-fiscale').value.toLowerCase();
+      const filtroCorso = document.getElementById('filtro-corso').value;
+      
+      // Carica tutti i dati
+      const tesserati = JSON.parse(localStorage.getItem('tesserati') || '[]');
+      const corsi = JSON.parse(localStorage.getItem('corsi') || '[]');
+      
+      // Filtra i tesserati
+      const tesseratiFiltrati = tesserati.filter(t => {
+        return (filtroNome === '' || (t.nome && t.nome.toLowerCase().includes(filtroNome))) &&
+               (filtroCognome === '' || (t.cognome && t.cognome.toLowerCase().includes(filtroCognome))) &&
+               (filtroCodiceFiscale === '' || (t.codice_fiscale && t.codice_fiscale.toLowerCase().includes(filtroCodiceFiscale)));
+      });
+      
+      // Popola la tabella tesserati
+      const corpoTesserati = document.getElementById('corpoTabellaTesserati');
+      corpoTesserati.innerHTML = '';
+      
+      if (tesseratiFiltrati.length === 0) {
+        corpoTesserati.innerHTML = '<tr><td colspan="7" class="nessun-risultato">Nessun tesserato trovato</td></tr>';
+      } else {
+        tesseratiFiltrati.forEach(tesserato => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${tesserato.nome || 'N/D'}</td>
+            <td>${tesserato.cognome || 'N/D'}</td>
+            <td>${tesserato.codice_fiscale || 'N/D'}</td>
+            <td>${tesserato.data_nascita ? new Date(tesserato.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
+            <td>${tesserato.telefono || 'N/D'}</td>
+            <td>${tesserato.email || 'N/D'}</td>
+            <td>
+              <button class="btn btn-small" onclick="modificaTesserato('${tesserato.codice_fiscale || `${tesserato.nome}${tesserato.cognome}`}')">
+                Modifica
+              </button>
+            </td>
+          `;
+          corpoTesserati.appendChild(row);
+        });
+      }
+      
+      // Filtra i corsi
+      const corsiFiltrati = corsi.filter(corso => {
+        if (filtroCorso === '') return true;
+        return corso.tipo === filtroCorso;
+      });
+      
+      // Popola la tabella corsi
+      const corpoCorsi = document.getElementById('corpoTabellaCorsi');
+      corpoCorsi.innerHTML = '';
+      
+      if (corsiFiltrati.length === 0) {
+        corpoCorsi.innerHTML = '<tr><td colspan="7" class="nessun-risultato">Nessun corso trovato</td></tr>';
+      } else {
+        corsiFiltrati.forEach(corso => {
+          // Trova il tesserato associato al corso
+          const tesserato = tesserati.find(t => 
+            t.codice_fiscale === corso.tesserato || 
+            `${t.nome}${t.cognome}` === corso.tesserato
+          );
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${tesserato ? `${tesserato.cognome} ${tesserato.nome}` : corso.tesserato}</td>
+            <td>${getCorsoName(corso.tipo)}</td>
+            <td>${corso.livello || 'N/D'}</td>
+            <td>${corso.giorni ? corso.giorni.join(', ') : 'N/D'}</td>
+            <td>${corso.orario || 'N/D'}</td>
+            <td>${corso.istruttore || 'N/D'}</td>
+            <td>
+              <button class="btn btn-small" onclick="modificaCorso('${corso.id || corso.tesserato}')">
+                Modifica
+              </button>
+            </td>
+          `;
+          corpoCorsi.appendChild(row);
+        });
+      }
+    }
+    
+    // Resetta i filtri di ricerca
+    function resetRicerca() {
+      document.getElementById('filtro-nome').value = '';
+      document.getElementById('filtro-cognome').value = '';
+      document.getElementById('filtro-codice-fiscale').value = '';
+      document.getElementById('filtro-corso').value = '';
+      eseguiRicerca();
+    }
+    
+    // Funzione helper per il nome del corso
+    function getCorsoName(tipo) {
+      const names = {
+        'avviamento': 'Avviamento',
+        'principianti': 'Principianti',
+        'intermedio': 'Intermedio',
+        'perfezionamento': 'Perfezionamento',
+        'cuffiegb': 'Cuffie Giallo Blu',
+        'calottegb': 'Calottine Giallo Blu',
+        'propaganda': 'Propaganda',
+        'agonisti': 'Agonisti',
+        'pallanuoto': 'Pallanuoto'
+      };
+      return names[tipo] || tipo;
+    }
+    
+    // Funzioni per modificare i record (da implementare)
+    function modificaTesserato(idTesserato) {
+      alert(`Modifica tesserato con ID: ${idTesserato}`);
+      // Reindirizza alla pagina di modifica con l'ID
+      // window.location.href = `inserimento-dati-tesserati.html?id=${idTesserato}`;
+    }
+    
+    function modificaCorso(idCorso) {
+      alert(`Modifica corso con ID: ${idCorso}`);
+      // Reindirizza alla pagina di modifica con l'ID
+      // window.location.href = `inserimento-dati-corsi.html?id=${idCorso}`;
+    }
+  </script>
+</body>
+</html>

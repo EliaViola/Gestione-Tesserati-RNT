@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Segreteria - Rari Nantes Trento</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- Aggiungi Firebase -->
+  <!-- Firebase compat (MODULO) -->
+<script type="module">
+  import "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js";
+  import "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js";
+  import "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js";
+  import "./assets/js/firebase-config.js"; // inizializza firebase
+</script>
+
+<!-- Il tuo script principale -->
+<script type="module" src="assets/js/auth.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <img src="assets/images/logo.png" alt="Rari Nantes Trento Logo" class="logo" />
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-container">
+      <a href="modifica-password.html">Modifica Password</a>
+      <a href="login.html" class="login-btn-nav">Login</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="main-container">
+      <div class="login-box card">
+        <div class="login-header">
+          <h2>Accesso Segreteria</h2>
+          <p>Area riservata al personale autorizzato</p>
+        </div>
+
+        <form id="secretaryLoginForm">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-control"
+              placeholder="Inserisci il tuo username"
+              required
+              autocomplete="username"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-control"
+              placeholder="Inserisci la tua password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="loginButton">
+            <span class="button-text">Accedi</span>
+            <span class="spinner hidden" id="spinner"></span>
+          </button>
+
+          <div class="alert alert-error mt-2 hidden" id="errorMessage">
+            <!-- Messaggio verrà inserito via JavaScript -->
+          </div>
+        </form>
+      </div>
+      
+      <!-- Sezione solo per admin -->
+      <div class="admin-login-hint mt-3 hidden" id="adminHint">
+        <p>Accesso amministratore: usa username <strong>admin</strong></p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>&copy; <span id="currentYear">2023</span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Aggiorna automaticamente l'anno corrente nel footer
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Mostra hint per admin se la pagina è caricata da localhost
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      document.getElementById('adminHint').classList.remove('hidden');
+    }
+  </script>
+  
+  <script type="module" src="assets/js/auth.js"></script>
+</body>
+</html>
