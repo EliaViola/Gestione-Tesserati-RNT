@@ -24,96 +24,97 @@
   </nav>
 
   <main>
-    <div class="form-container">
-      <h2 class="form-title">Ricerca Tesserati e Corsi</h2>
-      
-      <div class="filtri-ricerca">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="filtro-nome">Nome</label>
-            <input type="text" id="filtro-nome" placeholder="Cerca per nome">
-          </div>
-          
-          <div class="form-group">
-            <label for="filtro-cognome">Cognome</label>
-            <input type="text" id="filtro-cognome" placeholder="Cerca per cognome">
-          </div>
-          
-          <div class="form-group">
-            <label for="filtro-codice-fiscale">Codice Fiscale</label>
-            <input type="text" id="filtro-codice-fiscale" placeholder="Cerca per CF">
-          </div>
-          
-          <div class="form-group">
-            <label for="filtro-corso">Tipo Corso</label>
-            <select id="filtro-corso">
-              <option value="">Tutti i corsi</option>
-              <option value="avviamento">Avviamento</option>
-              <option value="principianti">Principianti</option>
-              <option value="intermedio">Intermedio</option>
-              <option value="perfezionamento">Perfezionamento</option>
-              <option value="cuffiegb">Cuffie Giallo Blu</option>
-              <option value="calottegb">Calottine Giallo Blu</option>
-              <option value="propaganda">Propaganda</option>
-              <option value="agonisti">Agonisti</option>
-              <option value="pallanuoto">Pallanuoto</option>
-            </select>
-          </div>
+  <div class="form-container">
+    <h2 class="form-title">Ricerca Tesserati e Corsi</h2>
+
+    <div class="filtri-ricerca">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="filtro-nome">Nome</label>
+          <input type="text" id="filtro-nome" placeholder="Cerca per nome" class="form-control">
         </div>
-        
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" onclick="eseguiRicerca()">Cerca</button>
-          <button type="button" class="btn btn-secondary" onclick="resetRicerca()">Azzera Filtri</button>
+
+        <div class="form-group">
+          <label for="filtro-cognome">Cognome</label>
+          <input type="text" id="filtro-cognome" placeholder="Cerca per cognome" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="filtro-codice-fiscale">Codice Fiscale</label>
+          <input type="text" id="filtro-codice-fiscale" placeholder="Cerca per CF" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="filtro-corso">Tipo Corso</label>
+          <select id="filtro-corso" class="form-control">
+            <option value="">Tutti i corsi</option>
+            <option value="avviamento">Avviamento</option>
+            <option value="principianti">Principianti</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="perfezionamento">Perfezionamento</option>
+            <option value="cuffiegb">Cuffie Giallo Blu</option>
+            <option value="calottegb">Calottine Giallo Blu</option>
+            <option value="propaganda">Propaganda</option>
+            <option value="agonisti">Agonisti</option>
+            <option value="pallanuoto">Pallanuoto</option>
+          </select>
         </div>
       </div>
-      
-      <div class="risultati-ricerca">
-        <div id="risultatiTesserati" class="tabella-risultati">
-          <h3>Tesserati</h3>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Cognome</th>
-                  <th>Codice Fiscale</th>
-                  <th>Data Nascita</th>
-                  <th>Telefono</th>
-                  <th>Email</th>
-                  <th>Azioni</th>
-                </tr>
-              </thead>
-              <tbody id="corpoTabellaTesserati">
-                <!-- Risultati verranno inseriti qui -->
-              </tbody>
-            </table>
-          </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="eseguiRicerca()">Cerca</button>
+        <button type="button" class="btn btn-secondary" onclick="resetRicerca()">Azzera Filtri</button>
+      </div>
+    </div>
+
+    <div class="risultati-ricerca">
+      <div id="risultatiTesserati" class="tabella-risultati">
+        <h3>Tesserati</h3>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th>Codice Fiscale</th>
+                <th>Data Nascita</th>
+                <th>Telefono</th>
+                <th>Email</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabellaTesserati">
+              <!-- Risultati verranno inseriti qui -->
+            </tbody>
+          </table>
         </div>
-        
-        <div id="risultatiCorsi" class="tabella-risultati">
-          <h3>Corsi</h3>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Tesserato</th>
-                  <th>Tipo Corso</th>
-                  <th>Livello</th>
-                  <th>Giorni</th>
-                  <th>Orario</th>
-                  <th>Istruttore</th>
-                  <th>Azioni</th>
-                </tr>
-              </thead>
-              <tbody id="corpoTabellaCorsi">
-                <!-- Risultati verranno inseriti qui -->
-              </tbody>
-            </table>
-          </div>
+      </div>
+
+      <div id="risultatiCorsi" class="tabella-risultati">
+        <h3>Corsi</h3>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tesserato</th>
+                <th>Tipo Corso</th>
+                <th>Livello</th>
+                <th>Giorni</th>
+                <th>Orario</th>
+                <th>Istruttore</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabellaCorsi">
+              <!-- Risultati verranno inseriti qui -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-  </main>
+  </div>
+</main>
+
 
   <footer>
     <div class="footer-container">
