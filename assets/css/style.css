@@ -578,3 +578,22 @@ nav a.active {
     font-size: 1.1rem;
   }
 }
+
+/* style.css */
+.lista-corsi {
+  list-style-type: none;
+  padding: 0;
+}
+
+.lista-corsi li {
+  background: #f8f9fa;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-left: 4px solid #1a3e72;
+}
+
+/* Stile per i campi obbligatori */
+.required-field label::after {
+  content: " *";
+  color: #dc3545;
+}
