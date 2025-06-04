@@ -5,21 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gestione Corsi - Rari Nantes Trento</title>
     <link rel="stylesheet" href="../assets/css/style.css" />
-    <!-- Aggiungi Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <style>
-      /* Stili migliorati per i select */
+      /* Miglioramento menu a tendina */
       select {
         padding: 8px 12px;
-        border: 2px solid #2980b9;
+        border: 2px solid --medium-gray;
         border-radius: 6px;
         background-color: #f0f8ff;
         color: #34495e;
         font-weight: 600;
         cursor: pointer;
         transition: border-color 0.3s ease;
-        width: 100%;
       }
 
       select:hover,
@@ -29,18 +25,9 @@
         background-color: #e6f0fb;
       }
 
-      /* Stile per il multiselect */
+      /* Per il multiselect pacchetti, manteniamo dimensioni */
       #pacchettiSelect {
-        min-height: 120px;
-      }
-
-      /* Stile per le card degli iscritti */
-      .iscritto-card {
-        background: #f8f9fa;
-        border-left: 4px solid #2980b9;
-        padding: 12px;
-        margin-bottom: 8px;
-        border-radius: 0 4px 4px 0;
+        min-width: 250px;
       }
     </style>
 </head>
@@ -70,7 +57,7 @@
             <label for="tesserato" class="required-field">Seleziona Tesserato</label>
             <select id="tesserato" name="tesserato" required aria-required="true">
               <option value="">-- Seleziona --</option>
-              <!-- Opzioni verranno caricate dinamicamente da Firebase -->
+              <!-- Opzioni verranno caricate dinamicamente -->
             </select>
           </div>
 
@@ -105,11 +92,8 @@
           </div>
 
           <div class="form-group">
-            <label for="istruttore" class="required-field">Istruttore Responsabile</label>
-            <input type="text" id="istruttore" name="istruttore" required aria-required="true" list="istruttoriList" />
-            <datalist id="istruttoriList">
-              <!-- Opzioni verranno caricate dinamicamente -->
-            </datalist>
+            <label for="istruttore" >Istruttore Responsabile</label>
+             <input type="text" id="istruttore" class="form-control" required pattern="[A-Za-zÀ-ÿ\s']{2,}" />
           </div>
 
           <div class="form-group">
@@ -169,5 +153,6 @@
   </footer>
 
   <script src="../assets/js/gestione-corsi.js" defer></script>
+  <script src="../assets/js/backup.js" defer></script>
 </body>
 </html>
