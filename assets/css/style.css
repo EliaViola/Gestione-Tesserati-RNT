@@ -597,3 +597,14 @@ nav a.active {
   content: " *";
   color: #dc3545;
 }
+
+select {
+        padding: 8px 12px;
+        border: 2px solid #2980b9;
+        border-radius: 6px;
+        background-color: #f0f8ff;
+        color: #34495e;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+      }
