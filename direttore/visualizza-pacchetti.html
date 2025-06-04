@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Visualizza Pacchetti</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body>
+  <h1>Seleziona un Pacchetto</h1>
+  <select id="selezionaPacchetto">
+    <option value="">-- Seleziona --</option>
+  </select>
+
+  <script>
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
+      authDomain: "rari-nantes-tesserati.firebaseapp.com",
+      projectId: "rari-nantes-tesserati",
+      storageBucket: "rari-nantes-tesserati.appspot.com",
+      messagingSenderId: "435337228811",
+      appId: "1:435337228811:web:a5f1fd0fb9e17bfbc00d0e"
+    };
+
+    // Inizializza Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Recupera pacchetti da Firestore
+    db.collection("pacchetti").get().then(querySnapshot => {
+      const select = document.getElementById("selezionaPacchetto");
+      querySnapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.data().nome;
+        select.appendChild(option);
+      });
+    }).catch(error => {
+      console.error("Errore nel recupero dei pacchetti: ", error);
+    });
+  </script>
+</body>
+</html>
