@@ -24,89 +24,90 @@
   </nav>
 
     <main>
-        <div class="form-container">
-            <h2 class="form-title">Registrazione Pagamenti</h2>
-            
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="tesserato" class="required-field">Seleziona Tesserato</label>
-                    <select id="tesserato" name="tesserato" required onchange="caricaCorsiTesserato()">
-                        <option value="">-- Seleziona --</option>
-                        <!-- Opzioni verranno caricate dinamicamente -->
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="corso" class="required-field">Seleziona Corso</label>
-                    <select id="corso" name="corso" required disabled>
-                        <option value="">-- Seleziona prima un tesserato --</option>
-                    </select>
-                </div>
+    <div class="form-container">
+        <h2 class="form-title">Registrazione Pagamenti</h2>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="tesserato" class="required-field">Seleziona Tesserato</label>
+                <select id="tesserato" name="tesserato" class="form-control" required onchange="caricaCorsiTesserato()">
+                    <option value="">-- Seleziona --</option>
+                </select>
             </div>
-            
-            <div id="infoTesserato" class="info-utente" style="display: none;">
-                <h3>Informazioni Tesserato</h3>
-                <p><strong>Nome:</strong> <span id="infoNome"></span></p>
-                <p><strong>Cognome:</strong> <span id="infoCognome"></span></p>
-                <p><strong>Corso:</strong> <span id="infoCorso"></span></p>
-                <p><strong>Lezioni totali:</strong> <span id="infoLezioniTotali"></span></p>
-                <p><strong>Lezioni pagate:</strong> <span id="infoLezioniPagate"></span></p>
-                <p><strong>Lezioni rimanenti:</strong> <span id="infoLezioniRimanenti"></span></p>
-            </div>
-            
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="num_lezioni" class="required-field">Numero Lezioni da Pagare</label>
-                    <input type="number" id="num_lezioni" name="num_lezioni" min="1" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="importo" class="required-field">Importo (€)</label>
-                    <input type="number" id="importo" name="importo" min="0" step="0.01" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="data_pagamento" class="required-field">Data Pagamento</label>
-                    <input type="date" id="data_pagamento" name="data_pagamento" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="metodo_pagamento" class="required-field">Metodo di Pagamento</label>
-                    <select id="metodo_pagamento" name="metodo_pagamento" required>
-                        <option value="">-- Seleziona --</option>
-                        <option value="contanti">Contanti</option>
-                        <option value="carta">Carta di Credito</option>
-                        <option value="bonifico">Bonifico Bancario</option>
-                        <option value="satispay">Satispay</option>
-                    </select>
-                </div>
-                
-                <div class="form-group full-width">
-                    <label for="note_pagamento">Note Pagamento</label>
-                    <textarea id="note_pagamento" name="note_pagamento" rows="2"></textarea>
-                </div>
-            </div>
-            <div id="feedback" class="feedback-msg" style="display: none;"></div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-primary" onclick="registraPagamento()">Registra Pagamento</button>
-                <button type="reset" class="btn btn-secondary">Azzera Campi</button>
-            </div>
-            
-            <div class="table-container">
-                <h3 class="table-title">Storico Pagamenti</h3>
-                <div id="storicoPagamentiContainer">
-                    <p class="nessun-risultato">Seleziona un tesserato e un corso per visualizzare lo storico pagamenti</p>
-                </div>
-            </div>
-            
-            <div class="table-container">
-                <h3 class="table-title">Calendario Lezioni</h3>
-                <div id="calendarioLezioniContainer">
-                    <p class="nessun-risultato">Seleziona un tesserato e un corso per visualizzare il calendario lezioni</p>
-                </div>
+
+            <div class="form-group">
+                <label for="corso" class="required-field">Seleziona Corso</label>
+                <select id="corso" name="corso" class="form-control" required disabled>
+                    <option value="">-- Seleziona prima un tesserato --</option>
+                </select>
             </div>
         </div>
-    </main>
+
+        <div id="infoTesserato" class="info-utente" style="display: none;">
+            <h3>Informazioni Tesserato</h3>
+            <p><strong>Nome:</strong> <span id="infoNome"></span></p>
+            <p><strong>Cognome:</strong> <span id="infoCognome"></span></p>
+            <p><strong>Corso:</strong> <span id="infoCorso"></span></p>
+            <p><strong>Lezioni totali:</strong> <span id="infoLezioniTotali"></span></p>
+            <p><strong>Lezioni pagate:</strong> <span id="infoLezioniPagate"></span></p>
+            <p><strong>Lezioni rimanenti:</strong> <span id="infoLezioniRimanenti"></span></p>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="num_lezioni" class="required-field">Numero Lezioni da Pagare</label>
+                <input type="number" id="num_lezioni" name="num_lezioni" class="form-control" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="importo" class="required-field">Importo (€)</label>
+                <input type="number" id="importo" name="importo" class="form-control" min="0" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="data_pagamento" class="required-field">Data Pagamento</label>
+                <input type="date" id="data_pagamento" name="data_pagamento" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="metodo_pagamento" class="required-field">Metodo di Pagamento</label>
+                <select id="metodo_pagamento" name="metodo_pagamento" class="form-control" required>
+                    <option value="">-- Seleziona --</option>
+                    <option value="contanti">Contanti</option>
+                    <option value="carta">Carta di Credito</option>
+                    <option value="bonifico">Bonifico Bancario</option>
+                    <option value="satispay">Satispay</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="note_pagamento">Note Pagamento</label>
+                <textarea id="note_pagamento" name="note_pagamento" rows="2" class="form-control"></textarea>
+            </div>
+        </div>
+
+        <div id="feedback" class="feedback-msg" style="display: none;"></div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary" onclick="registraPagamento()">Registra Pagamento</button>
+            <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+        </div>
+
+        <div class="table-container">
+            <h3 class="table-title">Storico Pagamenti</h3>
+            <div id="storicoPagamentiContainer">
+                <p class="nessun-risultato">Seleziona un tesserato e un corso per visualizzare lo storico pagamenti</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 class="table-title">Calendario Lezioni</h3>
+            <div id="calendarioLezioniContainer">
+                <p class="nessun-risultato">Seleziona un tesserato e un corso per visualizzare il calendario lezioni</p>
+            </div>
+        </div>
+    </div>
+</main>
 
     <footer>
     <div class="footer-container">
