@@ -1,30 +1,46 @@
-// Assicurati che firebase e firestore siano già caricati nello <head> con gli script corretti
+// Configurazione Firebase (sostituisci con la tua configurazione)
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "tuo-progetto.firebaseapp.com",
+  projectId: "tuo-progetto",
+  storageBucket: "tuo-progetto.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef123456"
+};
 
-const PACCHETTI_ENDPOINT = "/pacchetti.json";
+// Inizializza Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// 🔹 Carica tesserati da Firebase Firestore
+// Funzioni per gestire i corsi
 async function loadTesserati() {
   try {
-    const snapshot = await db.collection('tesserati').get();
-    const tesserati = [];
-    snapshot.forEach(doc => {
-      tesserati.push({ id: doc.id, ...doc.data() });
-    });
-    return tesserati;
-  } catch (e) {
-    console.error("Errore caricamento tesserati da Firebase:", e);
+    const snapshot = await db.collection("tesserati").get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Errore nel caricamento dei tesserati:", error);
+    showError("Impossibile caricare i tesserati");
     return [];
   }
 }
 
-// 🔹 Carica pacchetti da file JSON
 async function loadPacchetti() {
   try {
-    const res = await fetch(PACCHETTI_ENDPOINT);
-    if (!res.ok) throw new Error("Impossibile caricare i pacchetti.");
-    return await res.json();
-  } catch (e) {
-    console.error("Errore pacchetti:", e);
+    const snapshot = await db.collection("pacchetti").get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error("Errore nel caricamento dei pacchetti:", error);
+    showError("Impossibile caricare i pacchetti");
+    return [];
+  }
+}
+
+async function loadIstruttori() {
+  try {
+    const snapshot = await db.collection("istruttori").get();
+    return snapshot.docs.map(doc => doc.data().nome);
+  } catch (error) {
+    console.error("Errore nel caricamento degli istruttori:", error);
     return [];
   }
 }
@@ -32,11 +48,13 @@ async function loadPacchetti() {
 async function populateTesseratiSelect() {
   const select = document.getElementById("tesserato");
   const tesserati = await loadTesserati();
+  
   select.innerHTML = '<option value="">-- Seleziona --</option>';
-  tesserati.forEach(t => {
+  
+  tesserati.forEach(tesserato => {
     const option = document.createElement("option");
-    option.value = t.id;
-    option.textContent = `${t.nome} ${t.cognome} (${t.id})`;
+    option.value = tesserato.id;
+    option.textContent = `${tesserato.nome} ${tesserato.cognome} (${tesserato.id})`;
     select.appendChild(option);
   });
 }
@@ -44,129 +62,191 @@ async function populateTesseratiSelect() {
 async function populatePacchettiSelect() {
   const select = document.getElementById("pacchettiSelect");
   const pacchetti = await loadPacchetti();
-  select.innerHTML = '';
-  pacchetti.forEach(p => {
+  
+  select.innerHTML = '<option value="">-- Seleziona --</option>';
+  
+  pacchetti.forEach(pacchetto => {
     const option = document.createElement("option");
-    option.value = p.nome;
-    option.textContent = p.nome;
+    option.value = pacchetto.nome;
+    option.textContent = `${pacchetto.nome} (${pacchetto.durata})`;
     select.appendChild(option);
   });
 }
 
-function showError(message) {
-  alert(`Errore: ${message}`);
-}
-
-function showSuccess(message) {
-  alert(`✅ ${message}`);
+async function populateIstruttoriList() {
+  const datalist = document.getElementById("istruttoriList");
+  const istruttori = await loadIstruttori();
+  
+  datalist.innerHTML = '';
+  
+  istruttori.forEach(istruttore => {
+    const option = document.createElement("option");
+    option.value = istruttore;
+    datalist.appendChild(option);
+  });
 }
 
 function validateForm(data) {
-  if (!data.tesserato) return showError("Seleziona un tesserato.");
-  if (!data.tipo_corso) return showError("Seleziona il tipo di corso.");
-  if (!data.livello) return showError("Seleziona il livello.");
-  if (!data.istruttore.trim()) return showError("Inserisci l'istruttore.");
-  if (!data.pacchetti.length) return showError("Seleziona almeno un pacchetto.");
-  if (!data.orario) return showError("Seleziona un orario.");
+  if (!data.tesserato) {
+    showError("Seleziona un tesserato");
+    return false;
+  }
+  if (!data.tipo_corso) {
+    showError("Seleziona il tipo di corso");
+    return false;
+  }
+  if (!data.livello) {
+    showError("Seleziona il livello");
+    return false;
+  }
+  if (!data.istruttore.trim()) {
+    showError("Inserisci l'istruttore responsabile");
+    return false;
+  }
+  if (data.pacchetti.length === 0) {
+    showError("Seleziona almeno un pacchetto");
+    return false;
+  }
+  if (!data.orario) {
+    showError("Seleziona un orario");
+    return false;
+  }
   return true;
 }
 
-// 🔹 Salva iscrizione nel campo `corsi` del tesserato
 async function salvaIscrizione(data) {
   try {
-    const tesseratoRef = db.collection('tesserati').doc(data.tesserato);
-
-    await tesseratoRef.update({
+    // Aggiungi la data corrente
+    data.dataIscrizione = firebase.firestore.FieldValue.serverTimestamp();
+    
+    // Salva il corso nel database
+    await db.collection("corsi").add(data);
+    
+    // Aggiorna il tesserato con il nuovo corso
+    await db.collection("tesserati").doc(data.tesserato).update({
       corsi: firebase.firestore.FieldValue.arrayUnion({
-        tipo_corso: data.tipo_corso,
+        tipo: data.tipo_corso,
         livello: data.livello,
         istruttore: data.istruttore,
         pacchetti: data.pacchetti,
         orario: data.orario,
-        note: data.note,
-        dataIscrizione: new Date().toISOString()
+        dataIscrizione: data.dataIscrizione
       })
     });
-
-    showSuccess("Iscrizione salvata con successo.");
+    
+    showSuccess("Corso assegnato con successo al tesserato");
     return true;
-  } catch (e) {
-    console.error("Errore salvataggio iscrizione:", e);
-    showError("Errore salvataggio iscrizione.");
+  } catch (error) {
+    console.error("Errore nel salvataggio:", error);
+    showError("Errore nel salvataggio dei dati");
     return false;
   }
 }
 
-// 🔹 Mostra anteprima iscritti con corsi filtrati
 async function aggiornaAnteprima() {
-  const corso = document.getElementById("tipo_corso").value;
-  const pacchetti = Array.from(document.getElementById("pacchettiSelect").selectedOptions).map(o => o.value);
+  const corsoSelezionato = document.getElementById("tipo_corso").value;
+  const pacchettiSelezionati = Array.from(document.getElementById("pacchettiSelect").selectedOptions)
+    .map(option => option.value);
   const container = document.getElementById("anteprimaContainer");
 
-  if (!corso || pacchetti.length === 0) {
-    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto</p>';
+  if (!corsoSelezionato || pacchettiSelezionati.length === 0) {
+    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto per visualizzare gli iscritti</p>';
     return;
   }
 
   try {
-    const snapshot = await db.collection('tesserati').get();
-    const iscritti = [];
+    const snapshot = await db.collection("corsi")
+      .where("tipo_corso", "==", corsoSelezionato)
+      .where("pacchetti", "array-contains-any", pacchettiSelezionati)
+      .get();
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const corsi = data.corsi || [];
-
-      corsi.forEach(corsoItem => {
-        if (corsoItem.tipo_corso === corso && corsoItem.pacchetti.some(p => pacchetti.includes(p))) {
-          iscritti.push({
-            nome: data.nome,
-            cognome: data.cognome,
-            orario: corsoItem.orario,
-            pacchetti: corsoItem.pacchetti,
-            livello: corsoItem.livello,
-          });
-        }
-      });
-    });
-
-    if (iscritti.length === 0) {
-      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato</p>';
+    if (snapshot.empty) {
+      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato per questa combinazione</p>';
       return;
     }
 
     container.innerHTML = '';
-    iscritti.forEach(i => {
-      const div = document.createElement("div");
-      div.classList.add("iscritto-card");
-      div.textContent = `${i.nome} ${i.cognome} | Livello: ${i.livello} | Orario: ${i.orario} | Pacchetti: ${i.pacchetti.join(", ")}`;
-      container.appendChild(div);
-    });
-  } catch (e) {
-    console.error("Errore anteprima:", e);
-    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento.</p>';
+    
+    // Per ogni corso trovato, otteniamo i dettagli del tesserato
+    for (const doc of snapshot.docs) {
+      const corso = doc.data();
+      const tesseratoDoc = await db.collection("tesserati").doc(corso.tesserato).get();
+      const tesserato = tesseratoDoc.data();
+
+      const card = document.createElement("div");
+      card.className = "iscritto-card";
+      
+      const dataIscrizione = corso.dataIscrizione ? corso.dataIscrizione.toDate().toLocaleDateString("it-IT") : "N/D";
+      
+      card.innerHTML = `
+        <h3>${tesserato.nome} ${tesserato.cognome}</h3>
+        <p><strong>Corso:</strong> ${corso.tipo_corso} (Livello ${corso.livello})</p>
+        <p><strong>Pacchetti:</strong> ${corso.pacchetti.join(", ")}</p>
+        <p><strong>Orario:</strong> ${corso.orario}</p>
+        <p><strong>Istruttore:</strong> ${corso.istruttore}</p>
+        <p><small>Iscritto il: ${dataIscrizione}</small></p>
+      `;
+      
+      container.appendChild(card);
+    }
+  } catch (error) {
+    console.error("Errore nel caricamento dell'anteprima:", error);
+    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento dei dati</p>';
   }
 }
 
-// 🔹 Inizializzazione
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("currentYear").textContent = new Date().getFullYear();
-  populateTesseratiSelect();
-  populatePacchettiSelect();
-
+// Funzioni di utilità
+function showError(message) {
+  const errorDiv = document.createElement("div");
+  errorDiv.className = "error-message";
+  errorDiv.textContent = message;
+  
+  // Aggiungi il messaggio di errore sopra il form
   const form = document.getElementById("corsoForm");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  form.prepend(errorDiv);
+  
+  // Rimuovi il messaggio dopo 5 secondi
+  setTimeout(() => errorDiv.remove(), 5000);
+}
 
+function showSuccess(message) {
+  const successDiv = document.createElement("div");
+  successDiv.className = "success-message";
+  successDiv.textContent = message;
+  
+  // Aggiungi il messaggio di successo sopra il form
+  const form = document.getElementById("corsoForm");
+  form.prepend(successDiv);
+  
+  // Rimuovi il messaggio dopo 5 secondi
+  setTimeout(() => successDiv.remove(), 5000);
+}
+
+// Inizializzazione
+document.addEventListener("DOMContentLoaded", async () => {
+  // Imposta l'anno corrente nel footer
+  document.getElementById("currentYear").textContent = new Date().getFullYear();
+  
+  // Popola i select
+  await populateTesseratiSelect();
+  await populatePacchettiSelect();
+  await populateIstruttoriList();
+
+  // Gestione del form
+  document.getElementById("corsoForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const form = e.target;
     const formData = {
       tesserato: form.tesserato.value,
       tipo_corso: form.tipo_corso.value,
       livello: form.livello.value,
       istruttore: form.istruttore.value.trim(),
-      pacchetti: Array.from(form.pacchettiSelect.selectedOptions).map(o => o.value),
+      pacchetti: Array.from(form.pacchettiSelect.selectedOptions).map(option => option.value),
       orario: form.orario.value,
       note: form.note.value.trim()
     };
-
+    
     if (validateForm(formData)) {
       const success = await salvaIscrizione(formData);
       if (success) {
@@ -176,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Aggiorna l'anteprima quando cambiano i campi
   document.getElementById("tipo_corso").addEventListener("change", aggiornaAnteprima);
   document.getElementById("pacchettiSelect").addEventListener("change", aggiornaAnteprima);
 });
