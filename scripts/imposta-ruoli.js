@@ -2,40 +2,16 @@ const admin = require("firebase-admin");
 const serviceAccount = require("../serviceAccountKey.json");
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const utenti = [
-  {
-    email: "segreteria1@gmail.com",
-    uid: "E6PkV0mgelNxGlQ6HuDiMtqMQ",
-    claims: { secretary: true },
-  },
-  {
-    email: "segreteria2@gmail.com",
-    uid: "5YBcsDyapaZUZ3r1jyLovdvBcZY2",
-    claims: { secretary: true },
-  },
-  {
-    email: "segreteria3@gmail.com",
-    uid: "3kXGr6Afg5PCbgAAYJEkpBnToYN2",
-    claims: { secretary: true },
-  },
-  {
-    email: "admin@gmail.com",
-    uid: "Fc1my55Q1EaNexZEyXOyM8WRFhl2",
-    claims: { admin: true },
-  },
-  {
-    email: "direttore@gmail.com",
-    uid: "nw8uDBzYSccpPMOEz35PirMuhQO2",
-    claims: { director: true },
-  },
-  {
-    email: "coordinatore@gmail.com",
-    uid: "gNzIBuP8tlgSS1RdMvYu2CoY3lW2",
-    claims: { coordinator: true },
-  },
+  { uid: "E6PkV0mgelNxGlQ6HuDiMtqMQ", email: "segreteria1@gmail.com", claims: { secretary: true } },
+  { uid: "5YBcsDyapaZUZ3r1jyLovdvBcZY2", email: "segreteria2@gmail.com", claims: { secretary: true } },
+  { uid: "3kXGr6Afg5PCbgAAYJEkpBnToYN2", email: "segreteria3@gmail.com", claims: { secretary: true } },
+  { uid: "Fc1my55Q1EaNexZEyXOyM8WRFhl2", email: "admin@gmail.com", claims: { admin: true } },
+  { uid: "nw8uDBzYSccpPMOEz35PirMuhQO2", email: "direttore@gmail.com", claims: { director: true } },
+  { uid: "gNzIBuP8tlgSS1RdMvYu2CoY3lW2", email: "coordinatore@gmail.com", claims: { coordinator: true } }
 ];
 
 (async () => {
