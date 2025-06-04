@@ -5,7 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gestione Corsi - Rari Nantes Trento</title>
     <link rel="stylesheet" href="../assets/css/style.css" />
-    
+    <!-- Aggiungi Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <style>
+      /* Stili migliorati per i select */
+      select {
+        padding: 8px 12px;
+        border: 2px solid #2980b9;
+        border-radius: 6px;
+        background-color: #f0f8ff;
+        color: #34495e;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+        width: 100%;
+      }
+
+      select:hover,
+      select:focus {
+        border-color: #1b5d8a;
+        outline: none;
+        background-color: #e6f0fb;
+      }
+
+      /* Stile per il multiselect */
+      #pacchettiSelect {
+        min-height: 120px;
+      }
+
+      /* Stile per le card degli iscritti */
+      .iscritto-card {
+        background: #f8f9fa;
+        border-left: 4px solid #2980b9;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 0 4px 4px 0;
+      }
+    </style>
 </head>
 <body>
   <header>
@@ -33,7 +70,7 @@
             <label for="tesserato" class="required-field">Seleziona Tesserato</label>
             <select id="tesserato" name="tesserato" required aria-required="true">
               <option value="">-- Seleziona --</option>
-              <!-- Opzioni verranno caricate dinamicamente -->
+              <!-- Opzioni verranno caricate dinamicamente da Firebase -->
             </select>
           </div>
 
@@ -69,7 +106,10 @@
 
           <div class="form-group">
             <label for="istruttore" class="required-field">Istruttore Responsabile</label>
-            <input type="text" id="istruttore" name="istruttore" required aria-required="true" />
+            <input type="text" id="istruttore" name="istruttore" required aria-required="true" list="istruttoriList" />
+            <datalist id="istruttoriList">
+              <!-- Opzioni verranno caricate dinamicamente -->
+            </datalist>
           </div>
 
           <div class="form-group">
@@ -127,27 +167,7 @@
       <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
     </div>
   </footer>
-    <!-- Firebase App -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<!-- Firestore -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-<script>
-  // Configurazione Firebase che hai fornito
-  const firebaseConfig = {
-    apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
-    authDomain: "rari-nantes-tesserati.firebaseapp.com",
-    projectId: "rari-nantes-tesserati",
-    storageBucket: "rari-nantes-tesserati.appspot.com",
-    messagingSenderId: "435337228811",
-    appId: "1:435337228811:web:a5f1fd0fb9e17bfbc00d0e"
-  };
-
-  // Inizializza Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-</script>
-
-<script src="../assets/js/gestione-corsi.js" defer></script>
+  <script src="../assets/js/gestione-corsi.js" defer></script>
 </body>
 </html>
