@@ -127,8 +127,27 @@
       <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
     </div>
   </footer>
+    <!-- Firebase App -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<!-- Firestore -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-  <script src="../assets/js/gestione-corsi.js" defer></script>
-  <script src="../assets/js/backup.js" defer></script>
+<script>
+  // Configurazione Firebase che hai fornito
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
+    authDomain: "rari-nantes-tesserati.firebaseapp.com",
+    projectId: "rari-nantes-tesserati",
+    storageBucket: "rari-nantes-tesserati.appspot.com",
+    messagingSenderId: "435337228811",
+    appId: "1:435337228811:web:a5f1fd0fb9e17bfbc00d0e"
+  };
+
+  // Inizializza Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+
+<script src="../assets/js/gestione-corsi.js" defer></script>
 </body>
 </html>
