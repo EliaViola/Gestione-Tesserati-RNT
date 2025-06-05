@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (username === 'segreteria1' || username === 'segreteria2') {
                     window.location.href = 'segreteria/inserimento-dati-tesserati.html';
                 } 
-                if (username === 'admin'){
+            }else{
                     window.location.href = 'admin/reset-password.html';
                 }
             } else {
