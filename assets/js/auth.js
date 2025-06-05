@@ -130,10 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success) {
                 if (username === 'segreteria1' || username === 'segreteria2') {
-                    window.location.href = '../segreteria/inserimento-dati-tesserati.html';
+                    window.location.href = '/Gestione-Tesserati-RNT/segreteria/inserimento-dati-tesserati.html';
                 } 
                 if (username === 'admin'){
-                    window.location.href = '../admin/reset-password.html';
+                    window.location.href = '/Gestione-Tesserati-RNT/admin/reset-password.html';
                 }
             } else {
                 document.getElementById('errorMessage').style.display = 'block';
