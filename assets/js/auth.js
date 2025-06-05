@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success) {
                 if (username === 'segreteria1' || username === 'segreteria2') {
-                    window.location.href = 'segreteria/inserimento-dati-tesserati.html';
+                    window.location.href = '/Gestione-Tesserati-RNT/segreteria/inserimento-dati-tesserati.html';
                 } 
             }else{
                     window.location.href = 'admin/reset-password.html';
