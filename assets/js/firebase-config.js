@@ -1,5 +1,4 @@
 // firebase-config.js
-import { initializeApp } from "firebase/app";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
@@ -11,6 +10,7 @@ const firebaseConfig = {
   measurementId: "G-558LQEWD8Z"
 };
 
-const app = initializeApp(firebaseConfig);
-
-export default app;
+// Inizializza Firebase solo se non già inizializzato
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
