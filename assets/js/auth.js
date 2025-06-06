@@ -120,26 +120,25 @@ document.addEventListener('DOMContentLoaded', () => {
     AuthSystem.initialize();
 
     const loginForm = document.getElementById('secretaryLoginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = loginForm.username.value.trim();
-            const password = loginForm.password.value;
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = loginForm.username.value.trim();
+        const password = loginForm.password.value;
 
-            const result = AuthSystem.login(username, password);
+        const result = AuthSystem.login(username, password);
 
-            if (result.success) {
-                if (username === 'segreteria1' || username === 'segreteria2') {
-                    window.location.href = '/Gestione-Tesserati-RNT/segreteria/inserimento-dati-tesserati.html';
-                } 
-            }else{
-                    window.location.href = 'admin/reset-password.html';
-                }
-            } else {
-                document.getElementById('errorMessage').style.display = 'block';
+        if (result.success) {
+            if (username === 'segreteria1' || username === 'segreteria2') {
+                window.location.href = '/Gestione-Tesserati-RNT/segreteria/inserimento-dati-tesserati.html';
+            } else if (username === 'admin') {
+                window.location.href = '/Gestione-Tesserati-RNT/admin/reset-password.html';
             }
-        });
-    }
+        } else {
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+    });
+}
 
     // Se siamo in una pagina con profilo, lo renderizziamo
     AuthSystem.renderProfile();
