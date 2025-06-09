@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('loginForm');
-  const feedbackElement = document.getElementById('feedbackMessage');
+  const form = document.getElementById('secretaryLoginForm');
+  const errorMessage = document.getElementById('errorMessage');
+  const loginButton = document.getElementById('loginButton');
+  const spinner = document.getElementById('spinner');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -9,34 +11,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = form.password.value;
 
     if (!email || !password) {
-      showFeedback('Inserisci email e password', 'error');
+      showError('Inserisci email e password.');
       return;
     }
 
     try {
+      toggleLoading(true);
+
       const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
       const user = userCredential.user;
-
-      // Controllo ruolo
       const idToken = await user.getIdTokenResult();
+
       if (idToken.claims.secretary) {
         window.location.href = 'pages/inserimento.html';
       } else {
         await firebase.auth().signOut();
-        showFeedback('Accesso negato: ruolo non autorizzato.', 'error');
+        showError('Accesso non autorizzato: ruolo mancante.');
       }
     } catch (error) {
-      console.error('Errore login:', error);
-      showFeedback('Credenziali non valide o errore di rete.', 'error');
+      console.error(error);
+      showError('Credenziali non valide o errore di rete.');
+    } finally {
+      toggleLoading(false);
     }
   });
 
-  function showFeedback(message, type) {
-    feedbackElement.textContent = message;
-    feedbackElement.className = `feedback-msg ${type}`;
-    feedbackElement.classList.remove('hidden');
+  function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.classList.remove('hidden');
     setTimeout(() => {
-      feedbackElement.classList.add('hidden');
+      errorMessage.classList.add('hidden');
     }, 5000);
+  }
+
+  function toggleLoading(isLoading) {
+    loginButton.disabled = isLoading;
+    spinner.classList.toggle('hidden', !isLoading);
   }
 });
