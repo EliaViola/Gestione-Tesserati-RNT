@@ -25,10 +25,10 @@ db.enablePersistence()
 async function loadTesserati() {
   try {
     const snapshot = await db.collection("tesserati")
-      .where("tesseramento.stato", "==", "attivo")
-      .orderBy("anagrafica.cognome")
-      .orderBy("anagrafica.nome")
-      .get();
+  .where("tesseramento.stato", "==", "attivo")
+  .orderBy("anagrafica.cognome")
+  .orderBy("anagrafica.nome")
+  .get();
     return snapshot.docs.map(doc => ({ 
       id: doc.id, 
       ...doc.data(),
