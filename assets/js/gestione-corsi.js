@@ -24,19 +24,37 @@ db.enablePersistence()
 // Funzioni per gestire i corsi
 async function loadTesserati() {
   try {
+    console.log("Inizio caricamento tesserati...");
+    
     const snapshot = await db.collection("tesserati")
-  .where("tesseramento.stato", "==", "attivo")
-  .orderBy("anagrafica.cognome")
-  .orderBy("anagrafica.nome")
-  .get();
-    return snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data(),
-      nomeCompleto: `${doc.data().anagrafica.nome} ${doc.data().anagrafica.cognome}`
-    }));
+      .where("tesseramento.stato", "==", "attivo")
+      .orderBy("anagrafica.cognome")
+      .orderBy("anagrafica.nome")
+      .get();
+
+    console.log(`Trovati ${snapshot.size} documenti`);
+    
+    const result = snapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log(`Documento ID: ${doc.id}`, data);
+      return {
+        id: doc.id,
+        ...data,
+        nomeCompleto: `${data.anagrafica.nome} ${data.anagrafica.cognome}`
+      };
+    });
+
+    console.log("Dati trasformati:", result);
+    return result;
+
   } catch (error) {
-    console.error("Errore nel caricamento dei tesserati:", error);
-    showFeedback("Impossibile caricare i tesserati", "error");
+    console.error("Errore completo:", error);
+    console.error("Dettagli errore:", {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
+    showFeedback(`Errore tecnico: ${error.message}`, "error");
     return [];
   }
 }
