@@ -5,16 +5,7 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-<!-- Prima Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-<!-- Poi la tua configurazione -->
-<script src="assets/js/firebase-config.js"></script>
-
-<!-- Infine i tuoi script -->
-<script src="assets/js/gestione-corsi.js"></script>
 // Imposta impostazioni di persistenza (opzionale)
 db.enablePersistence()
   .catch((err) => {
