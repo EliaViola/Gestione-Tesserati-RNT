@@ -1,39 +1,52 @@
 
 // Inizializza Firebase solo se non è già stata inizializzata
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.firestore();
+// gestione-corsi.js
+document.addEventListener("DOMContentLoaded", async () => {
+  // Inizializza Firestore
+  const db = firebase.firestore();
+  
+  // Disabilita la persistenza offline (per evitare conflitti di versione)
+  // db.enablePersistence().catch(err => {
+  //   console.error("Persistenza disabilitata:", err);
+  // });
 
-
-// Imposta impostazioni di persistenza (opzionale)
-db.enablePersistence()
-  .catch((err) => {
-    console.error("Errore nell'abilitare la persistenza:", err);
-  });
+  // Funzione per mostrare feedback
+  const showFeedback = (message, type) => {
+    const feedbackDiv = document.getElementById("feedbackMessage") || document.createElement("div");
+    feedbackDiv.id = "feedbackMessage";
+    feedbackDiv.className = `feedback-message ${type}`;
+    feedbackDiv.innerHTML = message;
+    
+    if (!document.getElementById("feedbackMessage")) {
+      const form = document.getElementById("corsoForm");
+      form.prepend(feedbackDiv);
+    }
+    
+    setTimeout(() => {
+      feedbackDiv.style.opacity = '0';
+      setTimeout(() => feedbackDiv.remove(), 500);
+    }, 5000);
+  };
 
 // Funzioni per gestire i corsi
-async function loadTesserati() {
-  try {
-    console.log("Inizio caricamento tesserati...");
-    
-    const snapshot = await db.collection("tesserati")
-      .where("tesseramento.stato", "==", "attivo")
-      .orderBy("anagrafica.cognome")
-      .orderBy("anagrafica.nome")
-      .get();
-
-    console.log(`Trovati ${snapshot.size} documenti`);
-    
-    const result = snapshot.docs.map(doc => {
-      const data = doc.data();
-      console.log(`Documento ID: ${doc.id}`, data);
-      return {
+// Carica i tesserati (versione semplificata)
+  const loadTesserati = async () => {
+    try {
+      const snapshot = await db.collection("tesserati")
+        .where("tesseramento.stato", "==", "attivo")
+        .get();
+      
+      return snapshot.docs.map(doc => ({
         id: doc.id,
-        ...data,
-        nomeCompleto: `${data.anagrafica.nome} ${data.anagrafica.cognome}`
-      };
-    });
+        ...doc.data(),
+        nomeCompleto: `${doc.data().anagrafica.nome} ${doc.data().anagrafica.cognome}`
+      }));
+    } catch (error) {
+      console.error("Errore caricamento tesserati:", error);
+      showFeedback("Errore nel caricamento dei tesserati", "error");
+      return [];
+    }
+  };
 
     console.log("Dati trasformati:", result);
     return result;
