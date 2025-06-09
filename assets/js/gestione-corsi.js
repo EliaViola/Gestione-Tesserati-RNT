@@ -46,7 +46,7 @@ async function loadIstruttori() {
 }
 
 async function populateTesseratiSelect() {
-  const select = document.getElementById("tesserato");
+  const select = document.getElementById("tesserati");
   const tesserati = await loadTesserati();
   
   select.innerHTML = '<option value="">-- Seleziona --</option>';
