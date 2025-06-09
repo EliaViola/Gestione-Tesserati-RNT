@@ -49,3 +49,29 @@ document.addEventListener('DOMContentLoaded', () => {
     spinner.classList.toggle('hidden', !isLoading);
   }
 });
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
+
+exports.setSecretaryRole = functions.https.onCall(async (data, context) => {
+  // Solo admin può assegnare ruoli
+  if (!context.auth || !context.auth.token.admin) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Solo gli admin possono assegnare ruoli'
+    );
+  }
+
+  const email = data.email;
+  if (!email) {
+    throw new functions.https.HttpsError('invalid-argument', 'Email mancante');
+  }
+
+  try {
+    const user = await admin.auth().getUserByEmail(email);
+    await admin.auth().setCustomUserClaims(user.uid, { secretary: true });
+    return { message: `Ruolo "secretary" assegnato a ${email}` };
+  } catch (error) {
+    throw new functions.https.HttpsError('unknown', error.message, error);
+  }
+});
