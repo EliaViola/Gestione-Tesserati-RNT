@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     spinner.classList.remove('hidden');
     loginButton.disabled = true;
 
-    const email = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
     try {
