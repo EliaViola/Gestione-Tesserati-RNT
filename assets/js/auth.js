@@ -44,6 +44,14 @@ const AuthSystem = (() => {
         }
     };
 
+    // Mappa i ruoli alle pagine di destinazione
+    const ROLE_REDIRECTS = {
+        secretary: "inserimento.html",
+        coordinator: "ricerca-dati.html",
+        director: "visualizza-pacchetti.html",
+        admin: "reset-password.html"
+    };
+
     return {
         initialize,
 
@@ -112,6 +120,12 @@ const AuthSystem = (() => {
                 AuthSystem.logout();
                 window.location.href = 'login.html';
             });
+        },
+
+        // Nuovo metodo per il reindirizzamento basato sul ruolo
+        redirectByRole: (role) => {
+            const targetPage = ROLE_REDIRECTS[role] || 'index.html';
+            window.location.href = targetPage;
         }
     };
 })();
@@ -129,11 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = AuthSystem.login(username, password);
 
             if (result.success) {
-                if (username === 'segreteria1' || username === 'segreteria2') {
-                    window.location.href = '/Gestione-Tesserati-RNT/segreteria/inserimento.html';
-                } else if (username === 'admin') {
-                    window.location.href = '/Gestione-Tesserati-RNT/admin/reset-password.html';
-                }
+                // Ottieni il ruolo dall'account e reindirizza
+                const accounts = JSON.parse(localStorage.getItem(AuthSystem.CONFIG.ACCOUNTS_KEY));
+                const role = accounts[username].role;
+                AuthSystem.redirectByRole(role);
             } else {
                 document.getElementById('errorMessage').style.display = 'block';
             }
@@ -143,4 +156,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se siamo in una pagina con profilo, lo renderizziamo
     AuthSystem.renderProfile();
 });
-
