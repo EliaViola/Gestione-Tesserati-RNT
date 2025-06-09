@@ -1,77 +1,45 @@
+// assets/js/auth.js
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('secretaryLoginForm');
-  const errorMessage = document.getElementById('errorMessage');
-  const loginButton = document.getElementById('loginButton');
+  const errorMsg = document.getElementById('errorMessage');
   const spinner = document.getElementById('spinner');
+  const loginButton = document.getElementById('loginButton');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    errorMsg.classList.add('hidden');
+    spinner.classList.remove('hidden');
+    loginButton.disabled = true;
 
-    const email = form.email.value.trim();
-    const password = form.password.value;
-
-    if (!email || !password) {
-      showError('Inserisci email e password.');
-      return;
-    }
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
 
     try {
-      toggleLoading(true);
+      // Login con Firebase
+      const { user } = await firebase.auth().signInWithEmailAndPassword(email, password);
 
-      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-      const idToken = await user.getIdTokenResult();
+      // Recupera i custom claims
+      const idTokenResult = await user.getIdTokenResult();
 
-      if (idToken.claims.secretary) {
+      if (idTokenResult.claims.secretary) {
+        // Se è un segretario → vai alla pagina protetta
         window.location.href = 'pages/inserimento.html';
       } else {
+        // Se non ha il ruolo → logout + messaggio
         await firebase.auth().signOut();
-        showError('Accesso non autorizzato: ruolo mancante.');
+        showError('Accesso negato: non sei autorizzato.');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Errore login:', error);
       showError('Credenziali non valide o errore di rete.');
     } finally {
-      toggleLoading(false);
+      spinner.classList.add('hidden');
+      loginButton.disabled = false;
     }
   });
 
   function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.classList.remove('hidden');
-    setTimeout(() => {
-      errorMessage.classList.add('hidden');
-    }, 5000);
-  }
-
-  function toggleLoading(isLoading) {
-    loginButton.disabled = isLoading;
-    spinner.classList.toggle('hidden', !isLoading);
-  }
-});
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-admin.initializeApp();
-
-exports.setSecretaryRole = functions.https.onCall(async (data, context) => {
-  // Solo admin può assegnare ruoli
-  if (!context.auth || !context.auth.token.admin) {
-    throw new functions.https.HttpsError(
-      'permission-denied',
-      'Solo gli admin possono assegnare ruoli'
-    );
-  }
-
-  const email = data.email;
-  if (!email) {
-    throw new functions.https.HttpsError('invalid-argument', 'Email mancante');
-  }
-
-  try {
-    const user = await admin.auth().getUserByEmail(email);
-    await admin.auth().setCustomUserClaims(user.uid, { secretary: true });
-    return { message: `Ruolo "secretary" assegnato a ${email}` };
-  } catch (error) {
-    throw new functions.https.HttpsError('unknown', error.message, error);
+    errorMsg.textContent = message;
+    errorMsg.classList.remove('hidden');
   }
 });
