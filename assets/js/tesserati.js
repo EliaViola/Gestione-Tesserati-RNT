@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Verifica autenticazione e ruolo
   firebase.auth().onAuthStateChanged(async (user) => {
     if (!user) {
-      window.location.href = '../../index.html';
+      window.location.href = '../index.html';
       return;
     }
     
