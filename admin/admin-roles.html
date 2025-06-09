@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Assegna Ruolo</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+  <script src="assets/js/firebase-config.js"></script>
+</head>
+<body>
+  <h2>Assegna ruolo secretary</h2>
+  <input type="email" id="userEmail" placeholder="Email utente">
+  <button id="assignBtn">Assegna Ruolo</button>
+  <div id="response"></div>
+
+  <script>
+    const assignBtn = document.getElementById('assignBtn');
+    const response = document.getElementById('response');
+    const functions = firebase.app().functions('europe-west1'); // O la tua regione
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) return alert("Effettua il login");
+
+      const token = await user.getIdTokenResult();
+      if (!token.claims.admin) {
+        alert("Accesso negato: solo admin");
+        return;
+      }
+
+      assignBtn.addEventListener('click', async () => {
+        const email = document.getElementById('userEmail').value;
+        try {
+          const setSecretaryRole = functions.httpsCallable('setSecretaryRole');
+          const result = await setSecretaryRole({ email });
+          response.innerText = result.data.message;
+        } catch (err) {
+          response.innerText = `Errore: ${err.message}`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
