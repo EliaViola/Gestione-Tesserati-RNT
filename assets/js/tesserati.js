@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const idToken = await user.getIdTokenResult();
       if (!idToken.claims.secretary) {
         await firebase.auth().signOut();
-        window.location.href = '../../index.html';
+        window.location.href = '../index.html';
       }
     } catch (error) {
       console.error('Error verifying role:', error);
-      window.location.href = '../../index.html';
+      window.location.href = '../index.html';
     }
   });
 
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   logoutBtn.addEventListener('click', async () => {
     try {
       await firebase.auth().signOut();
-      window.location.href = '../../index.html';
+      window.location.href = '../index.html';
     } catch (error) {
       showFeedback('Errore durante il logout', 'error');
     }
