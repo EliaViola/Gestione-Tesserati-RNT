@@ -253,7 +253,7 @@ function showFeedback(message, type) {
 // Inizializzazione
 document.addEventListener("DOMContentLoaded", async () => {
   // Verifica autenticazione
-  /*firebase.auth().onAuthStateChanged(async (email) => {
+  firebase.auth().onAuthStateChanged(async (email) => {
     if (!email) {
       window.location.href = '../index.html';
       return;
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error('Error verifying role:', error);
       window.location.href = '../index.html';
     }
-  });*/
+  });
   
   async function initApp() {
     // Imposta l'anno corrente nel footer
