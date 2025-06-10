@@ -22,7 +22,7 @@ async function loadTesserati() {
       .orderBy("anagrafica.nome")
       .get();
 
-    console.log(`Trovati ${snapshot.size} documenti`);
+    console.log(`Trovati ${snapshot} documenti`);
     
     const result = snapshot.docs.map(doc => {
       const data = doc.data();
