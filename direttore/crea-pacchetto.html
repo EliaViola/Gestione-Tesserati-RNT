@@ -124,20 +124,33 @@
 
     // Aggiungi data al click
     function aggiungiData() {
-      const dateInput = document.getElementById('dateInput');
-      const dateValue = dateInput.value;
+  const dateInput = document.getElementById('dateInput');
+  const dateValue = dateInput.value;
 
-      if (dateValue) {
-        const dateBox = document.createElement('div');
-        dateBox.className = 'date-box';
-        dateBox.textContent = dateValue;
-        document.getElementById('dateContainer').appendChild(dateBox);
-        dateInput.value = '';
-      } else {
-        alert('Seleziona una data prima di aggiungerla.');
-      }
-    }
+  if (dateValue) {
+    const dateBox = document.createElement('div');
+    dateBox.className = 'date-box';
 
+    // Aggiungi il testo della data
+    const dateText = document.createElement('span');
+    dateText.textContent = dateValue;
+
+    // Aggiungi il pulsante elimina
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '❌';
+    removeBtn.className = 'remove-btn';
+    removeBtn.style.marginLeft = '8px';
+    removeBtn.onclick = () => dateBox.remove();
+
+    dateBox.appendChild(dateText);
+    dateBox.appendChild(removeBtn);
+
+    document.getElementById('dateContainer').appendChild(dateBox);
+    dateInput.value = '';
+  } else {
+    alert('Seleziona una data prima di aggiungerla.');
+  }
+}
     // Submit form (salvataggio pacchetto)
     document.getElementById('tesseratoForm').addEventListener('submit', async (e) => {
       e.preventDefault();
