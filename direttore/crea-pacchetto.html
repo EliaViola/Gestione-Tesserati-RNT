@@ -4,17 +4,41 @@
   <meta charset="UTF-8">
   <title>Creazione Pacchetto Lezioni</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
+  
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="../assets/js/firebase-config.js"></script> <!-- Solo dopo! -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="../assets/js/firebase-config.js"></script>
+
+  <style>
+    .date-box {
+      padding: 8px 12px;
+      background-color: #e0f7fa;
+      border: 1px solid #00796b;
+      border-radius: 8px;
+      color: #004d40;
+      font-weight: bold;
+    }
+    .input-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #dateContainer {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
 </head>
-  
-   <header>
+
+<body>
+  <header>
     <div class="header-container">
       <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
-      <button class="logout-btn" id="logoutBtn" onclick="location.href='../index.html'">Logout</button>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
   </header>
 
@@ -24,27 +48,28 @@
       <a href="visualizza-pacchetti.html">Visualizza pacchetti</a>
     </div>
   </nav>
-<body>
+
   <main>
     <div class="form-container">
       <h1 class="form-title">Crea Pacchetti</h1>
-      
       <div class="feedback-msg hidden" id="feedbackMessage"></div>
 
       <form id="tesseratoForm" class="form-grid">
-        <!-- Sezione Anagrafica -->
         <div class="form-section">
           <div class="form-group required-field">
             <label for="nome">Nome Pacchetto</label>
-            <input type="text" id="nome" name="nome" class="form-control" required pattern="[0-9]{1}[A-Za-zÀ-ÿ\s']{3}[-]{1}[A-Za-zÀ-ÿ\s']{3}" />
+            <input type="text" id="nome" name="nome" class="form-control" required 
+              pattern="[0-9]{1}[A-Za-zÀ-ÿ\s']{3}[-]{1}[A-Za-zÀ-ÿ\s']{3}" />
           </div>
-        <div class="input-section">
-    <input type="date" id="dateInput">
-    <button onclick="aggiungiData()">Aggiungi Data</button>
-  </div>
 
-  <div id="dateContainer"></div>
-        </div>  
+          <!-- Campo Data e Pulsante -->
+          <div class="input-section">
+            <input type="date" id="dateInput">
+            <button type="button" onclick="aggiungiData()">Aggiungi Data</button>
+            <div id="dateContainer"></div>
+          </div>
+        </div>
+
         <div class="form-actions full-width">
           <button type="submit" class="btn btn-primary" id="submitBtn">
             <span class="button-text">Salva Pacchetto</span>
@@ -61,61 +86,42 @@
       <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
     </div>
   </footer>
-  <script>
-   document.addEventListener('DOMContentLoaded', async () => {
-  // Inizializzazione
-  const form = document.getElementById('tesseratoForm');
-  const feedbackElement = document.getElementById('feedbackMessage');
-  const submitBtn = document.getElementById('submitBtn');
-  const spinner = document.getElementById('formSpinner');
-  const logoutBtn = document.getElementById('logoutBtn');
-  
-  // Aggiorna anno footer
-  document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-  // Verifica autenticazione e ruolo
-  firebase.auth().onAuthStateChanged(async (user) => {
-    if (!user) {
-      window.location.href = '../index.html';
-      return;
-    }
-    
-    try {
-      const idToken = await user.getIdTokenResult();
-      if (!idToken.claims.secretary) {
-        await firebase.auth().signOut();
+  <script>
+    // Mostra l'anno corrente nel footer
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+    // Controllo autenticazione e ruolo
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '../index.html';
+        return;
+      }
+
+      try {
+        const idToken = await user.getIdTokenResult();
+        if (!idToken.claims.secretary) {
+          await firebase.auth().signOut();
+          window.location.href = '../index.html';
+        }
+      } catch (error) {
+        console.error('Errore verifica ruolo:', error);
         window.location.href = '../index.html';
       }
-    } catch (error) {
-      console.error('Error verifying role:', error);
-      window.location.href = '../index.html';
-    }
-  });
+    });
 
-  // Logout
-  logoutBtn.addEventListener('click', async () => {
-    try {
-      await firebase.auth().signOut();
-      window.location.href = '../index.html';
-    } catch (error) {
-      showFeedback('Errore durante il logout', 'error');
-    }
-  });
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      try {
+        await firebase.auth().signOut();
+        window.location.href = '../index.html';
+      } catch (error) {
+        alert('Errore durante il logout.');
+      }
+    });
 
-  // Gestione submit form
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    if (!form.checkValidity()) {
-      showFeedback('Compila tutti i campi obbligatori correttamente', 'error');
-      return;
-    }
-
-    try {
-      toggleLoading(true);
-      
- // Funzione aggiungi data
-      function aggiungiData() {
+    // Aggiungi data al click
+    function aggiungiData() {
       const dateInput = document.getElementById('dateInput');
       const dateValue = dateInput.value;
 
@@ -123,15 +129,43 @@
         const dateBox = document.createElement('div');
         dateBox.className = 'date-box';
         dateBox.textContent = dateValue;
-
         document.getElementById('dateContainer').appendChild(dateBox);
-
-        // Reset del campo input
         dateInput.value = '';
       } else {
         alert('Seleziona una data prima di aggiungerla.');
       }
     }
+
+    // Submit form (salvataggio pacchetto)
+    document.getElementById('tesseratoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+      const nome = document.getElementById('nome').value.trim();
+
+      if (!form.checkValidity()) {
+        alert('Compila tutti i campi obbligatori correttamente.');
+        return;
+      }
+
+      try {
+        const dateBoxes = document.querySelectorAll('#dateContainer .date-box');
+        const dateList = Array.from(dateBoxes).map(el => el.textContent);
+
+        await firebase.firestore().collection('pacchetti').add({
+          nome: nome,
+          date: dateList,
+          creatoIl: firebase.firestore.Timestamp.now()
+        });
+
+        alert('Pacchetto salvato con successo!');
+        form.reset();
+        document.getElementById('dateContainer').innerHTML = '';
+      } catch (err) {
+        console.error('Errore salvataggio pacchetto:', err);
+        alert('Errore durante il salvataggio.');
+      }
+    });
   </script>
 </body>
 </html>
