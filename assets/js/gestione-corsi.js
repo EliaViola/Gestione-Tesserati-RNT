@@ -16,7 +16,7 @@ async function loadTesserati() {
   try {
     console.log("Inizio caricamento tesserati...");
     
-    const snapshot = await db.collection("tesserati")
+    const snapshot = await db.collection("tesserati[0]")
       .where("tesseramento.stato", "==", "attivo")
       .orderBy("anagrafica.cognome")
       .orderBy("anagrafica.nome")
