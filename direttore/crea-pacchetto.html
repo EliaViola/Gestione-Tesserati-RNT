@@ -101,7 +101,7 @@
 
       try {
         const idToken = await user.getIdTokenResult();
-        if (!idToken.claims.secretary) {
+        if (!idToken.claims.director) {
           await firebase.auth().signOut();
           window.location.href = '../index.html';
         }
