@@ -47,8 +47,9 @@
           <label for="datalezieone">Date Lezioni</label>
           <div id="dateLezioni" name="dateLezioni" class="date-container">
           </div>
+          <div id="dateLezioni" class="date-container"></div>
         </div>
-          
+        </div>  
         <div class="form-actions full-width">
           <button type="submit" class="btn btn-primary" id="submitBtn">
             <span class="button-text">Salva Pacchetto</span>
@@ -129,8 +130,8 @@
         lezioni.textContent = dateValue;
         document.getElementById('dateLezioni').appendChild(lezioni);
 
-        // Pulisce il campo data dopo l'inserimento
-        dateInput.value = '';
+        
+  
       } else {
         alert('Seleziona una data prima di aggiungerla.');
       }
