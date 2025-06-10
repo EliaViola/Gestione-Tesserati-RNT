@@ -102,9 +102,10 @@
       try {
         const idToken = await user.getIdTokenResult();
         if (!idToken.claims.director) {
-          await firebase.auth().signOut();
-          window.location.href = '../index.html';
-        }
+  await firebase.auth().signOut();
+  window.location.href = '../index.html';
+}
+
       } catch (error) {
         console.error('Errore verifica ruolo:', error);
         window.location.href = '../index.html';
