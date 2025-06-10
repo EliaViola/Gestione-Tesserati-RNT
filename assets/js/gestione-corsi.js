@@ -16,17 +16,21 @@ async function loadTesserati() {
   try {
     console.log("Inizio caricamento tesserati...");
     
-    const snapshot = await db.collection("tesserati.tesserato")
+    const snapshot = await db.collection("tesserati")
       .where("tesseramento.stato", "==", "attivo")
       .orderBy("anagrafica.cognome")
       .orderBy("anagrafica.nome")
       .get();
 
-    console.log(`Trovati ${snapshot} documenti`);
-    
-    const result = snapshot.docs.map(doc => {
+    // Cicla sui documenti e stampa tutti i dati
+    snapshot.docs.forEach(doc => {
       const data = doc.data();
       console.log(`Documento ID: ${doc.id}`, data);
+    });
+
+    // Se vuoi restituire un array con i dati:
+    const result = snapshot.docs.map(doc => {
+      const data = doc.data();
       return {
         id: doc.id,
         ...data,
@@ -34,17 +38,10 @@ async function loadTesserati() {
       };
     });
 
-    console.log("Dati trasformati:", result);
     return result;
 
   } catch (error) {
-    console.error("Errore completo:", error);
-    console.error("Dettagli errore:", {
-      code: error.code,
-      message: error.message,
-      stack: error.stack
-    });
-    showFeedback(`Errore tecnico: ${error.message}`, "error");
+    console.error("Errore durante il caricamento dei tesserati:", error);
     return [];
   }
 }
