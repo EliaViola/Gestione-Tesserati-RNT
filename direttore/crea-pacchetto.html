@@ -36,6 +36,86 @@
     <button type="submit">Salva Pacchetto</button>
   </form>
 
+  <main>
+    <div class="form-container">
+      <h1 class="form-title">Crea Pacchetti</h1>
+      
+      <div class="feedback-msg hidden" id="feedbackMessage"></div>
+
+      <form id="tesseratoForm" class="form-grid">
+        <!-- Sezione Anagrafica -->
+        <div class="form-section">
+          <div class="form-group required-field">
+            <label for="nome">Nome Pacchetto</label>
+            <input type="text" id="nome" name="nome" class="form-control" required pattern="[0-9]{1}[A-Za-zÀ-ÿ\s']{3}[-]{1}[A-Za-zÀ-ÿ\s']{3}" />
+          </div>
+          
+          <div class="form-group">
+            <label for="datalezieone">Date Lezioni</label>
+            <input type="date" id="date" name="datalezione" class="form-control" />
+          </div>
+          
+        </div>
+
+        <!-- Sezione Contatti -->
+        <div class="form-section">
+          <h3 class="section-title">Informazioni di Contatto</h3>
+          <div class="form-group full-width">
+            <label for="indirizzo">Indirizzo</label>
+            <input type="text" id="indirizzo" name="indirizzo" class="form-control" />
+          </div>
+          
+          <div class="form-group">
+            <label for="cap">CAP</label>
+            <input type="text" id="cap" name="cap" class="form-control" pattern="\d{5}" />
+          </div>
+          
+          <div class="form-group">
+            <label for="citta">Città</label>
+            <input type="text" id="citta" name="citta" class="form-control" pattern="[A-Za-zÀ-ÿ\s']{2,}" />
+          </div>
+          
+          <div class="form-group">
+            <label for="provincia">Provincia</label>
+            <input type="text" id="provincia" name="provincia" class="form-control" pattern="[A-Za-z]{2}" maxlength="2" />
+          </div>
+          
+          <div class="form-group required-field">
+            <label for="telefono">Telefono</label>
+            <input type="tel" id="telefono" name="telefono" class="form-control" required pattern="[0-9+\s]{9,}" />
+          </div>
+          
+          <div class="form-group required-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required autocomplete="email" />
+          </div>
+        </div>
+
+        <!-- Sezione Tesseramento -->
+        <div class="form-section">
+          <h3 class="section-title">Dati Tesseramento</h3>
+          <div class="form-group required-field">
+            <label for="tessera">Numero Tessera</label>
+            <input type="text" id="tessera" name="tessera" class="form-control" required pattern="[A-Za-z0-9]{6,}" />
+          </div>
+        </div>
+
+        <div class="form-actions full-width">
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="button-text">Salva Tesserato</span>
+            <span class="spinner hidden" id="formSpinner"></span>
+          </button>
+          <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
+  </footer>
   <script>
    document.addEventListener('DOMContentLoaded', async () => {
   // Inizializzazione
