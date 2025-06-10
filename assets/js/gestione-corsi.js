@@ -25,7 +25,7 @@ async function loadTesserati() {
     // Cicla sui documenti e stampa tutti i dati
     snapshot.docs.forEach(doc => {
       const data = doc.data();
-      console.log(`Documento ID: ${doc.id}`, data);
+      //console.log(`Documento ID: ${doc.id}`, data);
     });
 
     // Se vuoi restituire un array con i dati:
@@ -38,6 +38,7 @@ async function loadTesserati() {
       };
     });
 
+    populateTesseratiSelect(result);
     return result;
 
   } catch (error) {
@@ -73,17 +74,13 @@ async function loadIstruttori() {
   }
 }
 
-async function populateTesseratiSelect() {
+async function populateTesseratiSelect(tesserati) {
   const select = document.getElementById("tesserati");
-  const tesserati = await loadTesserati();
-  
-  select.innerHTML = '<option value="">-- Seleziona tesserato --</option>';
   
   tesserati.forEach(tesserato => {
     const option = document.createElement("option");
     option.value = tesserato.id;
     option.textContent = `${tesserato.anagrafica.cognome} ${tesserato.anagrafica.nome} (${tesserato.anagrafica.codice_fiscale || 'N/D'})`;
-    option.dataset.cf = tesserato.anagrafica.codice_fiscale || '';
     select.appendChild(option);
   });
 }
