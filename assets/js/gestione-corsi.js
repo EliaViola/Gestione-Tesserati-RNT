@@ -252,26 +252,7 @@ function showFeedback(message, type) {
 
 // Inizializzazione
 document.addEventListener("DOMContentLoaded", async () => {
-  // Verifica autenticazione
-  firebase.auth().onAuthStateChanged(async (email) => {
-    if (!email) {
-      window.location.href = '../index.html';
-      return;
-    }
-    
-    try {
-      const idToken = await email.getIdTokenResult();
-      if (!idToken.claims.secretary) {
-        await firebase.auth().signOut();
-        window.location.href = '../index.html';
-      } else {
-        initApp();
-      }
-    } catch (error) {
-      console.error('Error verifying role:', error);
-      window.location.href = '../index.html';
-    }
-  });
+  
   
   async function initApp() {
     // Imposta l'anno corrente nel footer
