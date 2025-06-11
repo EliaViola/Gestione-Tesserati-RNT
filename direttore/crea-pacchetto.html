@@ -37,7 +37,7 @@
           <div class="form-group required-field">
             <label for="nome">Nome Pacchetto</label>
             <input type="text" id="nome" name="nome" class="form-control" required 
-              pattern="[0-9]{1}[A-Za-zÀ-ÿ\s']{3}[-]{1}[A-Za-zÀ-ÿ\s']{3}" />
+  pattern="^[A-Za-zÀ-ÿ0-9\s\-']{3,}$" title="Almeno 3 caratteri. Lettere, numeri, spazio, trattino o apostrofo." />
           </div>
 
           <!-- Campo Data e Pulsante -->
