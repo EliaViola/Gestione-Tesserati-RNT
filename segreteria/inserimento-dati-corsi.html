@@ -10,14 +10,14 @@
   <header>
     <div class="header-container">
       <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
-      <button class="logout-btn" onclick="location.href='../index.html'" aria-label="Esci dal sistema">Logout</button>
+      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
     </div>
   </header>
 
-  <nav aria-label="Navigazione principale">
+  <nav>
     <div class="nav-container">
       <a href="inserimento.html">Anagrafica</a>
-      <a href="inserimento-dati-corsi.html" class="active" aria-current="page">Corsi</a>
+      <a href="inserimento-dati-corsi.html" class="active">Corsi</a>
       <a href="pagamenti.html">Pagamenti</a>
       <a href="ricerca-dati.html">Ricerca</a>
     </div>
@@ -25,20 +25,20 @@
 
   <main>
     <div class="form-container">
-      <h1 class="form-title" id="formTitle">Assegnazione Corso</h1>
-      <form id="corsoForm" aria-labelledby="formTitle">
+      <h1 id="formTitle">Assegnazione Corso</h1>
+      <form id="corsoForm">
         <div class="form-grid">
 
           <div class="form-group required-field">
             <label for="tesserato">Tesserato</label>
-            <select id="tesserato" name="tesserato" class="form-control" required>
+            <select id="tesserato" required>
               <option value="">-- Seleziona --</option>
             </select>
           </div>
 
           <div class="form-group required-field">
             <label for="tipo_corso">Tipo Corso</label>
-            <select id="tipo_corso" name="tipo_corso" class="form-control" required>
+            <select id="tipo_corso" required>
               <option value="">-- Seleziona --</option>
               <optgroup label="Scuola Nuoto">
                 <option value="avviamento">Avviamento</option>
@@ -58,7 +58,7 @@
 
           <div class="form-group required-field">
             <label for="livello">Livello</label>
-            <select id="livello" name="livello" class="form-control" required>
+            <select id="livello" required>
               <option value="">-- Seleziona --</option>
               <option value="1">Livello 1</option>
               <option value="2">Livello 2</option>
@@ -68,20 +68,18 @@
 
           <div class="form-group">
             <label for="istruttore">Istruttore Responsabile</label>
-            <input type="text" id="istruttore" class="form-control" required pattern="[A-Za-zÀ-ÿ\s']{2,}" />
+            <input type="text" id="istruttore" pattern="[A-Za-zÀ-ÿ\s']{2,}" required />
           </div>
 
           <div class="form-group required-field">
             <label for="pacchettiSelect">Seleziona uno o più pacchetti:</label>
-            <select id="pacchettiSelect" class="form-control" multiple size="5">
-              <option value="">Caricamento pacchetti...</option>
-            </select>
-            <small class="form-text">Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
+            <select id="pacchettiSelect" multiple size="5"></select>
+            <small>Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
           </div>
 
           <div class="form-group required-field">
             <label for="orario">Orario</label>
-            <select id="orario" name="orario" class="form-control" required>
+            <select id="orario" required>
               <option value="">-- Seleziona --</option>
               <optgroup label="Corsi da 30 minuti">
                 <option value="16:20-16:50">16:20 - 16:50</option>
@@ -100,20 +98,19 @@
 
           <div class="form-group full-width">
             <label for="note_corso">Eventuali note per il Corso</label>
-            <textarea id="note_corso" name="note_corso" rows="2" class="form-control"></textarea>
+            <textarea id="note_corso" rows="2"></textarea>
           </div>
 
         </div>
-
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Assegna Corso</button>
-          <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+          <button type="submit">Assegna Corso</button>
+          <button type="reset">Azzera Campi</button>
         </div>
       </form>
 
-      <section class="anteprima-corsi" aria-labelledby="anteprimaTitle">
-        <h2 id="anteprimaTitle" class="anteprima-title">Anteprima Iscritti</h2>
-        <div id="anteprimaContainer" class="anteprima-content">
+      <section>
+        <h2>Anteprima Iscritti</h2>
+        <div id="anteprimaContainer">
           <p class="nessun-risultato">Seleziona un corso e un pacchetto per visualizzare gli iscritti</p>
         </div>
       </section>
@@ -121,15 +118,9 @@
   </main>
 
   <footer>
-    <div class="footer-container">
-      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
-    </div>
+    <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
   </footer>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="../assets/js/firebase-config.js"></script>
-  <script src="../assets/js/gestione-corsi.js"></script>
+  <script type="module" src="../assets/js/gestione-corsi.js"></script>
 </body>
 </html>
