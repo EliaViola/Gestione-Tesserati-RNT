@@ -47,7 +47,14 @@ function populatePacchettiSelect() {
     pacchetti.forEach(p => {
       const option = document.createElement("option");
       option.value = p.id;
-      option.textContent = p.nome || "Pacchetto senza nome";
+      if (Array.isArray(p.date) && p.date.length > 0) {
+  const sortedDates = p.date.slice().sort(); // Ordina le date in ordine crescente
+  const primaData = sortedDates[0];
+  const ultimaData = sortedDates[sortedDates.length - 1];
+  option.textContent = `${p.nome || "Pacchetto"} (${primaData} - ${ultimaData})`;
+} else {
+  option.textContent = p.nome || "Pacchetto senza nome";
+}
       select.appendChild(option);
     });
   }).catch(err => {
