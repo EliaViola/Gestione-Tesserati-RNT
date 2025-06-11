@@ -1,89 +1,100 @@
-// Inizializza Firebase solo se non è già stata inizializzata
+// Inizializza Firebase solo se non è già inizializzata
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 
-
-// Imposta impostazioni di persistenza (opzionale)
-db.enablePersistence()
+// Abilita persistenza IndexedDB con sincronizzazione multi-tab
+db.enablePersistence({ synchronizeTabs: true })
   .catch((err) => {
-    console.error("Errore nell'abilitare la persistenza:", err);
+    if (err.code === 'failed-precondition') {
+      console.warn('Persistenza non abilitata: già attiva in un altro tab');
+    } else if (err.code === 'unimplemented') {
+      console.warn('Persistenza non supportata dal browser');
+    } else {
+      console.error("Errore nell'abilitare la persistenza:", err);
+    }
   });
 
-// Funzioni per gestire i corsi
+// Carica tesserati attivi, ordinati per cognome e nome
 async function loadTesserati() {
   try {
-    console.log("Inizio caricamento tesserati...");
-    
     const snapshot = await db.collection("tesserati")
       .where("tesseramento.stato", "==", "attivo")
       .orderBy("anagrafica.cognome")
       .orderBy("anagrafica.nome")
       .get();
 
-    // Cicla sui documenti e stampa tutti i dati
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      //console.log(`Documento ID: ${doc.id}`, data);
-    });
-
-    // Se vuoi restituire un array con i dati:
-    const result = snapshot.docs.map(doc => {
+    return snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
         ...data,
-        nomeCompleto: `${data.anagrafica.nome} ${data.anagrafica.cognome}`
+        nomeCompleto: `${data.anagrafica.cognome} ${data.anagrafica.nome}`
       };
     });
-
-    populateTesseratiSelect(result);
-    return result;
-
   } catch (error) {
     console.error("Errore durante il caricamento dei tesserati:", error);
     return [];
   }
 }
 
+// Popola select tesserati
+async function populateTesseratiSelect() {
+  const select = document.getElementById("tesserati");
+  if (!select) return;
+  
+  const tesserati = await loadTesserati();
+  select.innerHTML = '';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const select = document.getElementById('pacchettiSelect');
+  tesserati.forEach(tesserato => {
+    const option = document.createElement("option");
+    option.value = tesserato.id;
+    option.textContent = `${tesserato.anagrafica.cognome} ${tesserato.anagrafica.nome} (${tesserato.anagrafica.codice_fiscale || 'N/D'})`;
+    select.appendChild(option);
+  });
+}
 
+// Carica pacchetti con date ordinate
+async function loadPacchetti() {
   try {
-    const snapshot = await firebase.firestore().collection('pacchetti').get();
-
-    // Svuota il select
-    select.innerHTML = ''; // niente "caricamento" se è multiplo
-
-    snapshot.forEach(doc => {
+    const snapshot = await db.collection('pacchetti').get();
+    return snapshot.docs.map(doc => {
       const data = doc.data();
-      const dateList = Array.isArray(data.date) ? data.date : [];
-
-      if (dateList.length === 0) return; // Salta pacchetti senza date
-
-      const sortedDates = dateList.slice().sort((a, b) => new Date(a) - new Date(b));
-      const primaData = sortedDates[0];
-      const ultimaData = sortedDates[sortedDates.length - 1];
-
-      const option = document.createElement('option');
-      option.value = doc.id;
-      option.textContent = `${data.nome} – Dal: ${primaData} al: ${ultimaData}`;
-      select.appendChild(option);
+      const sortedDates = Array.isArray(data.date) ? data.date.slice().sort((a, b) => new Date(a) - new Date(b)) : [];
+      return {
+        id: doc.id,
+        nome: data.nome,
+        durata: data.durata || '',
+        prezzo: data.prezzo || '',
+        date: sortedDates
+      };
     });
-
   } catch (error) {
-    console.error('Errore nel recupero dei pacchetti:', error);
-    const fallback = document.createElement('option');
-    fallback.textContent = 'Errore nel caricamento';
-    fallback.disabled = true;
-    select.appendChild(fallback);
+    console.error('Errore nel caricamento dei pacchetti:', error);
+    return [];
   }
-});
+}
 
+// Popola select multiplo pacchetti
+async function populatePacchettiSelect() {
+  const select = document.getElementById("pacchettiSelect");
+  if (!select) return;
+  
+  const pacchetti = await loadPacchetti();
+  select.innerHTML = '';
 
+  pacchetti.forEach(pacchetto => {
+    const option = document.createElement("option");
+    const primaData = pacchetto.date.length ? pacchetto.date[0] : 'N/D';
+    const ultimaData = pacchetto.date.length ? pacchetto.date[pacchetto.date.length - 1] : 'N/D';
+    option.value = pacchetto.id;
+    option.textContent = `${pacchetto.nome} – Dal: ${primaData} al: ${ultimaData} (€${pacchetto.prezzo})`;
+    select.appendChild(option);
+  });
+}
 
+// Carica istruttori attivi e ordina per nome
 async function loadIstruttori() {
   try {
     const snapshot = await db.collection("istruttori")
@@ -98,54 +109,32 @@ async function loadIstruttori() {
   }
 }
 
-async function populateTesseratiSelect(tesserati) {
-  const select = document.getElementById("tesserati");
-  
-  tesserati.forEach(tesserato => {
-    const option = document.createElement("option");
-    option.value = tesserato.id;
-    option.textContent = `${tesserato.anagrafica.cognome} ${tesserato.anagrafica.nome} (${tesserato.anagrafica.codice_fiscale || 'N/D'})`;
-    select.appendChild(option);
-  });
-}
-
-async function populatePacchettiSelect() {
-  const select = document.getElementById("pacchettiSelect");
-  const pacchetti = await loadPacchetti();
-  
-  select.innerHTML = '';
-  
-  pacchetti.forEach(pacchetto => {
-    const option = document.createElement("option");
-    option.value = pacchetto.id;
-    option.textContent = `${pacchetto.nome} (${pacchetto.durata} - €${pacchetto.prezzo})`;
-    select.appendChild(option);
-  });
-}
-
+// Popola datalist istruttori
 async function populateIstruttoriList() {
   const datalist = document.getElementById("istruttoriList");
+  if (!datalist) return;
+
   const istruttori = await loadIstruttori();
-  
   datalist.innerHTML = '';
-  
-  istruttori.forEach(istruttore => {
+
+  istruttori.forEach(nome => {
     const option = document.createElement("option");
-    option.value = istruttore;
+    option.value = nome;
     datalist.appendChild(option);
   });
 }
 
+// Validazione form
 function validateForm(data) {
   const errors = [];
-  
+
   if (!data.tesserato) errors.push("Seleziona un tesserato");
   if (!data.tipo_corso) errors.push("Seleziona il tipo di corso");
   if (!data.livello) errors.push("Seleziona il livello");
   if (!data.istruttore.trim()) errors.push("Inserisci l'istruttore responsabile");
   if (!data.pacchetti || data.pacchetti.length === 0) errors.push("Seleziona almeno un pacchetto");
   if (!data.orario) errors.push("Seleziona un orario");
-  
+
   if (errors.length > 0) {
     showFeedback(errors.join("<br>"), "error");
     return false;
@@ -153,23 +142,26 @@ function validateForm(data) {
   return true;
 }
 
+// Salva iscrizione corso e aggiorna tesserato
 async function salvaIscrizione(data) {
   try {
-    // Aggiungi metadata
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error("Utente non autenticato");
+
     const metadata = {
       creatoIl: firebase.firestore.FieldValue.serverTimestamp(),
-      creatoDa: firebase.auth().currentUser.uid,
+      creatoDa: user.uid,
       ultimaModifica: firebase.firestore.FieldValue.serverTimestamp()
     };
-    
-    // Salva il corso nel database
+
+    // Salva corso
     const corsoRef = await db.collection("corsi").add({
       ...data,
       ...metadata,
       dataIscrizione: firebase.firestore.FieldValue.serverTimestamp()
     });
-    
-    // Aggiorna il tesserato con il nuovo corso
+
+    // Aggiorna array corsi nel tesserato
     await db.collection("tesserati").doc(data.tesserato).update({
       corsi: firebase.firestore.FieldValue.arrayUnion({
         id: corsoRef.id,
@@ -181,7 +173,7 @@ async function salvaIscrizione(data) {
         dataIscrizione: firebase.firestore.FieldValue.serverTimestamp()
       })
     });
-    
+
     showFeedback("Corso assegnato con successo al tesserato", "success");
     return true;
   } catch (error) {
@@ -191,16 +183,16 @@ async function salvaIscrizione(data) {
   }
 }
 
+// Aggiorna anteprima iscritti per corso e pacchetti selezionati
 async function aggiornaAnteprima() {
   const corsoSelezionato = document.getElementById("tipo_corso").value;
   const pacchettiSelezionati = Array.from(document.getElementById("pacchettiSelect").selectedOptions)
     .map(option => option.value);
   const container = document.getElementById("anteprimaContainer");
-
   container.innerHTML = '<div class="loading-spinner"></div>';
 
   if (!corsoSelezionato || pacchettiSelezionati.length === 0) {
-    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto per visualizzare gli iscritti</p>';
+    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e almeno un pacchetto per visualizzare gli iscritti</p>';
     return;
   }
 
@@ -218,8 +210,7 @@ async function aggiornaAnteprima() {
     }
 
     container.innerHTML = '<h3>Ultimi 20 iscritti:</h3>';
-    
-    // Per ogni corso trovato, otteniamo i dettagli del tesserato
+
     const promises = snapshot.docs.map(async doc => {
       const corso = doc.data();
       const tesseratoDoc = await db.collection("tesserati").doc(corso.tesserato).get();
@@ -227,99 +218,9 @@ async function aggiornaAnteprima() {
 
       const card = document.createElement("div");
       card.className = "iscritto-card";
-      
+
       const dataIscrizione = corso.dataIscrizione ? corso.dataIscrizione.toDate().toLocaleDateString("it-IT") : "N/D";
-      
+
       card.innerHTML = `
         <h4>${tesserato.anagrafica.cognome} ${tesserato.anagrafica.nome}</h4>
-        <p><strong>CF:</strong> ${tesserato.anagrafica.codice_fiscale || 'N/D'}</p>
-        <p><strong>Corso:</strong> ${corso.tipo_corso} (Livello ${corso.livello})</p>
-        <p><strong>Pacchetti:</strong> ${corso.pacchetti.join(", ")}</p>
-        <p><strong>Orario:</strong> ${corso.orario}</p>
-        <p><strong>Istruttore:</strong> ${corso.istruttore}</p>
-        <p><small>Iscritto il: ${dataIscrizione}</small></p>
-      `;
-      
-      container.appendChild(card);
-    });
-    
-    await Promise.all(promises);
-  } catch (error) {
-    console.error("Errore nel caricamento dell'anteprima:", error);
-    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento dei dati</p>';
-  }
-}
-
-// Funzione di utilità per mostrare feedback
-function showFeedback(message, type) {
-  const feedbackDiv = document.getElementById("feedbackMessage") || document.createElement("div");
-  feedbackDiv.id = "feedbackMessage";
-  feedbackDiv.className = `feedback-message ${type}`;
-  feedbackDiv.innerHTML = message;
-  
-  if (!document.getElementById("feedbackMessage")) {
-    const form = document.getElementById("corsoForm");
-    form.prepend(feedbackDiv);
-  }
-  
-  setTimeout(() => {
-    feedbackDiv.style.opacity = '0';
-    setTimeout(() => feedbackDiv.remove(), 500);
-  }, 5000);
-}
-
-// Inizializzazione
-document.addEventListener("DOMContentLoaded", async () => {
-  
-  
-  async function initApp() {
-    // Imposta l'anno corrente nel footer
-    document.getElementById("currentYear").textContent = new Date().getFullYear();
-    
-    // Popola i select
-    await Promise.all([
-      populateTesseratiSelect(),
-      populatePacchettiSelect(),
-      populateIstruttoriList()
-    ]);
-
-    // Gestione del form
-    document.getElementById("corsoForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const form = e.target;
-      const formData = {
-        tesserato: form.tesserato.value,
-        tipo_corso: form.tipo_corso.value,
-        livello: form.livello.value,
-        istruttore: form.istruttore.value.trim(),
-        pacchetti: Array.from(form.pacchettiSelect.selectedOptions).map(option => option.value),
-        orario: form.orario.value,
-        note: form.note.value.trim()
-      };
-      
-      if (validateForm(formData)) {
-        const success = await salvaIscrizione(formData);
-        if (success) {
-          form.reset();
-          aggiornaAnteprima();
-          await populateTesseratiSelect(); // Ricarica i tesserati
-        }
-      }
-    });
-
-    // Aggiorna l'anteprima quando cambiano i campi
-    document.getElementById("tipo_corso").addEventListener("change", aggiornaAnteprima);
-    document.getElementById("pacchettiSelect").addEventListener("change", aggiornaAnteprima);
-    
-    // Logout
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      try {
-        await firebase.auth().signOut();
-        window.location.href = '../index.html';
-      } catch (error) {
-        showFeedback("Errore durante il logout", "error");
-      }
-    });
-  }
-});
+        <p><strong>CF:</strong
