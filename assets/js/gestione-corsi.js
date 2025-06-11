@@ -1,17 +1,28 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence, collection, getDocs, query, where, orderBy } from "firebase/firestore";
-import { getAuth, onAuthStateChanged, getIdTokenResult } from "firebase/auth";
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy
+} from "firebase/firestore";
+import {
+  getAuth,
+  onAuthStateChanged,
+  getIdTokenResult
+} from "firebase/auth";
 
-// La tua config Firebase (metti la tua config)
+// Firebase config (usa quella che hai nel tuo progetto)
 const firebaseConfig = {
-  // ...
+  // inserisci la tua configurazione
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Abilita persistenza IndexedDB con multi-tab
 enableIndexedDbPersistence(db, { synchronizeTabs: true }).catch((err) => {
   console.warn("Errore nell'abilitare la persistenza:", err);
 });
@@ -19,10 +30,7 @@ enableIndexedDbPersistence(db, { synchronizeTabs: true }).catch((err) => {
 function getUserClaims() {
   return new Promise((resolve, reject) => {
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        reject(new Error("Utente non autenticato"));
-        return;
-      }
+      if (!user) return reject(new Error("Utente non autenticato"));
       try {
         const idTokenResult = await getIdTokenResult(user);
         resolve({ user, claims: idTokenResult.claims });
@@ -34,40 +42,25 @@ function getUserClaims() {
 }
 
 async function loadPacchetti() {
-  try {
-    const { claims } = await getUserClaims();
-
-    if (!claims.secretary && !claims.director) {
-      throw new Error("Permessi insufficienti per leggere i pacchetti");
-    }
-
-    const pacchettiSnapshot = await getDocs(collection(db, "pacchetti"));
-    return pacchettiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  } catch (error) {
-    console.error("Errore nel caricamento dei pacchetti:", error);
-    throw error;
+  const { claims } = await getUserClaims();
+  if (!claims.secretary && !claims.director) {
+    throw new Error("Permessi insufficienti per leggere i pacchetti");
   }
+
+  const snapshot = await getDocs(collection(db, "pacchetti"));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 async function loadTesserati() {
-  try {
-    await getUserClaims();
-
-    const tesseratiQuery = query(
-      collection(db, "tesserati"),
-      where("tesseramento.stato", "==", "attivo"),
-      orderBy("anagrafica.cognome"),
-      orderBy("anagrafica.nome")
-    );
-
-    const tesseratiSnapshot = await getDocs(tesseratiQuery);
-    return tesseratiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  } catch (error) {
-    console.error("Errore durante il caricamento dei tesserati:", error);
-    throw error;
-  }
+  await getUserClaims();
+  const q = query(
+    collection(db, "tesserati"),
+    where("tesseramento.stato", "==", "attivo"),
+    orderBy("anagrafica.cognome"),
+    orderBy("anagrafica.nome")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 async function populatePacchettiSelect() {
@@ -76,16 +69,11 @@ async function populatePacchettiSelect() {
     const pacchetti = await loadPacchetti();
     select.innerHTML = "";
     pacchetti.forEach(p => {
-      const dateList = Array.isArray(p.date) ? p.date : [];
-      if (dateList.length === 0) return;
-
-      const sortedDates = dateList.slice().sort((a,b) => new Date(a) - new Date(b));
-      const primaData = sortedDates[0];
-      const ultimaData = sortedDates[sortedDates.length - 1];
-
+      const dates = Array.isArray(p.date) ? p.date.slice().sort((a, b) => new Date(a) - new Date(b)) : [];
+      if (dates.length === 0) return;
       const option = document.createElement("option");
       option.value = p.id;
-      option.textContent = `${p.nome} – Dal: ${primaData} al: ${ultimaData}`;
+      option.textContent = `${p.nome} – Dal: ${dates[0]} al: ${dates[dates.length - 1]}`;
       select.appendChild(option);
     });
   } catch (error) {
@@ -94,7 +82,7 @@ async function populatePacchettiSelect() {
 }
 
 async function populateTesseratiSelect() {
-  const select = document.getElementById("tesserati");
+  const select = document.getElementById("tesserato");
   try {
     const tesserati = await loadTesserati();
     select.innerHTML = "";
@@ -114,7 +102,70 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await populateTesseratiSelect();
     await populatePacchettiSelect();
+
+    document.getElementById("pacchettiSelect").addEventListener("change", caricaAnteprimaIscritti);
+    document.getElementById("tipo_corso").addEventListener("change", caricaAnteprimaIscritti);
+    document.getElementById("livello").addEventListener("change", caricaAnteprimaIscritti);
   } catch (e) {
     console.error("Errore inizializzazione dati:", e);
   }
 });
+
+async function caricaAnteprimaIscritti() {
+  const pacchettiSelect = document.getElementById("pacchettiSelect");
+  const tipoCorso = document.getElementById("tipo_corso").value;
+  const livello = document.getElementById("livello").value;
+  const anteprimaContainer = document.getElementById("anteprimaContainer");
+
+  if (!pacchettiSelect || !tipoCorso || !livello) {
+    anteprimaContainer.innerHTML = `<p class="nessun-risultato">Seleziona corso, livello e almeno un pacchetto per vedere gli iscritti</p>`;
+    return;
+  }
+
+  const pacchettiSelezionati = Array.from(pacchettiSelect.selectedOptions).map(opt => opt.value);
+  if (pacchettiSelezionati.length === 0) {
+    anteprimaContainer.innerHTML = `<p class="nessun-risultato">Seleziona almeno un pacchetto per vedere gli iscritti</p>`;
+    return;
+  }
+
+  try {
+    const snapshot = await getDocs(collection(db, "corsi"));
+    const corsi = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const corsiFiltrati = corsi.filter(corso =>
+      corso.tipo_corso === tipoCorso &&
+      corso.livello === livello &&
+      corso.pacchetti &&
+      corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
+    );
+
+    if (corsiFiltrati.length === 0) {
+      anteprimaContainer.innerHTML = `<p class="nessun-risultato">Nessun iscritto trovato per questa combinazione.</p>`;
+      return;
+    }
+
+    const snapshotTesserati = await getDocs(collection(db, "tesserati"));
+    const tesseratiMap = new Map();
+    snapshotTesserati.forEach(doc => {
+      const data = doc.data();
+      tesseratiMap.set(doc.id, `${data.anagrafica?.cognome || ""} ${data.anagrafica?.nome || ""}`);
+    });
+
+    const elenco = document.createElement("ul");
+    elenco.classList.add("lista-iscritti");
+
+    corsiFiltrati.forEach(corso => {
+      const nomeTesserato = tesseratiMap.get(corso.tesseratoId) || "Sconosciuto";
+      const item = document.createElement("li");
+      item.textContent = `${nomeTesserato} – ${corso.orario}`;
+      elenco.appendChild(item);
+    });
+
+    anteprimaContainer.innerHTML = "";
+    anteprimaContainer.appendChild(elenco);
+
+  } catch (error) {
+    console.error("Errore nel recupero iscritti:", error);
+    anteprimaContainer.innerHTML = `<p class="nessun-risultato">Errore nel caricamento dei dati.</p>`;
+  }
+}
