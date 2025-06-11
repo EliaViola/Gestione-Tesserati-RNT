@@ -65,11 +65,22 @@
     </div>
   </footer>
 
-  <script>
-    // Mostra l'anno corrente nel footer
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+ 
+    <script type="module">
+  document.addEventListener('DOMContentLoaded', async () => {
+    const form = document.getElementById('tesseratoForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const feedbackElement = document.getElementById('feedbackMessage');
+    const spinner = document.getElementById('formSpinner');
+    const dateInput = document.getElementById('dateInput');
+    const dateContainer = document.getElementById('dateContainer');
 
-    // Controllo autenticazione e ruolo
+    // Mostra anno corrente (se hai un footer con id 'currentYear')
+    const currentYearEl = document.getElementById('currentYear');
+    if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
+
+    // Verifica autenticazione e ruolo
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = '../index.html';
@@ -79,10 +90,9 @@
       try {
         const idToken = await user.getIdTokenResult();
         if (!idToken.claims.director) {
-  await firebase.auth().signOut();
-  window.location.href = '../index.html';
-}
-
+          await firebase.auth().signOut();
+          window.location.href = '../index.html';
+        }
       } catch (error) {
         console.error('Errore verifica ruolo:', error);
         window.location.href = '../index.html';
@@ -90,74 +100,91 @@
     });
 
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
+    logoutBtn.addEventListener('click', async () => {
       try {
         await firebase.auth().signOut();
         window.location.href = '../index.html';
       } catch (error) {
-        alert('Errore durante il logout.');
+        showFeedback('Errore durante il logout', 'error');
       }
     });
 
-    // Aggiungi data al click
-    function aggiungiData() {
-  const dateInput = document.getElementById('dateInput');
-  const dateValue = dateInput.value;
+    // Aggiunta data
+    window.aggiungiData = function () {
+      const dateValue = dateInput.value;
+      if (dateValue) {
+        const dateBox = document.createElement('div');
+        dateBox.className = 'date-box';
 
-  if (dateValue) {
-    const dateBox = document.createElement('div');
-    dateBox.className = 'date-box';
+        const dateText = document.createElement('span');
+        dateText.textContent = dateValue;
 
-    // Aggiungi il testo della data
-    const dateText = document.createElement('span');
-    dateText.textContent = dateValue;
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '❌';
+        removeBtn.className = 'remove-btn';
+        removeBtn.style.marginLeft = '8px';
+        removeBtn.onclick = () => dateBox.remove();
 
-    // Aggiungi il pulsante elimina
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = '❌';
-    removeBtn.className = 'remove-btn';
-    removeBtn.style.marginLeft = '8px';
-    removeBtn.onclick = () => dateBox.remove();
+        dateBox.appendChild(dateText);
+        dateBox.appendChild(removeBtn);
+        dateContainer.appendChild(dateBox);
 
-    dateBox.appendChild(dateText);
-    dateBox.appendChild(removeBtn);
+        dateInput.value = '';
+      } else {
+        showFeedback('Seleziona una data prima di aggiungerla.', 'error');
+      }
+    };
 
-    document.getElementById('dateContainer').appendChild(dateBox);
-    dateInput.value = '';
-  } else {
-    alert('Seleziona una data prima di aggiungerla.');
-  }
-}
-    // Submit form (salvataggio pacchetto)
-    document.getElementById('tesseratoForm').addEventListener('submit', async (e) => {
+    // Salvataggio pacchetto
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const form = e.target;
-      const nome = document.getElementById('nome').value.trim();
-
       if (!form.checkValidity()) {
-        alert('Compila tutti i campi obbligatori correttamente.');
+        showFeedback('Compila tutti i campi obbligatori correttamente.', 'error');
         return;
       }
 
       try {
+        toggleLoading(true);
+
+        const user = firebase.auth().currentUser;
+        const nome = document.getElementById('nome').value.trim();
         const dateBoxes = document.querySelectorAll('#dateContainer .date-box');
-        const dateList = Array.from(dateBoxes).map(el => el.textContent);
+        const dateList = Array.from(dateBoxes).map(el => el.querySelector('span').textContent);
 
         await firebase.firestore().collection('pacchetti').add({
           nome: nome,
           date: dateList,
-          creatoIl: firebase.firestore.Timestamp.now()
+          creatoIl: firebase.firestore.FieldValue.serverTimestamp(),
+          creatoDa: user.uid
         });
 
-        alert('Pacchetto salvato con successo!');
+        showFeedback('Pacchetto salvato con successo!', 'success');
         form.reset();
-        document.getElementById('dateContainer').innerHTML = '';
+        dateContainer.innerHTML = '';
       } catch (err) {
         console.error('Errore salvataggio pacchetto:', err);
-        alert('Errore durante il salvataggio.');
+        showFeedback('Errore durante il salvataggio.', 'error');
+      } finally {
+        toggleLoading(false);
       }
     });
-  </script>
+
+    // Funzioni di supporto
+    function showFeedback(message, type) {
+      feedbackElement.textContent = message;
+      feedbackElement.className = `feedback-msg ${type}`;
+      feedbackElement.classList.remove('hidden');
+      setTimeout(() => {
+        feedbackElement.classList.add('hidden');
+      }, 5000);
+    }
+
+    function toggleLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      spinner.classList.toggle('hidden', !isLoading);
+    }
+  });
+</script>
 </body>
 </html>
