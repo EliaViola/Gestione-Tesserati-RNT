@@ -1,85 +1,31 @@
+// gestione-corsi.js
+
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Abilita persistenza con IndexedDB e sincronizzazione multi-tab
-db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-  console.warn("Errore nella persistenza offline:", err);
-});
-
-function getUserClaims() {
-  return new Promise((resolve, reject) => {
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        reject(new Error("Utente non autenticato"));
-        return;
-      }
-      try {
-        const idTokenResult = await user.getIdTokenResult();
-        resolve({ user, claims: idTokenResult.claims });
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
+// Carica i tesserati con tesseramento attivo
+function loadTesserati() {
+  return db.collection("tesserati")
+    .where("tesseramento.stato", "==", "attivo")
+    .orderBy("anagrafica.cognome")
+    .orderBy("anagrafica.nome")
+    .get()
+    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 }
 
-async function loadPacchetti() {
-  try {
-    const { claims } = await getUserClaims();
-
-    if (!claims.secretary && !claims.director) {
-      throw new Error("Permessi insufficienti per leggere i pacchetti");
-    }
-
-    const snapshot = await db.collection("pacchetti").get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error("Errore nel caricamento dei pacchetti:", error);
-    throw error;
-  }
+// Carica i pacchetti salvati da admin (nodo "pacchetti")
+function loadPacchetti() {
+  return db.collection("pacchetti")
+    .orderBy("nome") // opzionale, per ordinare per nome pacchetto
+    .get()
+    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 }
 
-async function loadTesserati() {
-  try {
-    await getUserClaims();
-
-    const snapshot = await db.collection("tesserati")
-      .where("tesseramento.stato", "==", "attivo")
-      .orderBy("anagrafica.cognome")
-      .orderBy("anagrafica.nome")
-      .get();
-
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error("Errore caricamento tesserati:", error);
-    throw error;
-  }
-}
-
-async function populatePacchettiSelect() {
-  const select = document.getElementById("pacchettiSelect");
-  try {
-    const pacchetti = await loadPacchetti();
-    select.innerHTML = "";
-    pacchetti.forEach(p => {
-      const dateList = Array.isArray(p.date) ? p.date : [];
-      if (dateList.length === 0) return;
-      const sorted = dateList.slice().sort((a, b) => new Date(a) - new Date(b));
-      const option = document.createElement("option");
-      option.value = p.id;
-      option.textContent = `${p.nome} – Dal: ${sorted[0]} al: ${sorted[sorted.length - 1]}`;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    select.innerHTML = `<option disabled>Errore nel caricamento dei pacchetti</option>`;
-  }
-}
-
-async function populateTesseratiSelect() {
+// Popola select dei tesserati
+function populateTesseratiSelect() {
   const select = document.getElementById("tesserato");
-  try {
-    const tesserati = await loadTesserati();
-    select.innerHTML = '<option value="">-- Seleziona --</option>';
+  loadTesserati().then(tesserati => {
+    select.innerHTML = "";
     tesserati.forEach(t => {
       const a = t.anagrafica || {};
       const option = document.createElement("option");
@@ -87,16 +33,32 @@ async function populateTesseratiSelect() {
       option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
       select.appendChild(option);
     });
-  } catch (error) {
-    select.innerHTML = `<option disabled>Errore caricamento tesserati</option>`;
-  }
+  }).catch(err => {
+    console.error("Errore nel caricamento dei tesserati:", err);
+    select.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+  });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await populateTesseratiSelect();
-    await populatePacchettiSelect();
-  } catch (err) {
-    console.error("Errore inizializzazione:", err);
-  }
+// Popola select dei pacchetti
+function populatePacchettiSelect() {
+  const select = document.getElementById("pacchetto");
+  loadPacchetti().then(pacchetti => {
+    select.innerHTML = "";
+    pacchetti.forEach(p => {
+      const option = document.createElement("option");
+      option.value = p.id;
+      option.textContent = p.nome || "Pacchetto senza nome";
+      select.appendChild(option);
+    });
+  }).catch(err => {
+    console.error("Errore nel caricamento dei pacchetti:", err);
+    select.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+  });
+}
+
+// Inizializzazione al caricamento della pagina
+document.addEventListener("DOMContentLoaded", () => {
+  populateTesseratiSelect();
+  populatePacchettiSelect();
 });
+
