@@ -1,44 +1,144 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Visualizza Pacchetti</title>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visualizza Pacchetti - Rari Nantes Trento</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="../assets/js/firebase-config.js"></script>
 </head>
 <body>
-  <h1>Seleziona un Pacchetto</h1>
-  <select id="selezionaPacchetto">
-    <option value="">-- Seleziona --</option>
-  </select>
+  <header>
+    <div class="header-container">
+      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </header>
 
-  <script>
-    // Configurazione Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBVcNJhXiytEKBtC09T3kbykVzAY0AHZmM",
-      authDomain: "rari-nantes-tesserati.firebaseapp.com",
-      projectId: "rari-nantes-tesserati",
-      storageBucket: "rari-nantes-tesserati.appspot.com",
-      messagingSenderId: "435337228811",
-      appId: "1:435337228811:web:a5f1fd0fb9e17bfbc00d0e"
-    };
+  <nav>
+    <div class="nav-container">
+      <a href="crea-pacchetto.html">Crea pacchetti</a>
+      <a href="visualizza-pacchetti.html" class="active">Visualizza pacchetti</a>
+    </div>
+  </nav>
 
-    // Inizializza Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <main>
+    <div class="form-container">
+      <h1 class="form-title">Elenco Pacchetti</h1>
+      <div class="feedback-msg hidden" id="feedbackMessage"></div>
+      <div class="spinner hidden" id="loadingSpinner"></div>
+      <div id="pacchettiList" class="list-container"></div>
+    </div>
+  </main>
 
-    // Recupera pacchetti da Firestore
-    db.collection("pacchetti").get().then(querySnapshot => {
-      const select = document.getElementById("selezionaPacchetto");
-      querySnapshot.forEach(doc => {
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.data().nome;
-        select.appendChild(option);
+  <footer>
+    <p>&copy; <span id="currentYear"></span> Rari Nantes Trento</p>
+  </footer>
+
+  <script type="module">
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      const pacchettiList = document.getElementById('pacchettiList');
+      const feedbackElement = document.getElementById('feedbackMessage');
+      const spinner = document.getElementById('loadingSpinner');
+
+      document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+      // Verifica autenticazione e ruolo
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = '../index.html';
+          return;
+        }
+
+        try {
+          const idToken = await user.getIdTokenResult();
+          if (!idToken.claims.director) {
+            await firebase.auth().signOut();
+            window.location.href = '../index.html';
+          } else {
+            caricaPacchetti();
+          }
+        } catch (error) {
+          console.error('Errore verifica ruolo:', error);
+          window.location.href = '../index.html';
+        }
       });
-    }).catch(error => {
-      console.error("Errore nel recupero dei pacchetti: ", error);
+
+      // Logout
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await firebase.auth().signOut();
+          window.location.href = '../index.html';
+        } catch (error) {
+          mostraFeedback('Errore durante il logout', 'error');
+        }
+      });
+
+      // Caricamento pacchetti
+      async function caricaPacchetti() {
+        try {
+          toggleLoading(true);
+          const snapshot = await firebase.firestore().collection('pacchetti').orderBy('creatoIl', 'desc').get();
+          pacchettiList.innerHTML = '';
+
+          if (snapshot.empty) {
+            pacchettiList.innerHTML = '<p>Nessun pacchetto trovato.</p>';
+            return;
+          }
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'pacchetto-item';
+            div.innerHTML = `
+              <h3>${data.nome}</h3>
+              <p><strong>Date:</strong> ${data.date?.join(', ') || 'Nessuna'}</p>
+              <p><strong>Creato il:</strong> ${data.creatoIl?.toDate().toLocaleDateString() || 'N/A'}</p>
+              <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
+            `;
+            pacchettiList.appendChild(div);
+          });
+
+          // Aggiungi eventi per i pulsanti "Elimina"
+          document.querySelectorAll('.btn-danger').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const id = btn.getAttribute('data-id');
+              if (confirm('Sei sicuro di voler eliminare questo pacchetto?')) {
+                try {
+                  await firebase.firestore().collection('pacchetti').doc(id).delete();
+                  mostraFeedback('Pacchetto eliminato con successo!', 'success');
+                  btn.closest('.pacchetto-item').remove();
+                } catch (err) {
+                  console.error('Errore eliminazione:', err);
+                  mostraFeedback('Errore durante l\'eliminazione.', 'error');
+                }
+              }
+            });
+          });
+
+        } catch (err) {
+          console.error('Errore caricamento pacchetti:', err);
+          mostraFeedback('Errore durante il caricamento.', 'error');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      function mostraFeedback(msg, tipo) {
+        feedbackElement.textContent = msg;
+        feedbackElement.className = `feedback-msg ${tipo}`;
+        feedbackElement.classList.remove('hidden');
+        setTimeout(() => feedbackElement.classList.add('hidden'), 4000);
+      }
+
+      function toggleLoading(isLoading) {
+        spinner.classList.toggle('hidden', !isLoading);
+      }
     });
   </script>
 </body>
