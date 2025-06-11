@@ -47,18 +47,42 @@ async function loadTesserati() {
   }
 }
 
-async function loadPacchetti() {
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const select = document.getElementById('pacchettiSelect');
+
   try {
-    const snapshot = await db.collection("pacchetti")
-      .orderBy("nome")
-      .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await firebase.firestore().collection('pacchetti').get();
+
+    // Svuota il select
+    select.innerHTML = ''; // niente "caricamento" se è multiplo
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const dateList = Array.isArray(data.date) ? data.date : [];
+
+      if (dateList.length === 0) return; // Salta pacchetti senza date
+
+      const sortedDates = dateList.slice().sort((a, b) => new Date(a) - new Date(b));
+      const primaData = sortedDates[0];
+      const ultimaData = sortedDates[sortedDates.length - 1];
+
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = `${data.nome} – Dal: ${primaData} al: ${ultimaData}`;
+      select.appendChild(option);
+    });
+
   } catch (error) {
-    console.error("Errore nel caricamento dei pacchetti:", error);
-    showFeedback("Impossibile caricare i pacchetti", "error");
-    return [];
+    console.error('Errore nel recupero dei pacchetti:', error);
+    const fallback = document.createElement('option');
+    fallback.textContent = 'Errore nel caricamento';
+    fallback.disabled = true;
+    select.appendChild(fallback);
   }
-}
+});
+
+
 
 async function loadIstruttori() {
   try {
