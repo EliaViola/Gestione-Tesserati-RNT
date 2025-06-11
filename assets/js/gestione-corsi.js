@@ -41,7 +41,7 @@ function populateTesseratiSelect() {
 
 // Popola select dei pacchetti
 function populatePacchettiSelect() {
-  const select = document.getElementById("pacchetto");
+  const select = document.getElementById("pacchettiSelect");
   loadPacchetti().then(pacchetti => {
     select.innerHTML = "";
     pacchetti.forEach(p => {
