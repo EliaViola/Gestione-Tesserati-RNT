@@ -1,23 +1,30 @@
-// Assumi che firebase sia già inizializzato
+import { initializeApp } from "firebase/app";
+import { getFirestore, enableIndexedDbPersistence, collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, getIdTokenResult } from "firebase/auth";
 
-const db = firebase.firestore();
+// La tua config Firebase (metti la tua config)
+const firebaseConfig = {
+  // ...
+};
 
-// Abilita la persistenza multi-tab
-db.enablePersistence({ synchronizeTabs: true })
-  .catch(err => {
-    console.error("Errore nell'abilitare la persistenza:", err);
-  });
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-// Funzione per attendere autenticazione e recuperare user custom claims
-async function getUserClaims() {
+// Abilita persistenza IndexedDB con multi-tab
+enableIndexedDbPersistence(db, { synchronizeTabs: true }).catch((err) => {
+  console.warn("Errore nell'abilitare la persistenza:", err);
+});
+
+function getUserClaims() {
   return new Promise((resolve, reject) => {
-    firebase.auth().onAuthStateChanged(async (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
         reject(new Error("Utente non autenticato"));
         return;
       }
       try {
-        const idTokenResult = await user.getIdTokenResult();
+        const idTokenResult = await getIdTokenResult(user);
         resolve({ user, claims: idTokenResult.claims });
       } catch (e) {
         reject(e);
@@ -28,19 +35,14 @@ async function getUserClaims() {
 
 async function loadPacchetti() {
   try {
-    const { user, claims } = await getUserClaims();
+    const { claims } = await getUserClaims();
 
-    // Controllo custom claims per sicurezza lato client (inutile senza regole, ma utile UX)
     if (!claims.secretary && !claims.director) {
       throw new Error("Permessi insufficienti per leggere i pacchetti");
     }
 
-    const snapshot = await db.collection("pacchetti").get();
-    const pacchetti = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    return pacchetti;
+    const pacchettiSnapshot = await getDocs(collection(db, "pacchetti"));
+    return pacchettiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   } catch (error) {
     console.error("Errore nel caricamento dei pacchetti:", error);
@@ -50,19 +52,17 @@ async function loadPacchetti() {
 
 async function loadTesserati() {
   try {
-    const { user } = await getUserClaims();
+    await getUserClaims();
 
-    // Lato client: l'utente è autenticato, possiamo fare la query
-    const snapshot = await db.collection("tesserati")
-      .where("tesseramento.stato", "==", "attivo")
-      .orderBy("anagrafica.cognome")
-      .orderBy("anagrafica.nome")
-      .get();
+    const tesseratiQuery = query(
+      collection(db, "tesserati"),
+      where("tesseramento.stato", "==", "attivo"),
+      orderBy("anagrafica.cognome"),
+      orderBy("anagrafica.nome")
+    );
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const tesseratiSnapshot = await getDocs(tesseratiQuery);
+    return tesseratiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   } catch (error) {
     console.error("Errore durante il caricamento dei tesserati:", error);
@@ -110,7 +110,6 @@ async function populateTesseratiSelect() {
   }
 }
 
-// Esempio di uso: al caricamento pagina
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await populateTesseratiSelect();
@@ -119,4 +118,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Errore inizializzazione dati:", e);
   }
 });
-
