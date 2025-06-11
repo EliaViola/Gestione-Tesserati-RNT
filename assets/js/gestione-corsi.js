@@ -1,43 +1,20 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  getIdTokenResult,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-// Inserisci qui la tua config Firebase
-const firebaseConfig = {
-  // ...la tua config firebase qui...
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Abilita persistenza IndexedDB multi-tab
-enableIndexedDbPersistence(db, { synchronizeTabs: true }).catch((err) => {
-  console.warn("Errore nell'abilitare la persistenza:", err);
+// Abilita persistenza con IndexedDB e sincronizzazione multi-tab
+db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+  console.warn("Errore nella persistenza offline:", err);
 });
 
-// Funzione per ottenere claims utente
 function getUserClaims() {
   return new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, async (user) => {
+    auth.onAuthStateChanged(async (user) => {
       if (!user) {
         reject(new Error("Utente non autenticato"));
         return;
       }
       try {
-        const idTokenResult = await getIdTokenResult(user);
+        const idTokenResult = await user.getIdTokenResult();
         resolve({ user, claims: idTokenResult.claims });
       } catch (e) {
         reject(e);
@@ -46,7 +23,6 @@ function getUserClaims() {
   });
 }
 
-// Carica pacchetti (solo secretary o director)
 async function loadPacchetti() {
   try {
     const { claims } = await getUserClaims();
@@ -55,51 +31,43 @@ async function loadPacchetti() {
       throw new Error("Permessi insufficienti per leggere i pacchetti");
     }
 
-    const pacchettiSnapshot = await getDocs(collection(db, "pacchetti"));
-    return pacchettiSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await db.collection("pacchetti").get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error("Errore nel caricamento dei pacchetti:", error);
     throw error;
   }
 }
 
-// Carica tesserati con stato attivo
 async function loadTesserati() {
   try {
     await getUserClaims();
 
-    const tesseratiQuery = query(
-      collection(db, "tesserati"),
-      where("tesseramento.stato", "==", "attivo"),
-      orderBy("anagrafica.cognome"),
-      orderBy("anagrafica.nome")
-    );
+    const snapshot = await db.collection("tesserati")
+      .where("tesseramento.stato", "==", "attivo")
+      .orderBy("anagrafica.cognome")
+      .orderBy("anagrafica.nome")
+      .get();
 
-    const tesseratiSnapshot = await getDocs(tesseratiQuery);
-    return tesseratiSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
-    console.error("Errore durante il caricamento dei tesserati:", error);
+    console.error("Errore caricamento tesserati:", error);
     throw error;
   }
 }
 
-// Popola select pacchetti
 async function populatePacchettiSelect() {
   const select = document.getElementById("pacchettiSelect");
   try {
     const pacchetti = await loadPacchetti();
     select.innerHTML = "";
-    pacchetti.forEach((p) => {
+    pacchetti.forEach(p => {
       const dateList = Array.isArray(p.date) ? p.date : [];
       if (dateList.length === 0) return;
-
-      const sortedDates = dateList.slice().sort((a, b) => new Date(a) - new Date(b));
-      const primaData = sortedDates[0];
-      const ultimaData = sortedDates[sortedDates.length - 1];
-
+      const sorted = dateList.slice().sort((a, b) => new Date(a) - new Date(b));
       const option = document.createElement("option");
       option.value = p.id;
-      option.textContent = `${p.nome} – Dal: ${primaData} al: ${ultimaData}`;
+      option.textContent = `${p.nome} – Dal: ${sorted[0]} al: ${sorted[sorted.length - 1]}`;
       select.appendChild(option);
     });
   } catch (error) {
@@ -107,21 +75,20 @@ async function populatePacchettiSelect() {
   }
 }
 
-// Popola select tesserati
 async function populateTesseratiSelect() {
   const select = document.getElementById("tesserato");
   try {
     const tesserati = await loadTesserati();
-    select.innerHTML = "";
-    tesserati.forEach((t) => {
+    select.innerHTML = '<option value="">-- Seleziona --</option>';
+    tesserati.forEach(t => {
       const a = t.anagrafica || {};
       const option = document.createElement("option");
       option.value = t.id;
-      option.textContent = `${a.cognome || ""} ${a.nome || ""} (${a.codice_fiscale || "N/D"})`;
+      option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
       select.appendChild(option);
     });
   } catch (error) {
-    select.innerHTML = `<option disabled>Errore nel caricamento dei tesserati</option>`;
+    select.innerHTML = `<option disabled>Errore caricamento tesserati</option>`;
   }
 }
 
@@ -129,10 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await populateTesseratiSelect();
     await populatePacchettiSelect();
-
-    // Imposta anno corrente nel footer
-    document.getElementById("currentYear").textContent = new Date().getFullYear();
-  } catch (e) {
-    console.error("Errore inizializzazione dati:", e);
+  } catch (err) {
+    console.error("Errore inizializzazione:", err);
   }
 });
