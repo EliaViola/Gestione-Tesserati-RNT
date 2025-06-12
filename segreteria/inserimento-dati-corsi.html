@@ -37,19 +37,23 @@
   <main>
     <div class="form-container">
       <h1 class="form-title" id="formTitle">Assegnazione Corso</h1>
-      <form id="corsoForm" aria-labelledby="formTitle">
-        <div class="form-grid">
-          <div class="form-group required-field">
-            <label for="tesseratiSelect">Tesserato</label>
-            <select id="tesseratiSelect" name="tesserati" class="form-control" required>
-              <option value="">-- Seleziona --</option>
-            </select>
-          </div>
+      <!-- ... altre parti dell'HTML ... -->
 
-          <div class="form-group required-field">
-            <label for="tipo_corso">Tipo Corso</label>
-            <select id="tipo_corso" name="tipo_corso" class="form-control" required>
-              <option value="">-- Seleziona --</option>
+<form id="corsoForm" aria-labelledby="formTitle">
+  <div class="form-grid">
+    <!-- Select TESSERATI -->
+    <div class="form-group required-field">
+      <label for="tesseratiSelect">Tesserato</label>
+      <select id="tesseratiSelect" name="tesserati" class="form-control" multiple required>
+        <option value="">-- Seleziona --</option>
+      </select>
+    </div>
+
+    <!-- Select TIPO CORSO -->
+    <div class="form-group required-field">
+      <label for="tipo_corso">Tipo Corso</label>
+      <select id="tipo_corso" name="tipo_corso" class="form-control" required>
+        <option value="">-- Seleziona --</option>
               <optgroup label="Scuola Nuoto">
                 <option value="avviamento">Avviamento</option>
                 <option value="principianti">Principianti</option>
@@ -63,31 +67,34 @@
                 <option value="agonisti">Agonisti</option>
                 <option value="pallanuoto">Pallanuoto</option>
               </optgroup>
-            </select>
-          </div>
+      </select>
+    </div>
 
-          <div class="form-group required-field">
-            <label for="livello">Livello</label>
-            <select id="livello" name="livello" class="form-control" required>
-              <option value="">-- Seleziona --</option>
+    <!-- Select LIVELLO -->
+    <div class="form-group required-field">
+      <label for="livello">Livello</label>
+      <select id="livello" name="livello" class="form-control" required>
+        <option value="">-- Seleziona --</option>
               <option value="1">Livello 1</option>
               <option value="2">Livello 2</option>
               <option value="3">Adulti</option>
-            </select>
-          </div>
+      </select>
+    </div>
 
-          <div class="form-group required-field">
-            <label for="pacchettiSelect">Seleziona uno o più pacchetti:</label>
-            <select id="pacchettiSelect" name="tesserati" class="form-control" multiple size="5" required>
-              <option value="">Caricamento pacchetti...</option>
-            </select>
-            <small class="form-text">Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
-          </div>
+    <!-- Select PACCHETTI -->
+    <div class="form-group required-field">
+      <label for="pacchettiSelect">Seleziona uno o più pacchetti:</label>
+      <select id="pacchettiSelect" name="pacchetti" class="form-control" multiple size="5" required>
+        <option value="">Caricamento pacchetti...</option>
+      </select>
+      <small class="form-text">Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
+    </div>
 
-          <div class="form-group required-field">
-            <label for="orario">Orario</label>
-            <select id="orario" name="orario" class="form-control" required>
-              <option value="">-- Seleziona --</option>
+    <!-- ORARIO -->
+    <div class="form-group required-field">
+      <label for="orario">Orario</label>
+      <select id="orario" name="orario" class="form-control" required>
+        <option value="">-- Seleziona --</option>
               <optgroup label="Corsi da 30 minuti">
                 <option value="16:20-16:50">16:20 - 16:50</option>
                 <option value="16:50-17:20">16:50 - 17:20</option>
@@ -99,21 +106,25 @@
                 <option value="16:00-16:40">16:00 - 16:40</option>
                 <option value="16:40-17:20">16:40 - 17:20</option>
                 <option value="18:00-18:40">18:00 - 18:40</option>
-              </optgroup>
-            </select>
-          </div>
+      </select>
+    </div>
 
-          <div class="form-group full-width">
-            <label for="note_corso">Eventuali note per il Corso</label>
-            <textarea id="note_corso" name="note_corso" rows="2" class="form-control"></textarea>
-          </div>
-        </div>
+    <!-- NOTE -->
+    <div class="form-group full-width">
+      <label for="note_corso">Eventuali note per il Corso</label>
+      <textarea id="note_corso" name="note_corso" rows="2" class="form-control"></textarea>
+    </div>
+  </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Assegna Corso</button>
-          <button type="reset" class="btn btn-secondary">Azzera Campi</button>
-        </div>
-      </form>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Assegna Corso</button>
+    <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+  </div>
+
+  <!-- ✅ FEEDBACK AGGIUNTO QUI -->
+  <div id="feedback" class="form-feedback"></div>
+</form>
+
 
       <section class="anteprima-corsi" aria-labelledby="anteprimaTitle">
         <h2 id="anteprimaTitle" class="anteprima-title">Anteprima Iscritti</h2>
