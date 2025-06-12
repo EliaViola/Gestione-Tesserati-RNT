@@ -148,9 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Funzione storico
 async function caricaStoricoPagamenti(tesseratoId) {
   const storicoBody = document.getElementById("storicoPagamentiBody");
-  if (!storicoBody || !tesseratoId) {
-    return;
-  }
+  if (!storicoBody || !tesseratoId) return;
 
   try {
     const pagamentiSnapshot = await db.collection("pagamenti")
@@ -166,16 +164,37 @@ async function caricaStoricoPagamenti(tesseratoId) {
       return;
     }
 
-    storicoBody.innerHTML = "";
+    const pagamenti = [];
+    const corsoIdsSet = new Set();
+
     pagamentiSnapshot.forEach(doc => {
       const p = doc.data();
-      console.log("Pagamento:", p);
+      pagamenti.push(p);
+      if (p.corsoId) corsoIdsSet.add(p.corsoId);
+    });
 
+    // Recupero i nomi dei corsi
+    const corsoIds = Array.from(corsoIdsSet);
+    const corsiMap = {};
+
+    if (corsoIds.length > 0) {
+      const corsiSnapshot = await db.collection("corsi")
+        .where(firebase.firestore.FieldPath.documentId(), "in", corsoIds)
+        .get();
+
+      corsiSnapshot.forEach(doc => {
+        corsiMap[doc.id] = doc.data().nome || `Corso ${doc.id}`;
+      });
+    }
+
+    storicoBody.innerHTML = "";
+    pagamenti.forEach(p => {
       const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
+      const nomeCorso = corsiMap[p.corsoId] || p.corsoId || "-";
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${dataStr}</td>
-        <td>${p.corsoId || "-"}</td>
+        <td>${nomeCorso}</td>
         <td>${parseFloat(p.importo || 0).toFixed(2)}</td>
         <td>${p.metodo || "-"}</td>
       `;
@@ -187,4 +206,5 @@ async function caricaStoricoPagamenti(tesseratoId) {
     storicoBody.innerHTML = `<tr><td colspan="4">Errore durante il caricamento</td></tr>`;
   }
 }
+
 
