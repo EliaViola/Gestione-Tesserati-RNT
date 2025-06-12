@@ -2,54 +2,96 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestione Pagamenti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestione Pagamenti - Rari Nantes Trento</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
 
-  <!-- Firebase compat -->
+  <!-- Firebase compat scripts -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Configurazione Firebase -->
   <script src="../assets/js/firebase-config.js"></script>
+
+  <!-- Script gestione pagamenti -->
+  <script src="../assets/js/gestione-pagamenti.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Registrazione Pagamento</h1>
-    <form id="pagamentoForm">
-      <div class="form-group">
-        <label for="tesserato">Tesserato (ID):</label>
-        <input type="text" id="tesserato" placeholder="ID del tesserato" required />
-      </div>
+  <header>
+    <div class="header-container">
+      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+      <button class="logout-btn" onclick="location.href='../index.html'" aria-label="Esci dal sistema">Logout</button>
+    </div>
+  </header>
 
-      <div class="form-group">
-        <label for="corso">Corso (ID):</label>
-        <input type="text" id="corso" placeholder="ID del corso" required />
-      </div>
+  <nav aria-label="Navigazione principale">
+    <div class="nav-container">
+      <a href="inserimento.html">Anagrafica</a>
+      <a href="inserimento-dati-corsi.html">Corsi</a>
+      <a href="pagamenti.html" class="active" aria-current="page">Pagamenti</a>
+      <a href="ricerca-dati.html">Ricerca</a>
+    </div>
+  </nav>
 
-      <div class="form-group">
-        <label for="importo">Importo (€):</label>
-        <input type="number" id="importo" placeholder="Es: 50" step="0.01" min="0" required />
-      </div>
+  <main>
+    <div class="form-container">
+      <h1 class="form-title" id="formTitle">Registrazione Pagamento</h1>
 
-      <div class="form-group">
-        <label for="metodo">Metodo di pagamento:</label>
-        <select id="metodo" required>
-          <option value="" disabled selected>Seleziona</option>
-          <option value="Contanti">Contanti</option>
-          <option value="Carta">Carta</option>
-          <option value="Bonifico">Bonifico</option>
-        </select>
-      </div>
+      <form id="pagamentoForm" aria-labelledby="formTitle" novalidate>
+        <div class="form-grid">
 
-      <div class="form-group">
-        <label for="data">Data del pagamento:</label>
-        <input type="date" id="data" required />
-      </div>
+          <div class="form-group required-field">
+            <label for="tesserato">Tesserato (ID)</label>
+            <input type="text" id="tesserato" name="tesserato" placeholder="ID del tesserato" required />
+          </div>
 
-      <button type="submit">Registra Pagamento</button>
-    </form>
-  </div>
+          <div class="form-group required-field">
+            <label for="corso">Corso (ID)</label>
+            <input type="text" id="corso" name="corso" placeholder="ID del corso" required />
+          </div>
 
-  <!-- Script gestione -->
-  <script src="../assets/js/gestione-pagamenti.js"></script>
+          <div class="form-group required-field">
+            <label for="importo">Importo (€)</label>
+            <input type="number" id="importo" name="importo" placeholder="Es: 50" step="0.01" min="0" required />
+          </div>
+
+          <div class="form-group required-field">
+            <label for="metodo">Metodo di pagamento</label>
+            <select id="metodo" name="metodo" required>
+              <option value="" disabled selected>Seleziona</option>
+              <option value="Contanti">Contanti</option>
+              <option value="Carta">Carta</option>
+              <option value="Bonifico">Bonifico</option>
+            </select>
+          </div>
+
+          <div class="form-group required-field">
+            <label for="data">Data del pagamento</label>
+            <input type="date" id="data" name="data" required />
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Registra Pagamento</button>
+          <button type="reset" class="btn btn-secondary">Azzera Campi</button>
+        </div>
+
+        <div id="feedback" class="form-feedback" role="alert" aria-live="polite"></div>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Aggiorna anno nel footer
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
