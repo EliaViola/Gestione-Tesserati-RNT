@@ -101,7 +101,11 @@ async function updateAnteprima() {
   container.innerHTML = '<div class="spinner"></div>';
   
   try {
-    const allCorsi = await loadAllCorsi();
+    const [allCorsi, allPacchetti] = await Promise.all([
+      loadAllCorsi(),
+      loadPacchetti() // Assicurati che i pacchetti siano caricati
+    ]);
+    
     const corsiFiltrati = allCorsi.filter(corso => 
       corso.tipologia === tipoCorso && corso.livello === livello
     );
@@ -117,7 +121,17 @@ async function updateAnteprima() {
       if (!corsiPerOrario[corso.orario]) {
         corsiPerOrario[corso.orario] = [];
       }
-      corsiPerOrario[corso.orario].push(corso);
+      
+      // Converti gli ID pacchetti in nomi
+      const pacchettiCorso = corso.pacchetti.map(pacchettoId => {
+        const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
+        return pacchetto ? pacchetto.nome : pacchettoId;
+      });
+      
+      corsiPerOrario[corso.orario].push({
+        ...corso,
+        nomiPacchetti: pacchettiCorso
+      });
     });
     
     // Costruisci l'HTML
@@ -125,21 +139,21 @@ async function updateAnteprima() {
     
     for (const [orario, corsi] of Object.entries(corsiPerOrario)) {
       html += `<div class="corsi-reparto">
-                <h4>Orario: ${orario}</h4>
+                <h3 class="orario-title">Orario: ${orario}</h3>
                 <table class="tabella-corsi">
                   <thead>
                     <tr>
-                      <th>Pacchetto</th>
-                      <th>Tipo</th>
+                      <th>Pacchetti</th>
+                      <th>Tipo Corso</th>
                       <th>Livello</th>
-                      <th>Iscritti</th>
+                      <th>Num. Iscritti</th>
                     </tr>
                   </thead>
                   <tbody>`;
       
       corsi.forEach(corso => {
         html += `<tr>
-                  <td>${corso.pacchetti.join(', ')}</td>
+                  <td>${corso.nomiPacchetti.join(', ')}</td>
                   <td>${corso.tipologia}</td>
                   <td>${corso.livello}</td>
                   <td>${corso.iscritti.length}</td>
