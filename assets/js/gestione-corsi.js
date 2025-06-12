@@ -69,3 +69,66 @@ document.addEventListener("DOMContentLoaded", () => {
   populatePacchettiSelect();
 });
 
+// gestione-corsi.js
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.getElementById('corsoForm');
+  const pacchettoSelect = document.getElementById('pacchettoSelect');
+  const tesseratiSelect = document.getElementById('tesseratiSelect');
+  const feedback = document.getElementById('feedback');
+
+  // Carica pacchetti disponibili
+  const pacchettiSnap = await firebase.firestore().collection('pacchetti').get();
+  pacchettiSnap.forEach(doc => {
+    const opt = document.createElement('option');
+    opt.value = doc.id;
+    opt.textContent = doc.data().nome;
+    pacchettoSelect.appendChild(opt);
+  });
+
+  // Carica tesserati attivi
+  const tesseratiSnap = await firebase.firestore().collection('tesserati').get();
+  tesseratiSnap.forEach(doc => {
+    const data = doc.data();
+    const opt = document.createElement('option');
+    opt.value = doc.id;
+    opt.textContent = `${data.anagrafica.nome} ${data.anagrafica.cognome}`;
+    tesseratiSelect.appendChild(opt);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const corso = {
+      tipologia: formData.get('tipologia'),
+      livello: formData.get('livello'),
+      orario: formData.get('orario'),
+      pacchettoId: formData.get('pacchetto'),
+      iscritti: [...formData.getAll('tesserati')],
+      creato_il: firebase.firestore.FieldValue.serverTimestamp(),
+      creato_da: firebase.auth().currentUser.uid
+    };
+
+    try {
+      // Salva il corso
+      const corsoRef = await firebase.firestore().collection('corsi').add(corso);
+
+      // Aggiorna ogni tesserato con riferimento al corso
+      await Promise.all(corso.iscritti.map(async tesseratoId => {
+        await firebase.firestore().collection('tesserati')
+          .doc(tesseratoId)
+          .update({
+            corsi: firebase.firestore.FieldValue.arrayUnion(corsoRef.id)
+          });
+      }));
+
+      feedback.textContent = 'Corso salvato con successo';
+      feedback.className = 'success';
+      form.reset();
+    } catch (error) {
+      console.error('Errore salvataggio corso:', error);
+      feedback.textContent = 'Errore: ' + error.message;
+      feedback.className = 'error';
+    }
+  });
+});
