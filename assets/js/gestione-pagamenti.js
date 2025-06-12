@@ -2,7 +2,10 @@
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Funzioni di supporto
+// Variabile globale per memorizzare i pacchetti del tesserato
+let tuttiPacchettiTesserato = [];
+
+// Carica l'elenco dei tesserati attivi
 async function loadTesserati() {
   try {
     const snapshot = await db.collection("tesserati")
@@ -18,6 +21,7 @@ async function loadTesserati() {
   }
 }
 
+// Carica i corsi associati a un tesserato
 async function loadCorsiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
@@ -36,6 +40,7 @@ async function loadCorsiPerTesserato(tesseratoId) {
   }
 }
 
+// Carica i pacchetti associati a un tesserato
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
@@ -47,30 +52,73 @@ async function loadPacchettiPerTesserato(tesseratoId) {
       .where(firebase.firestore.FieldPath.documentId(), "in", pacchetti)
       .get();
     
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snap.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data(),
+      corsoId: doc.data().corsoId || null
+    }));
   } catch (error) {
     console.error("Errore nel caricamento pacchetti:", error);
     throw new Error("Impossibile caricare i pacchetti del tesserato");
   }
 }
 
+// Aggiorna la lista dei pacchetti in base al corso selezionato
+function updatePacchettiList() {
+  const corsoSelezionato = document.getElementById("corsiSelect").value;
+  const pSelect = document.getElementById("pacchettiSelect");
+  pSelect.innerHTML = "";
+
+  if (tuttiPacchettiTesserato.length === 0) {
+    pSelect.innerHTML = '<option disabled>Nessun pacchetto associato</option>';
+    return;
+  }
+
+  // Filtra i pacchetti per corso selezionato
+  const pacchettiFiltrati = corsoSelezionato 
+    ? tuttiPacchettiTesserato.filter(p => p.corsoId === corsoSelezionato)
+    : tuttiPacchettiTesserato;
+
+  if (pacchettiFiltrati.length === 0) {
+    const msg = corsoSelezionato 
+      ? 'Nessun pacchetto per questo corso' 
+      : 'Nessun pacchetto disponibile';
+    pSelect.innerHTML = `<option disabled>${msg}</option>`;
+    return;
+  }
+
+  // Popola la select con i pacchetti filtrati
+  pacchettiFiltrati.forEach(p => {
+    const op = document.createElement("option");
+    op.value = p.id;
+    op.textContent = p.nome || `Pacchetto ${p.id}`;
+    pSelect.appendChild(op);
+  });
+}
+
+// Carica lo storico dei pagamenti per un tesserato
 async function caricaStoricoPagamenti(tesseratoId) {
   const storicoPagamentiBody = document.getElementById("storicoPagamentiBody");
   storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Caricamento storico pagamenti...</td></tr>';
 
   try {
+    // Query modificata per evitare necessità di indici complessi
     const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
-      .orderBy("data", "desc")
       .get();
+    
+    // Ordinamento lato client
+    const pagamenti = pagamentiSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => b.data.toDate() - a.data.toDate());
 
-    if (pagamentiSnapshot.empty) {
+    if (pagamenti.length === 0) {
       storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Nessun pagamento registrato.</td></tr>';
       return;
     }
 
-    const pagamentiPromises = pagamentiSnapshot.docs.map(async doc => {
-      const pagamento = doc.data();
+    // Carica i dettagli dei corsi in parallelo
+    const pagamentiPromises = pagamenti.map(async pagamento => {
       const corsoId = pagamento.corsoId;
       let nomeCorso = corsoId;
 
@@ -106,7 +154,7 @@ async function caricaStoricoPagamenti(tesseratoId) {
   }
 }
 
-// Inizializzazione pagina
+// Inizializzazione della pagina
 document.addEventListener("DOMContentLoaded", async () => {
   const tSelect = document.getElementById("tesseratiSelect");
   const cSelect = document.getElementById("corsiSelect");
@@ -157,6 +205,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadPacchettiPerTesserato(id)
       ]);
 
+      // Memorizza tutti i pacchetti
+      tuttiPacchettiTesserato = pacchetti;
+
       // Popola corsi
       corsi.forEach(c => {
         const op = document.createElement("option");
@@ -173,19 +224,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         cSelect.appendChild(op);
       });
 
-      // Popola pacchetti
-      pSelect.innerHTML = "";
-      if (pacchetti.length === 0) {
-        pSelect.innerHTML = '<option disabled>Nessun pacchetto associato</option>';
-      } else {
-        pacchetti.forEach(p => {
-          const op = document.createElement("option");
-          op.value = p.id;
-          op.textContent = p.nome || p.id;
-          pSelect.appendChild(op);
-        });
-      }
-
+      // Mostra tutti i pacchetti inizialmente
+      updatePacchettiList();
+      
       // Carica storico
       await caricaStoricoPagamenti(id);
     } catch (error) {
@@ -193,6 +234,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       feedback.classList.add("error");
     }
   });
+
+  // Gestione cambio corso (filtra pacchetti)
+  cSelect.addEventListener("change", updatePacchettiList);
 
   // Gestione submit form
   form.addEventListener("submit", async (e) => {
@@ -205,25 +249,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     const importo = parseFloat(document.getElementById("importo").value);
     const metodo = document.getElementById("metodo").value;
     const data = document.getElementById("data").value;
-    const pacchetti = Array.from(pSelect.selectedOptions).map(o => o.value);
+    const pacchettiSelezionati = Array.from(pSelect.selectedOptions).map(o => o.value);
 
-    // Validazione
+    // Validazione campi obbligatori
     if (!tId || !cId || !metodo || isNaN(importo) || !data) {
       feedback.textContent = "Compila tutti i campi obbligatori.";
       feedback.classList.add("error");
       return;
     }
 
+    // Validazione importo
     if (importo <= 0) {
       feedback.textContent = "L'importo deve essere maggiore di zero.";
       feedback.classList.add("error");
       return;
     }
 
+    // Validazione pacchetti (se selezionati)
+    if (pacchettiSelezionati.length > 0) {
+      const pacchettiNonAppartenenti = pacchettiSelezionati.filter(pId => {
+        const pacchetto = tuttiPacchettiTesserato.find(p => p.id === pId);
+        return pacchetto && pacchetto.corsoId !== cId;
+      });
+
+      if (pacchettiNonAppartenenti.length > 0) {
+        feedback.textContent = "Alcuni pacchetti selezionati non appartengono al corso scelto.";
+        feedback.classList.add("error");
+        return;
+      }
+    }
+
+    // Prepara i dati del pagamento
     const pagamentoData = {
       tesseratoId: tId,
       corsoId: cId,
-      pacchetti: pacchetti.filter(p => p), // Rimuovi valori vuoti
+      pacchetti: pacchettiSelezionati.filter(p => p), // Rimuovi valori vuoti
       importo,
       metodo,
       data: firebase.firestore.Timestamp.fromDate(new Date(data)),
