@@ -20,7 +20,7 @@ function showFeedback(message, type = 'success') {
   }, 5000);
 }
 
-// Carica tesserati attivi con cache
+// Carica tesserati attivi
 async function loadTesserati() {
   if (cache.tesserati.length > 0) return cache.tesserati;
   
@@ -45,7 +45,7 @@ async function loadTesserati() {
   }
 }
 
-// Carica pacchetti con cache
+// Carica pacchetti
 async function loadPacchetti() {
   if (cache.pacchetti.length > 0) return cache.pacchetti;
   
@@ -73,7 +73,7 @@ async function loadPacchetti() {
   }
 }
 
-// Carica tutti i corsi esistenti
+// Carica tutti i corsi
 async function loadAllCorsi() {
   if (cache.corsi.length > 0) return cache.corsi;
   
@@ -87,7 +87,7 @@ async function loadAllCorsi() {
   }
 }
 
-// Nuova funzione per visualizzare l'anteprima raggruppata per orario
+// Aggiorna l'anteprima con grafica migliorata
 async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
@@ -103,7 +103,7 @@ async function updateAnteprima() {
   try {
     const [allCorsi, allPacchetti] = await Promise.all([
       loadAllCorsi(),
-      loadPacchetti() // Assicurati che i pacchetti siano caricati
+      loadPacchetti()
     ]);
     
     const corsiFiltrati = allCorsi.filter(corso => 
@@ -111,56 +111,53 @@ async function updateAnteprima() {
     );
     
     if (corsiFiltrati.length === 0) {
-      container.innerHTML = '<p class="nessun-risultato">Nessun corso trovato per questa combinazione</p>';
+      container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Nessun corso trovato per questa combinazione</div>';
       return;
     }
     
-    // Raggruppa per orario
+    // Raggruppa per orario e converti ID pacchetti in nomi
     const corsiPerOrario = {};
     corsiFiltrati.forEach(corso => {
-      if (!corsiPerOrario[corso.orario]) {
-        corsiPerOrario[corso.orario] = [];
+      const orario = corso.orario || 'Orario non specificato';
+      if (!corsiPerOrario[orario]) {
+        corsiPerOrario[orario] = [];
       }
       
-      // Converti gli ID pacchetti in nomi
-      const pacchettiCorso = corso.pacchetti.map(pacchettoId => {
+      const pacchettiNomi = corso.pacchetti.map(pacchettoId => {
         const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
         return pacchetto ? pacchetto.nome : pacchettoId;
       });
       
-      corsiPerOrario[corso.orario].push({
+      corsiPerOrario[orario].push({
         ...corso,
-        nomiPacchetti: pacchettiCorso
+        pacchettiNomi: pacchettiNomi
       });
     });
     
-    // Costruisci l'HTML
-    let html = '<div class="anteprima-corsi">';
+    // Costruisci l'HTML con grafica migliorata
+    let html = '<div class="anteprima-corsi-container">';
     
     for (const [orario, corsi] of Object.entries(corsiPerOrario)) {
-      html += `<div class="corsi-reparto">
-                <h3 class="orario-title">Orario: ${orario}</h3>
-                <table class="tabella-corsi">
-                  <thead>
-                    <tr>
-                      <th>Pacchetti</th>
-                      <th>Tipo Corso</th>
-                      <th>Livello</th>
-                      <th>Num. Iscritti</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
+      html += `<div class="corsi-orario-group">
+                <h3 class="orario-header">${orario}</h3>
+                <div class="corsi-grid">`;
       
       corsi.forEach(corso => {
-        html += `<tr>
-                  <td>${corso.nomiPacchetti.join(', ')}</td>
-                  <td>${corso.tipologia}</td>
-                  <td>${corso.livello}</td>
-                  <td>${corso.iscritti.length}</td>
-                </tr>`;
+        html += `<div class="corso-card">
+                  <div class="corso-header">
+                    <span class="corso-tipo">${corso.tipologia} - Liv. ${corso.livello}</span>
+                    <span class="corso-iscritti">${corso.iscritti.length} iscritti</span>
+                  </div>
+                  <div class="corso-pacchetti">
+                    <i class="fas fa-box-open"></i> ${corso.pacchettiNomi.join(', ')}
+                  </div>
+                  <div class="corso-istruttore">
+                    <i class="fas fa-user-tie"></i> ${corso.istruttore || 'Nessun istruttore assegnato'}
+                  </div>
+                </div>`;
       });
       
-      html += `</tbody></table></div>`;
+      html += `</div></div>`;
     }
     
     html += '</div>';
@@ -168,36 +165,42 @@ async function updateAnteprima() {
     
   } catch (error) {
     console.error("Errore aggiornamento anteprima:", error);
-    container.innerHTML = '<p class="errore">Errore nel caricamento dei corsi</p>';
+    container.innerHTML = '<div class="errore-msg"><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dei corsi</div>';
   }
 }
 
 // Inizializzazione form
 async function initForm() {
-  const [tesserati, pacchetti] = await Promise.all([
-    loadTesserati(),
-    loadPacchetti()
-  ]);
-  
-  // Popola tesserati
-  const tesseratiSelect = document.getElementById('tesseratiSelect');
-  tesseratiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-  tesserati.forEach(t => {
-    const option = document.createElement('option');
-    option.value = t.id;
-    option.textContent = `${t.nomeCompleto} (${t.anagrafica?.codice_fiscale || 'N/D'})`;
-    tesseratiSelect.appendChild(option);
-  });
-  
-  // Popola pacchetti
-  const pacchettiSelect = document.getElementById('pacchettiSelect');
-  pacchettiSelect.innerHTML = '';
-  pacchetti.forEach(p => {
-    const option = document.createElement('option');
-    option.value = p.id;
-    option.textContent = `${p.nome} (${p.dateRange})`;
-    pacchettiSelect.appendChild(option);
-  });
+  try {
+    const [tesserati, pacchetti] = await Promise.all([
+      loadTesserati(),
+      loadPacchetti()
+    ]);
+    
+    // Popola tesserati
+    const tesseratiSelect = document.getElementById('tesserato');
+    tesseratiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    tesserati.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;
+      option.textContent = `${t.nomeCompleto} (${t.anagrafica?.codice_fiscale || 'N/D'})`;
+      tesseratiSelect.appendChild(option);
+    });
+    
+    // Popola pacchetti
+    const pacchettiSelect = document.getElementById('pacchettiSelect');
+    pacchettiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    pacchetti.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+      option.textContent = `${p.nome} (${p.dateRange})`;
+      pacchettiSelect.appendChild(option);
+    });
+    
+  } catch (error) {
+    console.error("Errore inizializzazione form:", error);
+    showFeedback("Errore nel caricamento dei dati iniziali", 'error');
+  }
 }
 
 // Gestione submit del form
@@ -206,46 +209,49 @@ async function handleSubmit(e) {
   
   const form = e.target;
   const formData = new FormData(form);
-  const tesseratoId = formData.get('tesserati');
-  const pacchetti = formData.getAll('pacchetti');
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
   
-  // Validazione
-  if (!tesseratoId || pacchetti.length === 0) {
-    showFeedback('Seleziona un tesserato e almeno un pacchetto', 'error');
-    return;
-  }
-  
+  // Prepara i dati
   const corsoData = {
     tipologia: formData.get('tipo_corso'),
     livello: formData.get('livello'),
     orario: formData.get('orario'),
-    pacchetti: pacchetti,
-    iscritti: [tesseratoId],
-    note: formData.get('note_corso') || '',
+    istruttore: formData.get('istruttore') || '',
+    pacchetti: Array.from(formData.getAll('pacchetti')),
+    iscritti: [formData.get('tesserato')],
+    note: formData.get('note') || '',
     creato_il: firebase.firestore.FieldValue.serverTimestamp(),
     creato_da: auth.currentUser?.uid || 'anonimo'
   };
   
+  // Validazione
+  if (!corsoData.iscritti[0] || corsoData.pacchetti.length === 0) {
+    showFeedback('Seleziona un tesserato e almeno un pacchetto', 'error');
+    return;
+  }
+  
   try {
-    submitBtn.innerHTML = '<span class="spinner"></span> Salvataggio in corso...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio in corso...';
     submitBtn.disabled = true;
     
+    // Usa una transazione per garantire consistenza
     await db.runTransaction(async (transaction) => {
       const corsoRef = db.collection('corsi').doc();
       transaction.set(corsoRef, corsoData);
       
-      const tesseratoRef = db.collection('tesserati').doc(tesseratoId);
+      // Aggiorna il tesserato
+      const tesseratoRef = db.collection('tesserati').doc(corsoData.iscritti[0]);
       transaction.update(tesseratoRef, {
         corsi: firebase.firestore.FieldValue.arrayUnion(corsoRef.id),
-        pacchetti: firebase.firestore.FieldValue.arrayUnion(...pacchetti)
+        pacchetti: firebase.firestore.FieldValue.arrayUnion(...corsoData.pacchetti)
       });
       
-      for (const pacchettoId of pacchetti) {
+      // Aggiorna i pacchetti
+      for (const pacchettoId of corsoData.pacchetti) {
         const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
         transaction.update(pacchettoRef, {
-          assegnato_a: firebase.firestore.FieldValue.arrayUnion(tesseratoId)
+          assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
         });
       }
     });
@@ -253,7 +259,8 @@ async function handleSubmit(e) {
     showFeedback('Corso assegnato con successo!');
     form.reset();
     updateAnteprima();
-    cache.corsi = []; // Invalida la cache dei corsi
+    cache.corsi = []; // Invalida cache
+    
   } catch (error) {
     console.error('Errore salvataggio:', error);
     showFeedback(`Errore durante il salvataggio: ${error.message}`, 'error');
@@ -266,18 +273,17 @@ async function handleSubmit(e) {
 // Inizializzazione app
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // Imposta l'anno corrente
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
     // Inizializza form
     await initForm();
     
     // Aggiungi event listeners
     document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
     document.getElementById('livello').addEventListener('change', updateAnteprima);
-    // Non serve più il listener per l'orario per l'anteprima
-    
     document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
     
-    // Imposta l'anno corrente
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
   } catch (error) {
     console.error('Errore inizializzazione:', error);
     showFeedback('Errore durante l\'inizializzazione dell\'applicazione', 'error');
