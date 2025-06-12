@@ -137,50 +137,57 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    feedback.textContent = "";
-    feedback.className = "form-feedback";
+  e.preventDefault();
+  feedback.textContent = "";
+  feedback.className = "form-feedback";
 
-    const tId = tSelect.value;
-    const cId = cSelect.value;
-    const importo = parseFloat(document.getElementById("importo").value);
-    const metodo = document.getElementById("metodo").value;
-    const data = document.getElementById("data").value;
-    const pacchetti = Array.from(pSelect.selectedOptions).map(o => o.value);
+  const tId = tSelect.value;
+  const cId = cSelect.value;
+  const importo = parseFloat(document.getElementById("importo").value);
+  const metodo = document.getElementById("metodo").value;
+  const data = document.getElementById("data").value;
+  const pacchetti = Array.from(pSelect.selectedOptions).map(o => o.value);
 
-    if (!tId || !cId || !metodo || isNaN(importo) || !data || pacchetti.length === 0) {
-      feedback.textContent = "Compila tutti i campi obbligatori.";
-      feedback.classList.add("error");
-      return;
-    }
+  if (!tId || !cId || !metodo || isNaN(importo) || !data || pacchetti.length === 0) {
+    feedback.textContent = "Compila tutti i campi obbligatori.";
+    feedback.classList.add("error");
+    return;
+  }
 
-    const pagamentoData = {
-      tesseratoId: tId,
-      corsoId: cId,
-      pacchetti,
-      importo,
-      metodo,
-      data: firebase.firestore.Timestamp.fromDate(new Date(data)),
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
+  const pagamentoData = {
+    tesseratoId: tId,
+    corsoId: cId,
+    pacchetti,
+    importo,
+    metodo,
+    data: firebase.firestore.Timestamp.fromDate(new Date(data)),
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  };
 
-    try {
-      const docRef = await db.collection("pagamenti").add(pagamentoData);
-      await db.collection("tesserati").doc(tId).update({
-        [`pagamenti.${cId}.${docRef.id}`]: pagamentoData
-      });
+  try {
+    const docRef = await db.collection("pagamenti").add(pagamentoData);
 
-      form.reset();
-      cSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
-      pSelect.innerHTML = `<option>Seleziona tesserato</option>`;
-      feedback.textContent = "Pagamento registrato con successo.";
-      feedback.classList.add("success");
+    // Aggiungi anche nel documento del tesserato
+    await db.collection("tesserati").doc(tId).set({
+      pagamenti: {
+        [cId]: {
+          [docRef.id]: pagamentoData
+        }
+      }
+    }, { merge: true });
 
-      await caricaStoricoPagamenti(tId);
-    } catch (err) {
-      console.error("Errore:", err);
-      feedback.textContent = "Errore durante la registrazione.";
-      feedback.classList.add("error");
-    }
-  });
+    form.reset();
+    cSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
+    pSelect.innerHTML = `<option>Seleziona tesserato</option>`;
+    feedback.textContent = "Pagamento registrato con successo.";
+    feedback.classList.add("success");
+
+    await caricaStoricoPagamenti(tId);
+  } catch (err) {
+    console.error("Errore:", err);
+    feedback.textContent = "Errore durante la registrazione.";
+    feedback.classList.add("error");
+  }
+});
+
 });
