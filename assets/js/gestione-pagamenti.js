@@ -10,6 +10,14 @@ function loadTesserati() {
     .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 }
 
+// Carica i pacchetti salvati da admin
+function loadPacchetti() {
+  return db.collection("pacchetti")
+    .orderBy("nome")
+    .get()
+    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+}
+
 async function loadCorsiPerTesserato(tesseratoId) {
   if (!tesseratoId) return [];
 
@@ -147,63 +155,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Funzione storico
 async function caricaStoricoPagamenti(tesseratoId) {
-  const storicoContainer = document.getElementById("storico-pagamenti");
-  storicoContainer.innerHTML = "";
+  const storicoBody = document.getElementById("storicoPagamentiBody");
+  if (!storicoBody || !tesseratoId) return;
 
   try {
     const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
+      // .orderBy("data", "desc") // RIMOSSO per evitare necessità indice
       .get();
 
+    if (pagamentiSnapshot.empty) {
+      storicoBody.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
+      return;
+    }
+
     const pagamenti = [];
+    const corsoIdsSet = new Set();
 
-    for (const doc of pagamentiSnapshot.docs) {
-      const pagamento = doc.data();
-      pagamento.id = doc.id;
+    pagamentiSnapshot.forEach(doc => {
+      const p = doc.data();
+      pagamenti.push(p);
+      if (p.corsoId) corsoIdsSet.add(p.corsoId);
+    });
 
-      // Recupera nome del corso
-      let nomeCorso = "Corso non trovato";
-      if (pagamento.corsoId) {
-        try {
-          const corsoDoc = await db.collection("corsi").doc(pagamento.corsoId).get();
-          if (corsoDoc.exists) {
-            const corsoData = corsoDoc.data();
-            nomeCorso = corsoData.tipologia + " " + corsoData.livello;
-          }
-        } catch (err) {
-          console.error("Errore nel recupero del corso:", err);
-        }
-      }
+    // Ordino in JS dal più recente al più vecchio
+    pagamenti.sort((a, b) => {
+      const dateA = a.data?.toDate?.() || new Date(0);
+      const dateB = b.data?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
 
-      pagamenti.push({
-        ...pagamento,
-        nomeCorso,
+    // Recupero i nomi dei corsi
+    const corsoIds = Array.from(corsoIdsSet);
+    const corsiMap = {};
+    if (corsoIds.length > 0) {
+      const corsiSnapshot = await db.collection("corsi")
+        .where(firebase.firestore.FieldPath.documentId(), "in", corsoIds)
+        .get();
+
+      corsiSnapshot.forEach(doc => {
+        corsiMap[doc.id] = doc.data().nome || `Corso ${doc.id}`;
       });
     }
 
-    // Ordina per data decrescente
-    pagamenti.sort((a, b) => b.data.toDate() - a.data.toDate());
+    // Aggiorno la tabella storico
+    storicoBody.innerHTML = "";
+    pagamenti.forEach(p => {
+      const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
+      const nomeCorso = corsiMap[p.corsoId] || p.corsoId || "-";
+      const importoStr = parseFloat(p.importo || 0).toFixed(2);
+      const metodo = p.metodo || "-";
 
-    for (const pagamento of pagamenti) {
-      const data = pagamento.data.toDate().toLocaleDateString();
-      const importo = pagamento.importo.toFixed(2);
-      const metodo = pagamento.metodo;
-      const nomeCorso = pagamento.nomeCorso;
-
-      const row = document.createElement("div");
-      row.classList.add("pagamento-row");
+      const row = document.createElement("tr");
       row.innerHTML = `
-        <div>${data}</div>
-        <div>${nomeCorso}</div>
-        <div>${importo} €</div>
-        <div>${metodo}</div>
+        <td>${dataStr}</td>
+        <td>${nomeCorso}</td>
+        <td>${importoStr}</td>
+        <td>${metodo}</td>
       `;
-      storicoContainer.appendChild(row);
-    }
+      storicoBody.appendChild(row);
+    });
+
   } catch (error) {
     console.error("Errore nel caricamento dello storico pagamenti:", error);
+    storicoBody.innerHTML = `<tr><td colspan="4">Errore durante il caricamento</td></tr>`;
   }
 }
-
 
 
