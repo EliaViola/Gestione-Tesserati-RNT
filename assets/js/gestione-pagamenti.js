@@ -158,6 +158,9 @@ async function caricaStoricoPagamenti(tesseratoId) {
       .orderBy("data", "desc")
       .get();
 
+    console.log("Query eseguita per tesseratoId:", tesseratoId);
+    console.log("Pagamenti trovati:", pagamentiSnapshot.size);
+
     if (pagamentiSnapshot.empty) {
       storicoBody.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
       return;
@@ -166,6 +169,8 @@ async function caricaStoricoPagamenti(tesseratoId) {
     storicoBody.innerHTML = "";
     pagamentiSnapshot.forEach(doc => {
       const p = doc.data();
+      console.log("Pagamento:", p);
+
       const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -176,8 +181,10 @@ async function caricaStoricoPagamenti(tesseratoId) {
       `;
       storicoBody.appendChild(row);
     });
+
   } catch (error) {
     console.error("Errore nel caricamento dello storico pagamenti:", error);
     storicoBody.innerHTML = `<tr><td colspan="4">Errore durante il caricamento</td></tr>`;
   }
 }
+
