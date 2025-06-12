@@ -661,21 +661,109 @@ select {
 }
 
 /* Stile per storico pagamenti  */
+/* Stile avanzato per storico pagamenti */
 .storico-container {
-  margin-top: 2rem;
-  background: #f9f9f9;
-  padding: 1.5rem;
-  border-radius: 12px;
+  margin-top: 2.5rem;
+  background: #ffffff;
+  padding: 1.8rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eaeaea;
 }
 
-.storico-table {
+.storico-container h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.storico-pagamenti {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
 }
 
-.storico-table th,
-.storico-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #ddd;
+.storico-pagamenti thead th {
+  background-color: #3498db;
+  color: white;
+  padding: 1rem;
+  font-weight: 500;
   text-align: center;
+  position: sticky;
+  top: 0;
+}
+
+.storico-pagamenti th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.storico-pagamenti th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.storico-pagamenti tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.storico-pagamenti tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.storico-pagamenti tbody tr:hover {
+  background-color: #f1f9ff;
+}
+
+.storico-pagamenti td {
+  padding: 1rem;
+  border-bottom: 1px solid #eaeaea;
+  text-align: center;
+  color: #4a5568;
+}
+
+.storico-pagamenti td:first-child {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+/* Stile per l'importo */
+.storico-pagamenti td:nth-child(3) {
+  font-weight: 600;
+  color: #2ecc71;
+}
+
+/* Messaggio quando non ci sono pagamenti */
+.storico-pagamenti tbody tr td[colspan] {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+/* Scrollbar per tabella (se necessaria) */
+.storico-container {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Personalizzazione scrollbar */
+.storico-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.storico-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.storico-container::-webkit-scrollbar-thumb {
+  background: #bdc3c7;
+  border-radius: 10px;
+}
+
+.storico-container::-webkit-scrollbar-thumb:hover {
+  background: #95a5a6;
 }
