@@ -114,11 +114,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     const corsi = await loadCorsiPerTesserato(id);
     cSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
     corsi.forEach(c => {
-      const op = document.createElement("option");
-      op.value = c.id;
-      op.textContent = c.nome || `Corso ${c.id}`;
-      cSelect.appendChild(op);
-    });
+  const op = document.createElement("option");
+  op.value = c.id;
+
+  // Costruisci nome leggibile, esempio:
+  let nomeCorso = "";
+  if (c.tipologia && c.livello) {
+    nomeCorso = `${c.tipologia} - ${c.livello}`;
+  } else if (c.nome) {
+    nomeCorso = c.nome;
+  } else {
+    nomeCorso = `Corso ${c.id}`;
+  }
+
+  op.textContent = nomeCorso;
+  cSelect.appendChild(op);
+});
 
     // Pacchetti
     const pacchetti = await loadPacchettiPerTesserato(id);
