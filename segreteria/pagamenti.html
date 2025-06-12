@@ -6,14 +6,13 @@
   <title>Gestione Pagamenti - Rari Nantes Trento</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
 
-  <!-- Firebase compat scripts -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <!-- Configurazione Firebase -->
+  <!-- Config -->
   <script src="../assets/js/firebase-config.js"></script>
-
   <!-- Script gestione pagamenti -->
   <script defer src="../assets/js/gestione-pagamenti.js"></script>
 </head>
@@ -21,29 +20,28 @@
   <header>
     <div class="header-container">
       <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
-      <button class="logout-btn" onclick="location.href='../index.html'" aria-label="Esci dal sistema">Logout</button>
+      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
     </div>
   </header>
 
-  <nav aria-label="Navigazione principale">
+  <nav>
     <div class="nav-container">
       <a href="inserimento.html">Anagrafica</a>
       <a href="inserimento-dati-corsi.html">Corsi</a>
-      <a href="pagamenti.html" class="active" aria-current="page">Pagamenti</a>
+      <a href="pagamenti.html" class="active">Pagamenti</a>
       <a href="ricerca-dati.html">Ricerca</a>
     </div>
   </nav>
 
   <main>
     <div class="form-container">
-      <h1 class="form-title" id="formTitle">Registrazione Pagamento</h1>
-
-      <form id="pagamentoForm" aria-labelledby="formTitle" novalidate>
+      <h1 id="formTitle">Registrazione Pagamento</h1>
+      <form id="pagamentoForm" novalidate>
         <div class="form-grid">
           <!-- Tesserato -->
           <div class="form-group required-field">
             <label for="tesseratiSelect">Tesserato</label>
-            <select id="tesseratiSelect" name="tesserati" class="form-control" required>
+            <select id="tesseratiSelect" required>
               <option value="">-- Seleziona --</option>
             </select>
           </div>
@@ -51,31 +49,31 @@
           <!-- Corso -->
           <div class="form-group required-field">
             <label for="corsiSelect">Corso</label>
-            <select id="corsiSelect" name="corsi" class="form-control" required>
+            <select id="corsiSelect" required>
               <option value="">-- Seleziona --</option>
             </select>
           </div>
 
-          <!-- Select PACCHETTI -->
-    <div class="form-group required-field">
-      <label for="pacchettiSelect">Seleziona uno o più pacchetti:</label>
-      <select id="pacchettiSelect" name="pacchetti" class="form-control" multiple size="5" required>
-        <option value="">Caricamento pacchetti...</option>
-      </select>
-      <small class="form-text">Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
-    </div>
-    
+          <!-- Pacchetti -->
+          <div class="form-group required-field">
+            <label for="pacchettiSelect">Pacchetti associati</label>
+            <select id="pacchettiSelect" multiple size="5" required>
+              <option value="">Seleziona tesserato</option>
+            </select>
+            <small>Tieni premuto Ctrl/Cmd per selezione multipla</small>
+          </div>
+
           <!-- Importo -->
           <div class="form-group required-field">
             <label for="importo">Importo (€)</label>
-            <input type="number" id="importo" name="importo" class="form-control" placeholder="Es: 50" step="0.01" min="0" required />
+            <input type="number" id="importo" step="0.01" min="0" required />
           </div>
 
           <!-- Metodo -->
           <div class="form-group required-field">
-            <label for="genere">Genere</label>
-            <select id="genere" name="genere" class="form-control" required>
-              <option value="" disabled selected>Seleziona</option>
+            <label for="metodo">Metodo</label>
+            <select id="metodo" required>
+              <option value="">Seleziona</option>
               <option value="Contanti">Contanti</option>
               <option value="Carta">Carta</option>
               <option value="Bonifico">Bonifico</option>
@@ -83,11 +81,12 @@
           </div>
 
           <!-- Data -->
-        <div class="form-group required-field">
-            <label for="data">Data del pagamento</label>
-            <input type="date" id="data" name="data" class="form-control" required max="<?= date('Y-m-d') ?>" />
+          <div class="form-group required-field">
+            <label for="data">Data pagamento</label>
+            <input type="date" id="data" required max="">
           </div>
-          
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">Registra Pagamento</button>
           <button type="reset" class="btn btn-secondary">Azzera Campi</button>
@@ -95,35 +94,35 @@
 
         <div id="feedback" class="form-feedback" role="alert" aria-live="polite"></div>
       </form>
+
       <section class="storico-container">
-  <h3>Storico Pagamenti</h3>
-<table class="storico-pagamenti">
-  <thead>
-    <tr>
-      <th>Data</th>
-      <th>Corso</th>
-      <th>Importo (€)</th>
-      <th>Metodo</th>
-    </tr>
-  </thead>
-  <tbody id="storicoPagamentiBody">
-    <tr><td colspan="4">Seleziona un tesserato</td></tr>
-  </tbody>
-</table>
-</section>
+        <h3>Storico Pagamenti</h3>
+        <table class="storico-pagamenti">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Corso</th>
+              <th>Importo (€)</th>
+              <th>Metodo</th>
+            </tr>
+          </thead>
+          <tbody id="storicoPagamentiBody">
+            <tr><td colspan="4">Seleziona un tesserato</td></tr>
+          </tbody>
+        </table>
+      </section>
     </div>
-    
   </main>
-  
 
   <footer>
     <div class="footer-container">
-      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento</p>
     </div>
   </footer>
 
   <script>
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    document.getElementById("currentYear").textContent = new Date().getFullYear();
+    document.getElementById("data").max = new Date().toISOString().split("T")[0];
   </script>
 </body>
 </html>
