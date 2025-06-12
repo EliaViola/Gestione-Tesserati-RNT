@@ -206,7 +206,28 @@ async function handleSubmit(e) {
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
 
-  // Prepara i dati
+  // Verifica preliminare dell'autenticazione
+  const user = auth.currentUser;
+  if (!user) {
+    showFeedback('Devi essere loggato per effettuare questa operazione', 'error');
+    return;
+  }
+
+  // Ottieni il token per verificare i ruoli
+  let hasRole = false;
+  try {
+    const token = await user.getIdTokenResult();
+    hasRole = token.claims.secretary || token.claims.director;
+  } catch (error) {
+    console.error("Errore verifica ruoli:", error);
+  }
+
+  if (!hasRole) {
+    showFeedback('Non hai i permessi necessari', 'error');
+    return;
+  }
+
+  // Prepara i dati per Firestore
   const corsoData = {
     tipologia: formData.get('tipo_corso'),
     livello: formData.get('livello'),
@@ -215,22 +236,12 @@ async function handleSubmit(e) {
     iscritti: [formData.get('tesserato')],
     note: formData.get('note') || '',
     creato_il: firebase.firestore.FieldValue.serverTimestamp(),
-    creato_da: auth.currentUser?.uid || 'anonimo'
+    creato_da: user.uid
   };
 
   try {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
-
-    // Verifica che l'utente sia autenticato e abbia il ruolo
-    const user = auth.currentUser;
-    if (!user) throw new Error("Utente non autenticato");
-    
-    // Ottieni il token per verificare i ruoli
-    const idToken = await user.getIdTokenResult();
-    if (!idToken.claims.secretary && !idToken.claims.director) {
-      throw new Error("Permessi insufficienti");
-    }
 
     // Salva il corso
     const corsoRef = await db.collection('corsi').add(corsoData);
@@ -241,23 +252,25 @@ async function handleSubmit(e) {
       pacchetti: firebase.firestore.FieldValue.arrayUnion(...corsoData.pacchetti)
     });
 
-    // Aggiorna i pacchetti
-    const batch = db.batch();
-    corsoData.pacchetti.forEach(pacchettoId => {
-      const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
-      batch.update(pacchettoRef, {
-        assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
+    // Aggiorna i pacchetti (solo se director)
+    if (user && (await user.getIdTokenResult()).claims.director) {
+      const batch = db.batch();
+      corsoData.pacchetti.forEach(pacchettoId => {
+        const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
+        batch.update(pacchettoRef, {
+          assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
+        });
       });
-    });
-    await batch.commit();
+      await batch.commit();
+    }
 
-    showFeedback('Corso assegnato con successo!');
+    showFeedback('Corso assegnato con successo!', 'success');
     form.reset();
     updateAnteprima();
     
   } catch (error) {
     console.error('Errore salvataggio:', error);
-    showFeedback(`Errore: ${error.message}`, 'error');
+    showFeedback(`Errore durante il salvataggio: ${error.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = originalText;
