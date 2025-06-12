@@ -39,17 +39,24 @@
       <h1 class="form-title" id="formTitle">Registrazione Pagamento</h1>
 
       <form id="pagamentoForm" aria-labelledby="formTitle" novalidate>
-        <div class="form-grid">
+        
 
-          <div class="form-group required-field">
-            <label for="tesserato">Tesserato (ID)</label>
-            <input type="text" id="tesserato" name="tesserato" placeholder="ID del tesserato" required />
-          </div>
+          <div class="form-grid">
+    <!-- Select TESSERATI -->
+    <div class="form-group required-field">
+      <label for="tesseratiSelect">Tesserato</label>
+      <select id="tesseratiSelect" name="tesserati" class="form-control" required>
+        <option value="">-- Seleziona --</option>
+      </select>
+    </div>
 
-          <div class="form-group required-field">
-            <label for="corso">Corso (ID)</label>
-            <input type="text" id="corso" name="corso" placeholder="ID del corso" required />
-          </div>
+          <!-- Select Corsi -->
+    <div class="form-group required-field">
+      <label for="tesseratiSelect">Tesserato</label>
+      <select id="tesseratiSelect" name="tesserati" class="form-control" required>
+        <option value="">-- Seleziona --</option>
+      </select>
+    </div>
 
           <div class="form-group required-field">
             <label for="importo">Importo (€)</label>

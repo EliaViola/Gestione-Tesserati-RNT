@@ -4,6 +4,48 @@
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Carica i tesserati con tesseramento attivo
+function loadTesserati() {
+  return db.collection("tesserati")
+    .where("tesseramento.stato", "==", "attivo")
+    .orderBy("anagrafica.cognome")
+    .orderBy("anagrafica.nome")
+    .orderBy("corsi")
+    .get()
+    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+}
+
+// Caricamento tesserati
+  try {
+    const tesserati = await loadTesserati();
+    tesseratiSelect.innerHTML = "";
+    tesserati.forEach(t => {
+      const a = t.anagrafica || {};
+      const option = document.createElement("option");
+      option.value = t.id;
+      option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
+      tesseratiSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Errore tesserati:", error);
+    tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+  }
+// Caricamento tesserati.corsi
+  try {
+    const tesserati = await loadTesserati();
+    tesseratiSelect.innerHTML = "";
+    tesserati.forEach(t => {
+      const a = t.corsi || {};
+      const option = document.createElement("option");
+      option.value = t.id;
+      corsiSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Errore tesserati:", error);
+    tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+  }
+
+
 document
   .getElementById("pagamentoForm")
   .addEventListener("submit", async function (e) {
