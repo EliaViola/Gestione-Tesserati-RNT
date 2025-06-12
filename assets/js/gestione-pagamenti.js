@@ -35,52 +35,53 @@ function loadPacchettiPerTesserato(tesseratoId) {
 }
 
 async function caricaStoricoPagamenti(tesseratoId) {
-  const body = document.getElementById("storicoPagamentiBody");
-  if (!body) return;
+  storicoDiv.innerHTML = "<p>Caricamento storico pagamenti...</p>";
 
   try {
-    const pagSnap = await db.collection("pagamenti")
+    const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
+      .orderBy("data", "desc")
       .get();
 
-    if (pagSnap.empty) {
-      body.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
+    if (pagamentiSnapshot.empty) {
+      storicoDiv.innerHTML = "<p>Nessun pagamento registrato.</p>";
       return;
     }
 
-    const pagamenti = [];
-    const corsiSet = new Set();
+    let html = "<ul>";
+    for (const doc of pagamentiSnapshot.docs) {
+      const pagamento = doc.data();
+      const corsoId = pagamento.corsoId;
+      let nomeCorso = corsoId;
 
-    pagSnap.forEach(doc => {
-      const p = doc.data();
-      pagamenti.push(p);
-      if (p.corsoId) corsiSet.add(p.corsoId);
-    });
+      // 🔁 Recupera nome corso da Firestore
+      try {
+        const corsoDoc = await db.collection("corsi").doc(corsoId).get();
+        if (corsoDoc.exists) {
+          const corsoData = corsoDoc.data();
+          nomeCorso = corsoData.tipologia + " - " + corsoData.livello; // o corsoData.nome se esiste
+        }
+      } catch (e) {
+        console.warn("Corso non trovato:", corsoId);
+      }
 
-    pagamenti.sort((a, b) => (b.data?.toDate?.() || 0) - (a.data?.toDate?.() || 0));
-
-    const corsiMap = {};
-    if (corsiSet.size > 0) {
-      const snap = await db.collection("corsi")
-        .where(firebase.firestore.FieldPath.documentId(), "in", Array.from(corsiSet))
-        .get();
-      snap.forEach(doc => corsiMap[doc.id] = doc.data().nome || `Corso ${doc.id}`);
+      const dataPag = pagamento.data.toDate().toLocaleDateString();
+      html += `
+        <li>
+          <strong>Corso:</strong> ${nomeCorso}<br>
+          <strong>Data:</strong> ${dataPag}<br>
+          <strong>Importo:</strong> €${pagamento.importo}<br>
+          <strong>Metodo:</strong> ${pagamento.metodo}<br>
+          <strong>Pacchetti:</strong> ${pagamento.pacchetti.join(", ")}
+        </li><hr>
+      `;
     }
+    html += "</ul>";
+    storicoDiv.innerHTML = html;
 
-    body.innerHTML = "";
-    pagamenti.forEach(p => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${p.data?.toDate()?.toLocaleDateString("it-IT") || "-"}</td>
-        <td>${corsiMap[p.corsoId] || "-"}</td>
-        <td>${(p.importo || 0).toFixed(2)}</td>
-        <td>${p.metodo || "-"}</td>`;
-      body.appendChild(row);
-    });
-
-  } catch (err) {
-    console.error("Errore storico:", err);
-    body.innerHTML = `<tr><td colspan="4">Errore caricamento</td></tr>`;
+  } catch (error) {
+    console.error("Errore nel caricamento storico:", error);
+    storicoDiv.innerHTML = "<p>Errore nel caricamento dei pagamenti.</p>";
   }
 }
 
