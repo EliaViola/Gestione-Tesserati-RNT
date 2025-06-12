@@ -659,3 +659,23 @@ select {
   0% { transform: rotate(0); }
   100% { transform: rotate(360deg); }
 }
+
+/* Stile per storico pagamenti  */
+.storico-container {
+  margin-top: 2rem;
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.storico-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.storico-table th,
+.storico-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}

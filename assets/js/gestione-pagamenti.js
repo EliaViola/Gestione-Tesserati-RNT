@@ -13,16 +13,14 @@ function loadTesserati() {
 async function loadCorsiPerTesserato(tesseratoId) {
   if (!tesseratoId) return [];
 
-  // Recupero il documento tesserato
   const tesseratoDoc = await db.collection("tesserati").doc(tesseratoId).get();
   if (!tesseratoDoc.exists) return [];
 
   const tesseratoData = tesseratoDoc.data();
-  const corsiIds = tesseratoData.corsi || [];  // supponendo sia array di id corsi
+  const corsiIds = tesseratoData.corsi || [];
 
   if (corsiIds.length === 0) return [];
 
-  // Carico i corsi
   const corsiSnapshot = await db.collection("corsi")
     .where(firebase.firestore.FieldPath.documentId(), "in", corsiIds)
     .get();
@@ -49,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Carica tesserati
       const tesserati = await loadTesserati();
       tesseratiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
       tesserati.forEach(t => {
@@ -67,42 +64,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Quando cambia il tesserato selezionato, carico i corsi suoi
+  // Cambio tesserato
   tesseratiSelect.addEventListener("change", async () => {
     const selectedTesseratoId = tesseratiSelect.value;
     corsiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
 
-    if (!selectedTesseratoId) {
-      return; // Se niente selezionato, pulisco
-    }
+    if (!selectedTesseratoId) return;
 
     try {
       const corsi = await loadCorsiPerTesserato(selectedTesseratoId);
       if (corsi.length === 0) {
         corsiSelect.innerHTML = `<option disabled>Nessun corso trovato</option>`;
-        return;
+      } else {
+        corsi.forEach(corso => {
+          const option = document.createElement("option");
+          option.value = corso.id;
+          option.textContent = corso.nome || `Corso ${corso.id}`;
+          corsiSelect.appendChild(option);
+        });
       }
-      corsi.forEach(corso => {
-        const option = document.createElement("option");
-        option.value = corso.id;
-        option.textContent = corso.nome || `Corso ${corso.id}`;
-        corsiSelect.appendChild(option);
-      });
+
+      // Carica storico pagamenti
+      await caricaStoricoPagamenti(selectedTesseratoId);
+
     } catch (error) {
       console.error("Errore nel caricamento corsi:", error);
       corsiSelect.innerHTML = `<option disabled>Errore nel caricamento corsi</option>`;
     }
   });
 
-  // Gestione submit pagamento (opzionale)
-  pagamentoForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    // Logica per salvare il pagamento
-  });
-});
-
-
-  // Gestione invio del pagamento
+  // Invio pagamento
   pagamentoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     feedback.textContent = "";
@@ -130,10 +121,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      // Aggiunta alla raccolta globale "pagamenti"
+      // Salva nella raccolta globale
       const docRef = await db.collection("pagamenti").add(pagamentoData);
 
-      // Salvataggio anche nel profilo del tesserato
+      // Salva anche nel profilo del tesserato
       await db.collection("tesserati").doc(tesseratoId).update({
         [`pagamenti.${corsoId}.${docRef.id}`]: pagamentoData
       });
@@ -142,10 +133,51 @@ document.addEventListener("DOMContentLoaded", () => {
       corsiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
       feedback.textContent = "Pagamento registrato con successo.";
       feedback.classList.add("success");
+
+      // Aggiorna lo storico
+      await caricaStoricoPagamenti(tesseratoId);
+
     } catch (error) {
       console.error("Errore durante la registrazione del pagamento:", error);
       feedback.textContent = "Errore nella registrazione del pagamento.";
       feedback.classList.add("error");
     }
   });
+});
 
+// Funzione storico
+async function caricaStoricoPagamenti(tesseratoId) {
+  const storicoBody = document.getElementById("storicoPagamentiBody");
+  if (!storicoBody || !tesseratoId) {
+    return;
+  }
+
+  try {
+    const pagamentiSnapshot = await db.collection("pagamenti")
+      .where("tesseratoId", "==", tesseratoId)
+      .orderBy("data", "desc")
+      .get();
+
+    if (pagamentiSnapshot.empty) {
+      storicoBody.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
+      return;
+    }
+
+    storicoBody.innerHTML = "";
+    pagamentiSnapshot.forEach(doc => {
+      const p = doc.data();
+      const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${dataStr}</td>
+        <td>${p.corsoId || "-"}</td>
+        <td>${parseFloat(p.importo || 0).toFixed(2)}</td>
+        <td>${p.metodo || "-"}</td>
+      `;
+      storicoBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error("Errore nel caricamento dello storico pagamenti:", error);
+    storicoBody.innerHTML = `<tr><td colspan="4">Errore durante il caricamento</td></tr>`;
+  }
+}
