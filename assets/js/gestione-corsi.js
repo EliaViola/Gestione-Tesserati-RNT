@@ -80,7 +80,6 @@ async function loadAnteprimaIscritti(tipoCorso, livello, orario) {
       .where("tipologia", "==", tipoCorso)
       .where("livello", "==", livello)
       .where("orario", "==", orario)
-      .select("iscritti")
       .get();
     
     return snapshot.docs.flatMap(doc => doc.data().iscritti || []);
@@ -164,6 +163,8 @@ async function handleSubmit(e) {
   const formData = new FormData(form);
   const tesseratoId = formData.get('tesserati');
   const pacchetti = formData.getAll('pacchetti');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
   
   // Validazione
   if (!tesseratoId || pacchetti.length === 0) {
@@ -183,13 +184,9 @@ async function handleSubmit(e) {
   };
   
   try {
-    // Mostra spinner
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
     submitBtn.innerHTML = '<span class="spinner"></span> Salvataggio in corso...';
     submitBtn.disabled = true;
     
-    // Transazione per consistenza dati
     await db.runTransaction(async (transaction) => {
       const corsoRef = db.collection('corsi').doc();
       transaction.set(corsoRef, corsoData);
@@ -200,7 +197,6 @@ async function handleSubmit(e) {
         pacchetti: firebase.firestore.FieldValue.arrayUnion(...pacchetti)
       });
       
-      // Aggiorna i pacchetti
       for (const pacchettoId of pacchetti) {
         const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
         transaction.update(pacchettoRef, {
@@ -212,8 +208,6 @@ async function handleSubmit(e) {
     showFeedback('Corso assegnato con successo!');
     form.reset();
     updateAnteprima();
-    
-    // Invalida cache
     cache.corsi = [];
   } catch (error) {
     console.error('Errore salvataggio:', error);
