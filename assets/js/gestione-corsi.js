@@ -73,57 +73,88 @@ async function loadPacchetti() {
   }
 }
 
-// Carica anteprima iscritti con ottimizzazione
-async function loadAnteprimaIscritti(tipoCorso, livello, orario) {
+// Carica tutti i corsi esistenti
+async function loadAllCorsi() {
+  if (cache.corsi.length > 0) return cache.corsi;
+  
   try {
-    const snapshot = await db.collection("corsi")
-      .where("tipologia", "==", tipoCorso)
-      .where("livello", "==", livello)
-      .where("orario", "==", orario)
-      .get();
-    
-    return snapshot.docs.flatMap(doc => doc.data().iscritti || []);
+    const snapshot = await db.collection("corsi").get();
+    cache.corsi = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return cache.corsi;
   } catch (error) {
-    console.error("Errore caricamento anteprima:", error);
+    console.error("Errore caricamento corsi:", error);
     throw error;
   }
 }
 
-// Aggiorna l'anteprima degli iscritti
+// Nuova funzione per visualizzare l'anteprima raggruppata per orario
 async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
   const livello = document.getElementById('livello').value;
-  const orario = document.getElementById('orario').value;
   
-  if (!tipoCorso || !livello || !orario) {
-    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto per visualizzare gli iscritti</p>';
+  if (!tipoCorso || !livello) {
+    container.innerHTML = '<p class="nessun-risultato">Seleziona tipo corso e livello</p>';
     return;
   }
   
   container.innerHTML = '<div class="spinner"></div>';
   
   try {
-    const iscrittiIds = await loadAnteprimaIscritti(tipoCorso, livello, orario);
+    const allCorsi = await loadAllCorsi();
+    const corsiFiltrati = allCorsi.filter(corso => 
+      corso.tipologia === tipoCorso && corso.livello === livello
+    );
     
-    if (iscrittiIds.length === 0) {
-      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato per questa combinazione</p>';
+    if (corsiFiltrati.length === 0) {
+      container.innerHTML = '<p class="nessun-risultato">Nessun corso trovato per questa combinazione</p>';
       return;
     }
     
-    // Usa la cache per i tesserati
-    const tesserati = cache.tesserati.filter(t => iscrittiIds.includes(t.id));
-    
-    let html = '<div class="anteprima-lista"><h3>Iscritti al corso:</h3><ul>';
-    tesserati.forEach(t => {
-      html += `<li>${t.nomeCompleto} (${t.anagrafica?.codice_fiscale || 'N/D'})</li>`;
+    // Raggruppa per orario
+    const corsiPerOrario = {};
+    corsiFiltrati.forEach(corso => {
+      if (!corsiPerOrario[corso.orario]) {
+        corsiPerOrario[corso.orario] = [];
+      }
+      corsiPerOrario[corso.orario].push(corso);
     });
-    html += '</ul><small>Totale: ' + tesserati.length + ' iscritti</small></div>';
     
+    // Costruisci l'HTML
+    let html = '<div class="anteprima-corsi">';
+    
+    for (const [orario, corsi] of Object.entries(corsiPerOrario)) {
+      html += `<div class="corsi-reparto">
+                <h4>Orario: ${orario}</h4>
+                <table class="tabella-corsi">
+                  <thead>
+                    <tr>
+                      <th>Pacchetto</th>
+                      <th>Tipo</th>
+                      <th>Livello</th>
+                      <th>Iscritti</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+      
+      corsi.forEach(corso => {
+        html += `<tr>
+                  <td>${corso.pacchetti.join(', ')}</td>
+                  <td>${corso.tipologia}</td>
+                  <td>${corso.livello}</td>
+                  <td>${corso.iscritti.length}</td>
+                </tr>`;
+      });
+      
+      html += `</tbody></table></div>`;
+    }
+    
+    html += '</div>';
     container.innerHTML = html;
+    
   } catch (error) {
     console.error("Errore aggiornamento anteprima:", error);
-    container.innerHTML = '<p class="errore">Errore nel caricamento degli iscritti</p>';
+    container.innerHTML = '<p class="errore">Errore nel caricamento dei corsi</p>';
   }
 }
 
@@ -208,7 +239,7 @@ async function handleSubmit(e) {
     showFeedback('Corso assegnato con successo!');
     form.reset();
     updateAnteprima();
-    cache.corsi = [];
+    cache.corsi = []; // Invalida la cache dei corsi
   } catch (error) {
     console.error('Errore salvataggio:', error);
     showFeedback(`Errore durante il salvataggio: ${error.message}`, 'error');
@@ -227,7 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aggiungi event listeners
     document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
     document.getElementById('livello').addEventListener('change', updateAnteprima);
-    document.getElementById('orario').addEventListener('change', updateAnteprima);
+    // Non serve più il listener per l'orario per l'anteprima
+    
     document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
     
     // Imposta l'anno corrente

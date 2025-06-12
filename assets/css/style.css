@@ -767,3 +767,33 @@ select {
 .storico-container::-webkit-scrollbar-thumb:hover {
   background: #95a5a6;
 }
+
+
+/* PAnteprima per i corsi */
+.anteprima-corsi {
+  margin-top: 1rem;
+}
+
+.corsi-reparto {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tabella-corsi {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.tabella-corsi th, .tabella-corsi td {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.tabella-corsi th {
+  background-color: #f5f5f5;
+}
