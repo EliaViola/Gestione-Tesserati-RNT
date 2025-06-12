@@ -1,109 +1,110 @@
-// Assicurati che nel tuo HTML siano già stati caricati questi script Firebase:
-// firebase-app.js, firebase-firestore.js (tutti dalla compat)
-
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Carica i tesserati con tesseramento attivo
-function loadTesserati() {
-  return db.collection("tesserati")
+const tesseratiSelect = document.getElementById("tesserato");
+const corsiSelect = document.getElementById("corso");
+
+// Carica tesserati attivi con corsi
+async function loadTesserati() {
+  const snapshot = await db
+    .collection("tesserati")
     .where("tesseramento.stato", "==", "attivo")
-    .orderBy("anagrafica.cognome")
-    .orderBy("anagrafica.nome")
-    .orderBy("corsi")
-    .get()
-    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    .get();
+
+  const tesserati = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(t => Array.isArray(t.corsi) && t.corsi.length > 0);
+
+  tesseratiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
+  tesserati.forEach(t => {
+    const a = t.anagrafica || {};
+    const option = document.createElement("option");
+    option.value = t.id;
+    option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
+    tesseratiSelect.appendChild(option);
+  });
 }
 
-// Caricamento tesserati
-  try {
-    const tesserati = await loadTesserati();
-    tesseratiSelect.innerHTML = "";
-    tesserati.forEach(t => {
-      const a = t.anagrafica || {};
-      const option = document.createElement("option");
-      option.value = t.id;
-      option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
-      tesseratiSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Errore tesserati:", error);
-    tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+// Carica corsi del tesserato selezionato
+async function loadCorsiForTesserato(tesseratoId) {
+  corsiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
+
+  const doc = await db.collection("tesserati").doc(tesseratoId).get();
+  const tesserato = doc.data();
+
+  if (!tesserato || !Array.isArray(tesserato.corsi)) return;
+
+  for (const corso of tesserato.corsi) {
+    const option = document.createElement("option");
+    option.value = corso.corsoId || ""; // assicurati che 'corsoId' venga salvato nel profilo
+    option.textContent = `${corso.tipologia} - ${corso.livello} - ${corso.orario}`;
+    corsiSelect.appendChild(option);
   }
-// Caricamento tesserati.corsi
-  try {
-    const tesserati = await loadTesserati();
-    tesseratiSelect.innerHTML = "";
-    tesserati.forEach(t => {
-      const a = t.corsi || {};
-      const option = document.createElement("option");
-      option.value = t.id;
-      corsiSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Errore tesserati:", error);
-    tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+}
+
+// Event: cambio tesserato -> carica corsi
+tesseratiSelect.addEventListener("change", (e) => {
+  const selectedId = e.target.value;
+  if (selectedId) {
+    loadCorsiForTesserato(selectedId);
+  } else {
+    corsiSelect.innerHTML = `<option value="">-- Seleziona un tesserato prima --</option>`;
+  }
+});
+
+// Invia pagamento
+document.getElementById("pagamentoForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const tesseratoId = tesseratiSelect.value;
+  const corsoId = corsiSelect.value;
+  const importo = parseFloat(document.getElementById("importo").value);
+  const metodo = document.getElementById("metodo").value;
+  const dataPagamento = document.getElementById("data").value;
+
+  if (!tesseratoId || !corsoId || isNaN(importo) || !metodo || !dataPagamento) {
+    alert("Per favore, compila tutti i campi.");
+    return;
   }
 
+  try {
+    const tesseratoSnap = await db.collection("tesserati").doc(tesseratoId).get();
+    const corsoSnap = await db.collection("corsi").doc(corsoId).get();
 
-document
-  .getElementById("pagamentoForm")
-  .addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const tesseratoId = document.getElementById("tesserato").value;
-    const corsoId = document.getElementById("corso").value;
-    const importo = parseFloat(document.getElementById("importo").value);
-    const metodo = document.getElementById("metodo").value;
-    const dataPagamento = document.getElementById("data").value;
-
-    if (!tesseratoId || !corsoId || isNaN(importo) || !metodo || !dataPagamento) {
-      alert("Per favore, compila tutti i campi.");
+    if (!tesseratoSnap.exists || !corsoSnap.exists) {
+      alert("Errore nel recupero dati tesserato o corso.");
       return;
     }
 
-    try {
-      const tesseratoRef = db.collection("tesserati").doc(tesseratoId);
-      const corsoRef = db.collection("corsi").doc(corsoId);
+    const tesseratoData = tesseratoSnap.data();
+    const corsoData = corsoSnap.data();
 
-      const tesseratoSnap = await tesseratoRef.get();
-      const corsoSnap = await corsoRef.get();
+    const pagamentoData = {
+      tesseratoId,
+      nomeTesserato: `${tesseratoData.anagrafica?.nome || ''} ${tesseratoData.anagrafica?.cognome || ''}`,
+      corsoId,
+      descrizioneCorso: `${corsoData.tipologia} - ${corsoData.livello} - ${corsoData.orario}`,
+      importo,
+      metodo,
+      data: firebase.firestore.Timestamp.fromDate(new Date(dataPagamento))
+    };
 
-      if (!tesseratoSnap.exists) {
-        alert("Tesserato non trovato.");
-        return;
-      }
+    // Salva nella raccolta globale 'pagamenti'
+    await db.collection("pagamenti").add(pagamentoData);
 
-      if (!corsoSnap.exists) {
-        alert("Corso non trovato.");
-        return;
-      }
+    // Aggiungi al profilo del tesserato
+    await db.collection("tesserati").doc(tesseratoId).update({
+      pagamenti: firebase.firestore.FieldValue.arrayUnion(pagamentoData)
+    });
 
-      const tesseratoData = tesseratoSnap.data();
-      const corsoData = corsoSnap.data();
+    alert("Pagamento registrato con successo.");
+    document.getElementById("pagamentoForm").reset();
+    corsiSelect.innerHTML = `<option value="">-- Seleziona un tesserato --</option>`;
+  } catch (error) {
+    console.error("Errore durante il salvataggio:", error);
+    alert("Errore durante il salvataggio del pagamento.");
+  }
+});
 
-      const pagamentoData = {
-        tesseratoId,
-        nomeTesserato: tesseratoData.nome + " " + tesseratoData.cognome,
-        corsoId,
-        descrizioneCorso: `${corsoData.tipologia} - ${corsoData.livello} - ${corsoData.orario}`,
-        importo,
-        metodo,
-        data: firebase.firestore.Timestamp.fromDate(new Date(dataPagamento))
-      };
-
-      // Salva nella raccolta globale 'pagamenti'
-      await db.collection("pagamenti").add(pagamentoData);
-
-      // Aggiungi al documento del tesserato
-      await tesseratoRef.update({
-        pagamenti: firebase.firestore.FieldValue.arrayUnion(pagamentoData)
-      });
-
-      alert("Pagamento registrato con successo.");
-      document.getElementById("pagamentoForm").reset();
-    } catch (error) {
-      console.error("Errore durante il salvataggio:", error);
-      alert("Errore durante il salvataggio del pagamento.");
-    }
-  });
+// Avvia caricamento tesserati al load
+window.addEventListener("DOMContentLoaded", loadTesserati);

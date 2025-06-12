@@ -15,7 +15,7 @@
   <script src="../assets/js/firebase-config.js"></script>
 
   <!-- Script gestione pagamenti -->
-  <script src="../assets/js/gestione-pagamenti.js"></script>
+  <script defer src="../assets/js/gestione-pagamenti.js"></script>
 </head>
 <body>
   <header>
@@ -39,30 +39,30 @@
       <h1 class="form-title" id="formTitle">Registrazione Pagamento</h1>
 
       <form id="pagamentoForm" aria-labelledby="formTitle" novalidate>
-        
+        <div class="form-grid">
+          <!-- Select TESSERATI -->
+          <div class="form-group required-field">
+            <label for="tesseratiSelect">Tesserato</label>
+            <select id="tesseratiSelect" name="tesserati" class="form-control" required>
+              <option value="">-- Seleziona --</option>
+            </select>
+          </div>
 
-          <div class="form-grid">
-    <!-- Select TESSERATI -->
-    <div class="form-group required-field">
-      <label for="tesseratiSelect">Tesserato</label>
-      <select id="tesseratiSelect" name="tesserati" class="form-control" required>
-        <option value="">-- Seleziona --</option>
-      </select>
-    </div>
+          <!-- Select CORSI -->
+          <div class="form-group required-field">
+            <label for="corsiSelect">Corso associato</label>
+            <select id="corsiSelect" name="corso" class="form-control" required>
+              <option value="">-- Seleziona un tesserato --</option>
+            </select>
+          </div>
 
-          <!-- Select Corsi -->
-    <div class="form-group required-field">
-      <label for="tesseratiSelect">Tesserato</label>
-      <select id="tesseratiSelect" name="tesserati" class="form-control" required>
-        <option value="">-- Seleziona --</option>
-      </select>
-    </div>
-
+          <!-- Importo -->
           <div class="form-group required-field">
             <label for="importo">Importo (€)</label>
             <input type="number" id="importo" name="importo" placeholder="Es: 50" step="0.01" min="0" required />
           </div>
 
+          <!-- Metodo -->
           <div class="form-group required-field">
             <label for="metodo">Metodo di pagamento</label>
             <select id="metodo" name="metodo" required>
@@ -73,11 +73,11 @@
             </select>
           </div>
 
+          <!-- Data -->
           <div class="form-group required-field">
             <label for="data">Data del pagamento</label>
             <input type="date" id="data" name="data" required />
           </div>
-
         </div>
 
         <div class="form-actions">
@@ -97,7 +97,6 @@
   </footer>
 
   <script>
-    // Aggiorna anno nel footer
     document.getElementById('currentYear').textContent = new Date().getFullYear();
   </script>
 </body>
