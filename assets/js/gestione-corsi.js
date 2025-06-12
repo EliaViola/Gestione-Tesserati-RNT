@@ -205,62 +205,62 @@ async function handleSubmit(e) {
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  
+
   // Prepara i dati
   const corsoData = {
     tipologia: formData.get('tipo_corso'),
     livello: formData.get('livello'),
     orario: formData.get('orario'),
-    istruttore: formData.get('istruttore') || '',
     pacchetti: Array.from(formData.getAll('pacchetti')),
     iscritti: [formData.get('tesserato')],
     note: formData.get('note') || '',
     creato_il: firebase.firestore.FieldValue.serverTimestamp(),
     creato_da: auth.currentUser?.uid || 'anonimo'
   };
-  
-  // Validazione
-  if (!corsoData.iscritti[0] || corsoData.pacchetti.length === 0) {
-    showFeedback('Seleziona un tesserato e almeno un pacchetto', 'error');
-    return;
-  }
-  
+
   try {
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio in corso...';
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
+
+    // Verifica che l'utente sia autenticato e abbia il ruolo
+    const user = auth.currentUser;
+    if (!user) throw new Error("Utente non autenticato");
     
-    // Usa una transazione per garantire consistenza
-    await db.runTransaction(async (transaction) => {
-      const corsoRef = db.collection('corsi').doc();
-      transaction.set(corsoRef, corsoData);
-      
-      // Aggiorna il tesserato
-      const tesseratoRef = db.collection('tesserati').doc(corsoData.iscritti[0]);
-      transaction.update(tesseratoRef, {
-        corsi: firebase.firestore.FieldValue.arrayUnion(corsoRef.id),
-        pacchetti: firebase.firestore.FieldValue.arrayUnion(...corsoData.pacchetti)
-      });
-      
-      // Aggiorna i pacchetti
-      for (const pacchettoId of corsoData.pacchetti) {
-        const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
-        transaction.update(pacchettoRef, {
-          assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
-        });
-      }
+    // Ottieni il token per verificare i ruoli
+    const idToken = await user.getIdTokenResult();
+    if (!idToken.claims.secretary && !idToken.claims.director) {
+      throw new Error("Permessi insufficienti");
+    }
+
+    // Salva il corso
+    const corsoRef = await db.collection('corsi').add(corsoData);
+    
+    // Aggiorna il tesserato
+    await db.collection('tesserati').doc(corsoData.iscritti[0]).update({
+      corsi: firebase.firestore.FieldValue.arrayUnion(corsoRef.id),
+      pacchetti: firebase.firestore.FieldValue.arrayUnion(...corsoData.pacchetti)
     });
-    
+
+    // Aggiorna i pacchetti
+    const batch = db.batch();
+    corsoData.pacchetti.forEach(pacchettoId => {
+      const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
+      batch.update(pacchettoRef, {
+        assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
+      });
+    });
+    await batch.commit();
+
     showFeedback('Corso assegnato con successo!');
     form.reset();
     updateAnteprima();
-    cache.corsi = []; // Invalida cache
     
   } catch (error) {
     console.error('Errore salvataggio:', error);
-    showFeedback(`Errore durante il salvataggio: ${error.message}`, 'error');
+    showFeedback(`Errore: ${error.message}`, 'error');
   } finally {
-    submitBtn.textContent = originalText;
     submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
   }
 }
 
