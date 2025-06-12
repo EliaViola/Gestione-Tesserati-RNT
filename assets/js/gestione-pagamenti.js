@@ -1,7 +1,7 @@
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Carica tutti i tesserati con tesseramento attivo
+// Funzione per caricare tesserati con tesseramento attivo
 function loadTesserati() {
   return db.collection("tesserati")
     .where("tesseramento.stato", "==", "attivo")
@@ -11,57 +11,40 @@ function loadTesserati() {
     .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 }
 
-// Carica i corsi a cui partecipa il tesserato selezionato
-function loadCorsiPerTesserato(tesseratoId) {
-  return db.collection("corsi")
-    .where("partecipanti", "array-contains", tesseratoId)
-    .get()
-    .then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const tesseratiSelect = document.getElementById("tesseratiSelect");
-  const corsiSelect = document.getElementById("corsiSelect");
-  const pagamentoForm = document.getElementById("pagamentoForm");
   const feedback = document.getElementById("feedback");
+  const pagamentoForm = document.getElementById("pagamentoForm");
 
-  // Caricamento tesserati nel menu a discesa
-  try {
-    const tesserati = await loadTesserati();
-    tesserati.forEach(t => {
-      const a = t.anagrafica || {};
-      const option = document.createElement("option");
-      option.value = t.id;
-      option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
-      tesseratiSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Errore nel caricamento dei tesserati:", error);
-    tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+  if (!tesseratiSelect || !feedback || !pagamentoForm) {
+    console.error("Elementi HTML mancanti.");
+    return;
   }
 
-  // Quando selezioni un tesserato, carica i corsi a cui partecipa
-  tesseratiSelect.addEventListener("change", async () => {
-    const tesseratoId = tesseratiSelect.value;
-    corsiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
+  // Attende autenticazione utente
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      feedback.textContent = "Errore: utente non autenticato. Effettua il login.";
+      tesseratiSelect.innerHTML = `<option disabled>Accesso non autorizzato</option>`;
+      return;
+    }
 
-    if (!tesseratoId) return;
-
+    // Utente autenticato, carica tesserati
     try {
-      const corsi = await loadCorsiPerTesserato(tesseratoId);
-      if (corsi.length === 0) {
-        corsiSelect.innerHTML = `<option disabled>Nessun corso trovato</option>`;
-      } else {
-        corsi.forEach(c => {
-          const option = document.createElement("option");
-          option.value = c.id;
-          option.textContent = `${c.tipologia || 'Corso'} - ${c.livello || 'Livello'} (${c.orario || ''})`;
-          corsiSelect.appendChild(option);
-        });
-      }
+      const tesserati = await loadTesserati();
+      tesseratiSelect.innerHTML = `<option value="">-- Seleziona --</option>`;
+      tesserati.forEach(t => {
+        const a = t.anagrafica || {};
+        const option = document.createElement("option");
+        option.value = t.id;
+        option.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`;
+        tesseratiSelect.appendChild(option);
+      });
+      feedback.textContent = "";
     } catch (error) {
-      console.error("Errore nel caricamento corsi:", error);
-      corsiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
+      console.error("Errore nel caricamento tesserati:", error);
+      feedback.textContent = "Errore nel caricamento tesserati. Riprova più tardi.";
+      tesseratiSelect.innerHTML = `<option disabled>Errore nel caricamento</option>`;
     }
   });
 
