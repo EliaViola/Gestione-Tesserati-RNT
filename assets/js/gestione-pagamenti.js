@@ -147,71 +147,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Funzione storico
 async function caricaStoricoPagamenti(tesseratoId) {
-  const storicoBody = document.getElementById("storicoPagamentiBody");
-  if (!storicoBody || !tesseratoId) return;
+  const storicoContainer = document.getElementById("storico-pagamenti");
+  storicoContainer.innerHTML = "";
 
   try {
     const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
-      // .orderBy("data", "desc") // RIMOSSO per evitare necessità indice
       .get();
 
-    if (pagamentiSnapshot.empty) {
-      storicoBody.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
-      return;
-    }
-
     const pagamenti = [];
-    const corsoIdsSet = new Set();
 
-    pagamentiSnapshot.forEach(doc => {
-      const p = doc.data();
-      pagamenti.push(p);
-      if (p.corsoId) corsoIdsSet.add(p.corsoId);
-    });
+    for (const doc of pagamentiSnapshot.docs) {
+      const pagamento = doc.data();
+      pagamento.id = doc.id;
 
-    // Ordino in JS dal più recente al più vecchio
-    pagamenti.sort((a, b) => {
-      const dateA = a.data?.toDate?.() || new Date(0);
-      const dateB = b.data?.toDate?.() || new Date(0);
-      return dateB - dateA;
-    });
+      // Recupera nome del corso
+      let nomeCorso = "Corso non trovato";
+      if (pagamento.corsoId) {
+        try {
+          const corsoDoc = await db.collection("corsi").doc(pagamento.corsoId).get();
+          if (corsoDoc.exists) {
+            const corsoData = corsoDoc.data();
+            nomeCorso = corsoData.tipologia + " " + corsoData.livello;
+          }
+        } catch (err) {
+          console.error("Errore nel recupero del corso:", err);
+        }
+      }
 
-    // Recupero i nomi dei corsi
-    const corsoIds = Array.from(corsoIdsSet);
-    const corsiMap = {};
-    if (corsoIds.length > 0) {
-      const corsiSnapshot = await db.collection("corsi")
-        .where(firebase.firestore.FieldPath.documentId(), "in", corsoIds)
-        .get();
-
-      corsiSnapshot.forEach(doc => {
-        corsiMap[doc.id] = doc.data().nome || `Corso ${doc.id}`;
+      pagamenti.push({
+        ...pagamento,
+        nomeCorso,
       });
     }
 
-    // Aggiorno la tabella storico
-    storicoBody.innerHTML = "";
-    pagamenti.forEach(p => {
-      const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
-      const nomeCorso = corsiMap[p.corsoId] || p.corsoId || "-";
-      const importoStr = parseFloat(p.importo || 0).toFixed(2);
-      const metodo = p.metodo || "-";
+    // Ordina per data decrescente
+    pagamenti.sort((a, b) => b.data.toDate() - a.data.toDate());
 
-      const row = document.createElement("tr");
+    for (const pagamento of pagamenti) {
+      const data = pagamento.data.toDate().toLocaleDateString();
+      const importo = pagamento.importo.toFixed(2);
+      const metodo = pagamento.metodo;
+      const nomeCorso = pagamento.nomeCorso;
+
+      const row = document.createElement("div");
+      row.classList.add("pagamento-row");
       row.innerHTML = `
-        <td>${dataStr}</td>
-        <td>${nomeCorso}</td>
-        <td>${importoStr}</td>
-        <td>${metodo}</td>
+        <div>${data}</div>
+        <div>${nomeCorso}</div>
+        <div>${importo} €</div>
+        <div>${metodo}</div>
       `;
-      storicoBody.appendChild(row);
-    });
-
+      storicoContainer.appendChild(row);
+    }
   } catch (error) {
     console.error("Errore nel caricamento dello storico pagamenti:", error);
-    storicoBody.innerHTML = `<tr><td colspan="4">Errore durante il caricamento</td></tr>`;
   }
 }
+
 
 
