@@ -153,11 +153,8 @@ async function caricaStoricoPagamenti(tesseratoId) {
   try {
     const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
-      .orderBy("data", "desc")
+      // .orderBy("data", "desc") // RIMOSSO per evitare necessità indice
       .get();
-
-    console.log("Query eseguita per tesseratoId:", tesseratoId);
-    console.log("Pagamenti trovati:", pagamentiSnapshot.size);
 
     if (pagamentiSnapshot.empty) {
       storicoBody.innerHTML = `<tr><td colspan="4">Nessun pagamento registrato</td></tr>`;
@@ -173,10 +170,16 @@ async function caricaStoricoPagamenti(tesseratoId) {
       if (p.corsoId) corsoIdsSet.add(p.corsoId);
     });
 
+    // Ordino in JS dal più recente al più vecchio
+    pagamenti.sort((a, b) => {
+      const dateA = a.data?.toDate?.() || new Date(0);
+      const dateB = b.data?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+
     // Recupero i nomi dei corsi
     const corsoIds = Array.from(corsoIdsSet);
     const corsiMap = {};
-
     if (corsoIds.length > 0) {
       const corsiSnapshot = await db.collection("corsi")
         .where(firebase.firestore.FieldPath.documentId(), "in", corsoIds)
@@ -187,16 +190,20 @@ async function caricaStoricoPagamenti(tesseratoId) {
       });
     }
 
+    // Aggiorno la tabella storico
     storicoBody.innerHTML = "";
     pagamenti.forEach(p => {
       const dataStr = p.data?.toDate().toLocaleDateString("it-IT") || "-";
       const nomeCorso = corsiMap[p.corsoId] || p.corsoId || "-";
+      const importoStr = parseFloat(p.importo || 0).toFixed(2);
+      const metodo = p.metodo || "-";
+
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${dataStr}</td>
         <td>${nomeCorso}</td>
-        <td>${parseFloat(p.importo || 0).toFixed(2)}</td>
-        <td>${p.metodo || "-"}</td>
+        <td>${importoStr}</td>
+        <td>${metodo}</td>
       `;
       storicoBody.appendChild(row);
     });
