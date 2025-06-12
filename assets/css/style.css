@@ -797,3 +797,7 @@ select {
 .tabella-corsi th {
   background-color: #f5f5f5;
 }
+
+.tabella-corsi tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
