@@ -1,255 +1,231 @@
+// dettaglio-tesserato.js - Gestione dettaglio e modifica tesserato
+
+// Definizioni globali
+window.salvaModificheTesserato = function() {};
+window.annullaModifiche = function() {};
+
 document.addEventListener('DOMContentLoaded', function() {
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-    const urlParams = new URLSearchParams(window.location.search);
-    const tesseratoId = urlParams.get('id');
-    
-    if (!tesseratoId) {
-        alert('Nessun tesserato selezionato!');
-        window.location.href = 'ricerca-dati.html';
-        return;
-    }
-
-    // Carica i dati del tesserato
-    async function caricaTesserato() {
-        try {
-            const doc = await db.collection("tesserati").doc(tesseratoId).get();
-            if (!doc.exists) {
-                throw new Error("Tesserato non trovato");
-            }
-            
-            const tesserato = doc.data();
-            mostraDatiAnagrafici(tesserato);
-            caricaStoricoCorsi();
-            caricaStoricoPagamenti();
-            caricaDocumenti();
-            
-        } catch (error) {
-            console.error("Errore caricamento tesserato:", error);
-            alert("Errore durante il caricamento del tesserato: " + error.message);
-            window.location.href = 'ricerca-dati.html';
+    try {
+        // Inizializza Firebase
+        if (typeof firebase === 'undefined') {
+            throw new Error('Firebase non è stato caricato correttamente');
         }
-    }
-
-    // Mostra i dati anagrafici
-    function mostraDatiAnagrafici(tesserato) {
-        const anagrafica = tesserato.anagrafica || {};
-        const contatti = tesserato.contatti || {};
-        const tesseramento = tesserato.tesseramento || {};
         
-        document.getElementById('anagraficaInfo').innerHTML = `
-            <div class="info-row">
-                <span class="info-label">Nome:</span>
-                <span class="info-value">${anagrafica.nome || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Cognome:</span>
-                <span class="info-value">${anagrafica.cognome || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Codice Fiscale:</span>
-                <span class="info-value">${anagrafica.codice_fiscale || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Data Nascita:</span>
-                <span class="info-value">${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Indirizzo:</span>
-                <span class="info-value">${anagrafica.indirizzo || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Telefono:</span>
-                <span class="info-value">${contatti.telefono || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Email:</span>
-                <span class="info-value">${contatti.email || 'N/D'}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Stato Tesseramento:</span>
-                <span class="info-value ${tesseramento.stato === 'attivo' ? 'status-active' : 'status-inactive'}">
-                    ${tesseramento.stato || 'N/D'}
-                </span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Scadenza Certificato:</span>
-                <span class="info-value">${tesseramento.scadenza_certificato ? new Date(tesseramento.scadenza_certificato).toLocaleDateString('it-IT') : 'N/D'}</span>
-            </div>
-        `;
-    }
-
-    // Carica lo storico corsi
-    async function caricaStoricoCorsi() {
-        try {
-            const snapshot = await db.collection("corsi")
-                .where("iscritti", "array-contains", tesseratoId)
-                .orderBy("timestamp", "desc")
-                .get();
-                
-            const storicoCorsi = document.getElementById('storicoCorsi');
-            storicoCorsi.innerHTML = '';
-            
-            if (snapshot.empty) {
-                storicoCorsi.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="nessun-risultato">
-                            Nessun corso trovato
-                        </td>
-                    </tr>`;
-                return;
-            }
-            
-            snapshot.forEach(doc => {
-                const corso = doc.data();
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${getCorsoName(corso.tipologia)}</td>
-                    <td>${corso.livello || 'N/D'}</td>
-                    <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
-                    <td>${corso.orario || 'N/D'}</td>
-                    <td>${corso.stagione || 'N/D'}</td>
-                    <td><span class="status-badge ${corso.stato || 'inattivo'}">${corso.stato || 'N/D'}</span></td>
-                `;
-                storicoCorsi.appendChild(row);
-            });
-            
-        } catch (error) {
-            console.error("Errore caricamento corsi:", error);
-            document.getElementById('storicoCorsi').innerHTML = `
-                <tr>
-                    <td colspan="6" class="errore-caricamento">
-                        Errore nel caricamento dei corsi
-                    </td>
-                </tr>`;
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementi UI
+        const formTesserato = document.getElementById('form-tesserato');
+        const btnSalva = document.getElementById('btn-salva');
+        const btnAnnulla = document.getElementById('btn-annulla');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const feedbackMsg = document.getElementById('feedback-msg');
+        
+        // Ottieni ID tesserato dall'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tesseratoId = urlParams.get('id');
+        
+        if (!tesseratoId) {
+            throw new Error('ID tesserato non specificato');
         }
-    }
-
-    // Carica lo storico pagamenti
-    async function caricaStoricoPagamenti() {
-        try {
-            const snapshot = await db.collection("pagamenti")
-                .where("tesseratoId", "==", tesseratoId)
-                .orderBy("data", "desc")
-                .get();
+        
+        // Carica i dati del tesserato
+        async function caricaDatiTesserato() {
+            try {
+                showLoading(true);
                 
-            const storicoPagamenti = document.getElementById('storicoPagamenti');
-            storicoPagamenti.innerHTML = '';
-            
-            if (snapshot.empty) {
-                storicoPagamenti.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="nessun-risultato">
-                            Nessun pagamento trovato
-                        </td>
-                    </tr>`;
-                return;
-            }
-            
-            snapshot.forEach(doc => {
-                const pagamento = doc.data();
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${pagamento.data ? new Date(pagamento.data).toLocaleDateString('it-IT') : 'N/D'}</td>
-                    <td>${pagamento.importo ? '€' + pagamento.importo.toFixed(2) : 'N/D'}</td>
-                    <td>${pagamento.metodo || 'N/D'}</td>
-                    <td>${pagamento.fattura ? `<a href="${pagamento.fattura}" target="_blank">Visualizza</a>` : 'N/D'}</td>
-                    <td><span class="status-badge ${pagamento.stato || 'pending'}">${pagamento.stato || 'N/D'}</span></td>
-                `;
-                storicoPagamenti.appendChild(row);
-            });
-            
-        } catch (error) {
-            console.error("Errore caricamento pagamenti:", error);
-            document.getElementById('storicoPagamenti').innerHTML = `
-                <tr>
-                    <td colspan="5" class="errore-caricamento">
-                        Errore nel caricamento dei pagamenti
-                    </td>
-                </tr>`;
-        }
-    }
-
-    // Carica i documenti
-    async function caricaDocumenti() {
-        try {
-            const snapshot = await db.collection("documenti")
-                .where("tesseratoId", "==", tesseratoId)
-                .orderBy("dataUpload", "desc")
-                .get();
+                const doc = await db.collection("tesserati").doc(tesseratoId).get();
                 
-            const documentiContainer = document.getElementById('documentiTesserato');
-            documentiContainer.innerHTML = '';
-            
-            if (snapshot.empty) {
-                documentiContainer.innerHTML = `
-                    <div class="nessun-documento">
-                        Nessun documento caricato
-                    </div>`;
-                return;
+                if (!doc.exists) {
+                    throw new Error('Tesserato non trovato');
+                }
+                
+                const tesserato = doc.data();
+                popolaForm(tesserato);
+                showLoading(false);
+                
+            } catch (error) {
+                console.error("Errore caricamento tesserato:", error);
+                showFeedback("Errore nel caricamento del tesserato", 'error');
+                throw error;
             }
-            
-            snapshot.forEach(doc => {
-                const documento = doc.data();
-                const docElement = document.createElement('div');
-                docElement.className = 'documento-card';
-                docElement.innerHTML = `
-                    <div class="documento-icon">
-                        <i class="fas fa-file-pdf"></i>
-                    </div>
-                    <div class="documento-info">
-                        <h3>${documento.nome || 'Documento'}</h3>
-                        <p>Caricato il: ${documento.dataUpload ? new Date(documento.dataUpload).toLocaleDateString('it-IT') : 'N/D'}</p>
-                        <a href="${documento.url}" target="_blank" class="btn btn-small">
-                            <i class="fas fa-download"></i> Scarica
-                        </a>
-                    </div>
-                `;
-                documentiContainer.appendChild(docElement);
-            });
-            
-        } catch (error) {
-            console.error("Errore caricamento documenti:", error);
-            document.getElementById('documentiTesserato').innerHTML = `
-                <div class="errore-caricamento">
-                    Errore nel caricamento dei documenti
-                </div>`;
         }
+        
+        // Popola il form con i dati del tesserato
+        function popolaForm(tesserato) {
+            // Sezione Anagrafica
+            const anagrafica = tesserato.anagrafica || {};
+            document.getElementById('nome').value = anagrafica.nome || '';
+            document.getElementById('cognome').value = anagrafica.cognome || '';
+            document.getElementById('codice-fiscale').value = anagrafica.codice_fiscale || '';
+            document.getElementById('data-nascita').value = anagrafica.data_nascita || '';
+            document.getElementById('luogo-nascita').value = anagrafica.luogo_nascita || '';
+            document.getElementById('sesso').value = anagrafica.sesso || '';
+            document.getElementById('nazionalita').value = anagrafica.nazionalita || '';
+            
+            // Sezione Contatti
+            const contatti = tesserato.contatti || {};
+            document.getElementById('indirizzo').value = contatti.indirizzo || '';
+            document.getElementById('citta').value = contatti.citta || '';
+            document.getElementById('provincia').value = contatti.provincia || '';
+            document.getElementById('cap').value = contatti.cap || '';
+            document.getElementById('telefono').value = contatti.telefono || '';
+            document.getElementById('email').value = contatti.email || '';
+            
+            // Sezione Documenti
+            const documenti = tesserato.documenti || {};
+            document.getElementById('tipo-documento').value = documenti.tipo || '';
+            document.getElementById('numero-documento').value = documenti.numero || '';
+            document.getElementById('rilasciato-da').value = documenti.rilasciato_da || '';
+            document.getElementById('data-rilascio').value = documenti.data_rilascio || '';
+            document.getElementById('data-scadenza').value = documenti.data_scadenza || '';
+            
+            // Sezione Tesseramento
+            const tesseramento = tesserato.tesseramento || {};
+            document.getElementById('data-tesseramento').value = tesseramento.data || '';
+            document.getElementById('tipo-tessera').value = tesseramento.tipo || '';
+            document.getElementById('numero-tessera').value = tesseramento.numero || '';
+            document.getElementById('stato-tessera').value = tesseramento.stato || '';
+            
+            // Sezione Medica
+            const medica = tesserato.medica || {};
+            document.getElementById('certificato-medico').value = medica.certificato || '';
+            document.getElementById('data-certificato').value = medica.data_certificato || '';
+            document.getElementById('scadenza-certificato').value = medica.scadenza_certificato || '';
+            document.getElementById('note-mediche').value = medica.note || '';
+            
+            // Sezione Pagamenti
+            const pagamenti = tesserato.pagamenti || {};
+            document.getElementById('quota-iscrizione').value = pagamenti.quota_iscrizione || '';
+            document.getElementById('data-pagamento').value = pagamenti.data_pagamento || '';
+            document.getElementById('metodo-pagamento').value = pagamenti.metodo || '';
+            document.getElementById('stato-pagamento').value = pagamenti.stato || '';
+            document.getElementById('note-pagamenti').value = pagamenti.note || '';
+        }
+        
+        // Salva le modifiche al tesserato
+        async function salvaModificheTesserato() {
+            try {
+                if (!formTesserato.checkValidity()) {
+                    formTesserato.reportValidity();
+                    return;
+                }
+                
+                showLoading(true);
+                
+                // Prepara l'oggetto tesserato con i dati del form
+                const tesserato = {
+                    anagrafica: {
+                        nome: document.getElementById('nome').value.trim(),
+                        cognome: document.getElementById('cognome').value.trim(),
+                        codice_fiscale: document.getElementById('codice-fiscale').value.trim().toUpperCase(),
+                        data_nascita: document.getElementById('data-nascita').value,
+                        luogo_nascita: document.getElementById('luogo-nascita').value.trim(),
+                        sesso: document.getElementById('sesso').value,
+                        nazionalita: document.getElementById('nazionalita').value.trim()
+                    },
+                    contatti: {
+                        indirizzo: document.getElementById('indirizzo').value.trim(),
+                        citta: document.getElementById('citta').value.trim(),
+                        provincia: document.getElementById('provincia').value.trim().toUpperCase(),
+                        cap: document.getElementById('cap').value.trim(),
+                        telefono: document.getElementById('telefono').value.trim(),
+                        email: document.getElementById('email').value.trim().toLowerCase()
+                    },
+                    documenti: {
+                        tipo: document.getElementById('tipo-documento').value,
+                        numero: document.getElementById('numero-documento').value.trim().toUpperCase(),
+                        rilasciato_da: document.getElementById('rilasciato-da').value.trim(),
+                        data_rilascio: document.getElementById('data-rilascio').value,
+                        data_scadenza: document.getElementById('data-scadenza').value
+                    },
+                    tesseramento: {
+                        data: document.getElementById('data-tesseramento').value,
+                        tipo: document.getElementById('tipo-tessera').value,
+                        numero: document.getElementById('numero-tessera').value.trim(),
+                        stato: document.getElementById('stato-tessera').value
+                    },
+                    medica: {
+                        certificato: document.getElementById('certificato-medico').value,
+                        data_certificato: document.getElementById('data-certificato').value,
+                        scadenza_certificato: document.getElementById('scadenza-certificato').value,
+                        note: document.getElementById('note-mediche').value.trim()
+                    },
+                    pagamenti: {
+                        quota_iscrizione: document.getElementById('quota-iscrizione').value,
+                        data_pagamento: document.getElementById('data-pagamento').value,
+                        metodo: document.getElementById('metodo-pagamento').value,
+                        stato: document.getElementById('stato-pagamento').value,
+                        note: document.getElementById('note-pagamenti').value.trim()
+                    },
+                    ultimaModifica: new Date(),
+                    modificatoDa: auth.currentUser?.email || 'admin'
+                };
+                
+                // Salva su Firestore
+                await db.collection("tesserati").doc(tesseratoId).set(tesserato, { merge: true });
+                
+                showFeedback("Modifiche salvate con successo!", 'success');
+                showLoading(false);
+                
+                // Torna alla pagina di ricerca dopo 2 secondi
+                setTimeout(() => {
+                    window.location.href = 'ricerca.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error("Errore durante il salvataggio:", error);
+                showFeedback("Errore durante il salvataggio delle modifiche", 'error');
+                showLoading(false);
+            }
+        }
+        
+        // Annulla le modifiche e torna alla ricerca
+        function annullaModifiche() {
+            if (confirm('Annullare tutte le modifiche e tornare alla pagina di ricerca?')) {
+                window.location.href = 'ricerca.html';
+            }
+        }
+        
+        // Mostra/nascondi loading indicator
+        function showLoading(show) {
+            if (loadingIndicator) {
+                loadingIndicator.style.display = show ? 'block' : 'none';
+            }
+            if (btnSalva) {
+                btnSalva.disabled = show;
+            }
+            if (btnAnnulla) {
+                btnAnnulla.disabled = show;
+            }
+        }
+        
+        // Mostra messaggio di feedback
+        function showFeedback(message, type = 'success') {
+            if (feedbackMsg) {
+                feedbackMsg.textContent = message;
+                feedbackMsg.className = `feedback-msg ${type}`;
+                feedbackMsg.style.display = 'block';
+                
+                setTimeout(() => {
+                    feedbackMsg.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Sovrascrivi funzioni globali
+        window.salvaModificheTesserato = salvaModificheTesserato;
+        window.annullaModifiche = annullaModifiche;
+        
+        // Aggiungi event listener
+        btnSalva?.addEventListener('click', salvaModificheTesserato);
+        btnAnnulla?.addEventListener('click', annullaModifiche);
+        
+        // Carica i dati iniziali
+        caricaDatiTesserato();
+        
+    } catch (error) {
+        console.error('Errore inizializzazione:', error);
+        alert('Errore: ' + error.message);
     }
-
-    // Funzioni helper
-    function getCorsoName(tipo) {
-        const names = {
-            'avviamento': 'Avviamento',
-            'principianti': 'Principianti',
-            'intermedio': 'Intermedio',
-            'perfezionamento': 'Perfezionamento',
-            'cuffiegb': 'Cuffie Giallo Blu',
-            'calottegb': 'Calottine Giallo Blu',
-            'propaganda': 'Propaganda',
-            'agonisti': 'Agonisti',
-            'pallanuoto': 'Pallanuoto'
-        };
-        return names[tipo] || tipo;
-    }
-
-    function formatGiorni(giorni) {
-        const giorniMap = {
-            'lun': 'Lunedì',
-            'mar': 'Martedì',
-            'mer': 'Mercoledì',
-            'gio': 'Giovedì',
-            'ven': 'Venerdì'
-        };
-        return giorni ? giorni.map(g => giorniMap[g] || g).join(', ') : 'N/D';
-    }
-
-    // Funzione per modificare il tesserato
-    window.modificaTesserato = function() {
-        window.location.href = `inserimento.html?id=${tesseratoId}`;
-    };
-
-    // Inizializzazione
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
-    caricaTesserato();
 });
