@@ -92,14 +92,16 @@ async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
   const livello = document.getElementById('livello').value;
-  const orario = document.getElementById('orario').value;
+  const pacchettiSelect = document.getElementById('pacchettiSelect');
+  const pacchettiSelezionati = Array.from(pacchettiSelect.selectedOptions).map(opt => opt.value);
 
-  if (!tipoCorso || !livello || !orario) {
-    container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Seleziona tipo, livello e orario</div>';
+  if (!tipoCorso || !livello || pacchettiSelezionati.length === 0) {
+    container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Seleziona tipo, livello e almeno un pacchetto</div>';
     return;
   }
 
   container.innerHTML = '<div class="spinner"></div>';
+
 
   try {
     const [allCorsi, allTesserati, allPacchetti] = await Promise.all([
@@ -109,11 +111,11 @@ async function updateAnteprima() {
     ]);
 
     // Filtra i corsi
-    const corsiFiltrati = allCorsi.filter(corso => 
-      corso.tipologia === tipoCorso && 
-      corso.livello === livello && 
-      corso.orario === orario
-    );
+   const corsiFiltrati = allCorsi.filter(corso => 
+  corso.tipologia === tipoCorso && 
+  corso.livello === livello &&
+  corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
+  );
 
     if (corsiFiltrati.length === 0) {
       container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Nessun corso trovato</div>';
@@ -260,39 +262,6 @@ async function handleSubmit(e) {
   }
 }
 
-async function aggiornaAnteprima() {
-  const corso = document.getElementById("tipo_corso").value;
-  const pacchetti = Array.from(document.getElementById("pacchettiSelect").selectedOptions).map(o => o.value);
-  const container = document.getElementById("anteprimaContainer");
-
-  if (!corso || pacchetti.length === 0) {
-    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto</p>';
-    return;
-  }
-
-  try {
-    const res = await fetch("/corsi.json");
-    const corsi = await res.json();
-    const iscritti = corsi.filter(c => c.tipo_corso === corso && c.pacchetti.some(p => pacchetti.includes(p)));
-
-    if (iscritti.length === 0) {
-      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato</p>';
-      return;
-    }
-
-    container.innerHTML = '';
-    iscritti.forEach(i => {
-      const div = document.createElement("div");
-      div.classList.add("iscritto-card");
-      div.textContent = `Tesserato: ${i.tesserato}, Corso: ${i.tipo_corso}, Pacchetti: ${i.pacchetti.join(", ")}, Orario: ${i.orario}`;
-      container.appendChild(div);
-    });
-  } catch (e) {
-    console.error("Errore anteprima:", e);
-    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento.</p>';
-  }
-}
-
 
 // Inizializzazione app
 document.addEventListener('DOMContentLoaded', async () => {
@@ -306,6 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aggiungi event listeners
     document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
     document.getElementById('livello').addEventListener('change', updateAnteprima);
+    document.getElementById('pacchettiSelect').addEventListener('change', updateAnteprima);
     document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
     
   } catch (error) {
