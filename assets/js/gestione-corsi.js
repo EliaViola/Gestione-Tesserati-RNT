@@ -8,6 +8,28 @@ let cache = {
   corsi: []
 };
 
+// Configurazione limiti corsi
+const LIMITI_CORSI = {
+  avviamento: { max: 8, durata: '30 min' },
+  principianti: { max: 8, durata: '30 min' },
+  intermedio: { max: 8, durata: '30 min' },
+  perfezionamento: { max: 8, durata: '30 min' },
+  cuffiegb: { max: 12, durata: '30 min' },
+  calottegb: { max: 12, durata: '30 min' },
+  propaganda: { max: 15, durata: '40 min' },
+  agonisti: { max: 20, durata: '60 min' },
+  pallanuoto: { max: 15, durata: '90 min' }
+};
+
+// Giorni della settimana
+const GIORNI_SETTIMANA = [
+  { id: 'lun', nome: 'Lunedì' },
+  { id: 'mar', nome: 'Martedì' },
+  { id: 'mer', nome: 'Mercoledì' },
+  { id: 'gio', nome: 'Giovedì' },
+  { id: 'ven', nome: 'Venerdì' }
+];
+
 // Funzione per mostrare feedback
 function showFeedback(message, type = 'success') {
   const feedback = document.getElementById('feedback');
@@ -87,7 +109,7 @@ async function loadAllCorsi() {
   }
 }
 
-// Aggiorna l'anteprima con grafica migliorata
+// Aggiorna l'anteprima con la tabella
 async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
@@ -102,7 +124,6 @@ async function updateAnteprima() {
 
   container.innerHTML = '<div class="spinner"></div>';
 
-
   try {
     const [allCorsi, allTesserati, allPacchetti] = await Promise.all([
       loadAllCorsi(),
@@ -111,26 +132,47 @@ async function updateAnteprima() {
     ]);
 
     // Filtra i corsi
-   const corsiFiltrati = allCorsi.filter(corso => 
-  corso.tipologia === tipoCorso && 
-  corso.livello === livello &&
-  corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
-  );
+    const corsiFiltrati = allCorsi.filter(corso => 
+      corso.tipologia === tipoCorso && 
+      corso.livello === livello &&
+      corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
+    );
 
     if (corsiFiltrati.length === 0) {
-      container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Nessun corso trovato</div>';
+      container.innerHTML = `
+        <div class="nessun-risultato">
+          <i class="fas fa-info-circle"></i> Nessun corso trovato con questi filtri
+          <div class="limite-corso">
+            Massimo partecipanti: ${LIMITI_CORSI[tipoCorso]?.max || 'N/D'} - 
+            Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}
+          </div>
+        </div>`;
       return;
     }
 
-    // Costruisci l'HTML
-    let html = '<div class="anteprima-corsi-container">';
-    
+    // Costruisci la tabella HTML
+    let html = `
+      <div class="table-responsive">
+        <table class="anteprima-table">
+          <thead>
+            <tr>
+              <th>Tipo/Livello</th>
+              <th>Orario</th>
+              <th>Frequenza</th>
+              <th>Giorni</th>
+              <th>Partecipanti</th>
+              <th>Disponibilità</th>
+              <th>Pacchetti</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
     corsiFiltrati.forEach(corso => {
       // Converti ID pacchetti in nomi
       const pacchettiNomi = corso.pacchetti.map(pacchettoId => {
         const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
         return pacchetto ? pacchetto.nome : pacchettoId;
-      });
+      }).join(', ');
 
       // Converti ID tesserati in nomi
       const tesseratiNomi = corso.iscritti.map(tesseratoId => {
@@ -138,30 +180,146 @@ async function updateAnteprima() {
         return tesserato ? tesserato.nomeCompleto : tesseratoId;
       });
 
+      const limiteCorso = LIMITI_CORSI[corso.tipologia]?.max || 0;
+      const postiDisponibili = limiteCorso - corso.iscritti.length;
+      const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
+
+      // Formatta i giorni
+      const giorniFormattati = corso.giorni 
+        ? corso.giorni.map(g => GIORNI_SETTIMANA.find(gs => gs.id === g)?.nome || g).join(', ')
+        : 'N/D';
+
       html += `
-        <div class="corso-card">
-          <div class="corso-header">
-            <span class="corso-tipo">${corso.tipologia} - Liv. ${corso.livello}</span>
-            <span class="corso-orario">${corso.orario}</span>
-          </div>
-          <div class="corso-pacchetti">
-            <i class="fas fa-box-open"></i> ${pacchettiNomi.join(', ')}
-          </div>
-          <div class="corso-tesserati">
-            <h4><i class="fas fa-users"></i> Partecipanti (${tesseratiNomi.length})</h4>
+        <tr>
+          <td>${corso.tipologia} - Liv.${corso.livello}</td>
+          <td>${corso.orario}</td>
+          <td>
+            <span class="badge-frequenza badge-${corso.frequenza === '2giorni' ? '2giorni' : '1giorno'}">
+              ${corso.frequenza === '2giorni' ? '2 giorni' : '1 giorno'}
+            </span>
+          </td>
+          <td>${giorniFormattati}</td>
+          <td>
             <ul class="tesserati-list">
               ${tesseratiNomi.map(t => `<li>${t}</li>`).join('')}
             </ul>
-          </div>
-        </div>`;
+          </td>
+          <td class="${disponibilitaClass}">
+            ${corso.iscritti.length}/${limiteCorso}
+            ${postiDisponibili <= 0 ? ' (COMPLETO)' : ''}
+          </td>
+          <td>${pacchettiNomi}</td>
+        </tr>`;
     });
 
-    html += '</div>';
+    html += `
+          </tbody>
+        </table>
+        <div class="limite-corso">
+          Massimo partecipanti: ${LIMITI_CORSI[tipoCorso]?.max || 'N/D'} - 
+          Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}
+        </div>
+      </div>`;
+    
     container.innerHTML = html;
 
   } catch (error) {
     console.error("Errore aggiornamento anteprima:", error);
     container.innerHTML = '<div class="errore-msg"><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento</div>';
+  }
+}
+
+// Gestione submit del form
+async function handleSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const formData = new FormData(form);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
+
+  try {
+    const tesseratoId = formData.get('tesserato');
+    const tipologia = formData.get('tipo_corso');
+    const livello = formData.get('livello');
+    const orario = formData.get('orario');
+    const note = formData.get('note') || '';
+    const pacchetti = Array.from(document.getElementById('pacchettiSelect').selectedOptions).map(opt => opt.value);
+    const frequenza = document.querySelector('input[name="frequenza"]:checked').value;
+    const giorniSelezionati = Array.from(document.querySelectorAll('input[name="giorno"]:checked')).map(el => el.value);
+
+    // Validazione
+    if (!tesseratoId || !tipologia || !livello || !orario || pacchetti.length === 0) {
+      showFeedback('Compila tutti i campi richiesti.', 'error');
+      return;
+    }
+
+    if ((frequenza === "2giorni" && giorniSelezionati.length !== 2) ||
+        (frequenza === "1giorno" && giorniSelezionati.length !== 1)) {
+      showFeedback('Seleziona il numero corretto di giorni in base alla frequenza scelta.', 'error');
+      return;
+    }
+
+    // Verifica limiti corso
+    const limiteCorso = LIMITI_CORSI[tipologia]?.max || 0;
+    const corsiEsistenti = await db.collection("corsi")
+      .where("tipologia", "==", tipologia)
+      .where("livello", "==", livello)
+      .where("orario", "==", orario)
+      .where("giorni", "array-contains-any", giorniSelezionati)
+      .get();
+
+    let postiOccupati = 0;
+    corsiEsistenti.forEach(doc => {
+      postiOccupati += doc.data().iscritti.length;
+    });
+
+    if (postiOccupati >= limiteCorso) {
+      showFeedback(`Il corso ha raggiunto il limite massimo di ${limiteCorso} partecipanti.`, 'error');
+      return;
+    }
+
+    // Crea il documento corso
+    const corsoData = {
+      tipologia,
+      livello,
+      orario,
+      note,
+      pacchetti,
+      iscritti: [tesseratoId],
+      frequenza,
+      giorni: giorniSelezionati,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const corsoRef = await db.collection("corsi").add(corsoData);
+    const corsoId = corsoRef.id;
+
+    // Aggiorna profilo del tesserato
+    await db.collection("tesserati").doc(tesseratoId).update({
+      [`corsi.${corsoId}`]: {
+        tipologia,
+        livello,
+        orario,
+        pacchetti,
+        note,
+        frequenza,
+        giorni: giorniSelezionati
+      }
+    });
+
+    showFeedback('Corso assegnato con successo.');
+    form.reset();
+    updateAnteprima();
+
+  } catch (error) {
+    console.error("Errore nell'assegnazione del corso:", error);
+    showFeedback('Errore durante il salvataggio del corso.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
   }
 }
 
@@ -193,75 +351,50 @@ async function initForm() {
       pacchettiSelect.appendChild(option);
     });
     
+    // Aggiungi sezione frequenza
+    const pacchettiGroup = document.querySelector('.form-group.required-field');
+    const frequenzaHTML = `
+      <div class="form-group required-field">
+        <label><i class="fas fa-calendar-week"></i> Frequenza</label>
+        <div class="frequenza-selector">
+          <label>
+            <input type="radio" name="frequenza" value="1giorno" checked> 1 giorno/settimana
+          </label>
+          <label>
+            <input type="radio" name="frequenza" value="2giorni"> 2 giorni/settimana
+          </label>
+        </div>
+      </div>
+      <div class="form-group required-field giorni-container">
+        <label><i class="fas fa-calendar-day"></i> Seleziona giorno/i</label>
+        <div class="giorni-selector">
+          ${GIORNI_SETTIMANA.map(g => `
+            <label>
+              <input type="checkbox" name="giorno" value="${g.id}"> ${g.nome}
+            </label>
+          `).join('')}
+        </div>
+      </div>`;
+    
+    pacchettiGroup.insertAdjacentHTML('afterend', frequenzaHTML);
+
+    // Gestione cambio frequenza
+    document.querySelectorAll('input[name="frequenza"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const giorniContainer = document.querySelector('.giorni-container');
+        if (this.value === '2giorni') {
+          giorniContainer.querySelector('label').textContent = 'Seleziona 2 giorni';
+        } else {
+          giorniContainer.querySelector('label').textContent = 'Seleziona giorno';
+        }
+      });
+    });
+
   } catch (error) {
     console.error("Errore inizializzazione form:", error);
     showFeedback("Errore nel caricamento dei dati iniziali", 'error');
   }
 }
-
-// Gestione submit del form
-// Continua da handleSubmit
-async function handleSubmit(e) {
-  e.preventDefault();
-  
-  const form = e.target;
-  const formData = new FormData(form);
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const originalText = submitBtn.innerHTML;
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
-
-  try {
-    const tesseratoId = formData.get('tesserato');
-    const tipologia = formData.get('tipo_corso');
-    const livello = formData.get('livello');
-    const orario = formData.get('orario');
-    const note = formData.get('note') || '';
-    const pacchetti = Array.from(document.getElementById('pacchettiSelect').selectedOptions).map(opt => opt.value);
-
-    if (!tesseratoId || !tipologia || !livello || !orario || pacchetti.length === 0) {
-      showFeedback('Compila tutti i campi richiesti.', 'error');
-      return;
-    }
-
-    // Crea il documento corso
-    const corsoData = {
-      tipologia,
-      livello,
-      orario,
-      note,
-      pacchetti,
-      iscritti: [tesseratoId],
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    const corsoRef = await db.collection("corsi").add(corsoData);
-    const corsoId = corsoRef.id;
-
-    // Aggiorna profilo del tesserato
-    await db.collection("tesserati").doc(tesseratoId).update({
-      [`corsi.${corsoId}`]: {
-        tipologia,
-        livello,
-        orario,
-        pacchetti,
-        note
-      }
-    });
-
-    showFeedback('Corso assegnato con successo.');
-    form.reset();
-    updateAnteprima();
-
-  } catch (error) {
-    console.error("Errore nell'assegnazione del corso:", error);
-    showFeedback('Errore durante il salvataggio del corso.', 'error');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalText;
-  }
-}
-
 
 // Inizializzazione app
 document.addEventListener('DOMContentLoaded', async () => {
