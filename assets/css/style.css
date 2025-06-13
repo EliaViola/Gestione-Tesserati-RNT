@@ -864,34 +864,3 @@ select {
 .fa-spinner {
   margin-right: 8px;
 }
-.anteprima-pacchetto {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  background-color: #f9f9f9;
-}
-
-.titolo-pacchetto {
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
-  color: #003366;
-}
-
-.tabella-anteprima {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-}
-
-.tabella-anteprima th,
-.tabella-anteprima td {
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  text-align: left;
-}
-
-.tabella-anteprima th {
-  background-color: #1a4d6e;
-  color: white;
-}
