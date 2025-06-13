@@ -117,8 +117,8 @@ async function updateAnteprima() {
   const pacchettiSelect = document.getElementById('pacchettiSelect');
   const pacchettiSelezionati = Array.from(pacchettiSelect.selectedOptions).map(opt => opt.value);
 
-  if (!tipoCorso || !livello || pacchettiSelezionati.length === 0) {
-    container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Seleziona tipo, livello e almeno un pacchetto</div>';
+  if (!tipoCorso || !livello) {
+    container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Seleziona tipo e livello del corso</div>';
     return;
   }
 
@@ -132,11 +132,17 @@ async function updateAnteprima() {
     ]);
 
     // Filtra i corsi
-    const corsiFiltrati = allCorsi.filter(corso => 
+    let corsiFiltrati = allCorsi.filter(corso => 
       corso.tipologia === tipoCorso && 
-      corso.livello === livello &&
-      corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
+      corso.livello === livello
     );
+
+    // Filtra ulteriormente per pacchetti se sono selezionati
+    if (pacchettiSelezionati.length > 0) {
+      corsiFiltrati = corsiFiltrati.filter(corso =>
+        corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
+      );
+    }
 
     if (corsiFiltrati.length === 0) {
       container.innerHTML = `
@@ -324,6 +330,7 @@ async function handleSubmit(e) {
 }
 
 // Inizializzazione form
+// Modifica la funzione initForm per posizionare correttamente le sezioni
 async function initForm() {
   try {
     const [tesserati, pacchetti] = await Promise.all([
@@ -351,46 +358,58 @@ async function initForm() {
       pacchettiSelect.appendChild(option);
     });
     
-    // Aggiungi sezione frequenza SOLO SE NON ESISTE GIÀ
-    if (!document.querySelector('.frequenza-selector')) {
-      const pacchettiGroup = document.querySelector('.form-group.required-field');
-      const frequenzaHTML = `
-        <div class="form-group required-field">
-          <label><i class="fas fa-calendar-week"></i> Frequenza</label>
-          <div class="frequenza-selector">
-            <label>
-              <input type="radio" name="frequenza" value="1giorno" checked> 1 giorno/settimana
-            </label>
-            <label>
-              <input type="radio" name="frequenza" value="2giorni"> 2 giorni/settimana
-            </label>
-          </div>
+    // Aggiungi sezione frequenza DOPO il campo pacchetti
+    const pacchettiGroup = document.querySelector('#pacchettiSelect').closest('.form-group');
+    const frequenzaHTML = `
+      <div class="form-group required-field">
+        <label><i class="fas fa-calendar-week"></i> Frequenza</label>
+        <div class="frequenza-selector">
+          <label>
+            <input type="radio" name="frequenza" value="1giorno" checked> 1 giorno/settimana
+          </label>
+          <label>
+            <input type="radio" name="frequenza" value="2giorni"> 2 giorni/settimana
+          </label>
         </div>
-        <div class="form-group required-field giorni-container">
-          <label><i class="fas fa-calendar-day"></i> Seleziona giorno/i</label>
-          <div class="giorni-selector">
-            ${GIORNI_SETTIMANA.map(g => `
-              <label>
-                <input type="checkbox" name="giorno" value="${g.id}"> ${g.nome}
-              </label>
-            `).join('')}
-          </div>
-        </div>`;
-      
-      pacchettiGroup.insertAdjacentHTML('afterend', frequenzaHTML);
+      </div>
+      <div class="form-group required-field giorni-container">
+        <label><i class="fas fa-calendar-day"></i> Seleziona giorno/i</label>
+        <div class="giorni-selector">
+          ${GIORNI_SETTIMANA.map(g => `
+            <label>
+              <input type="checkbox" name="giorno" value="${g.id}"> ${g.nome}
+            </label>
+          `).join('')}
+        </div>
+      </div>`;
+    
+    pacchettiGroup.insertAdjacentHTML('afterend', frequenzaHTML);
 
-      // Gestione cambio frequenza
-      document.querySelectorAll('input[name="frequenza"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-          const giorniContainer = document.querySelector('.giorni-container');
-          if (this.value === '2giorni') {
-            giorniContainer.querySelector('label').textContent = 'Seleziona 2 giorni';
-          } else {
-            giorniContainer.querySelector('label').textContent = 'Seleziona giorno';
-          }
-        });
+    // Gestione cambio frequenza
+    document.querySelectorAll('input[name="frequenza"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const giorniContainer = document.querySelector('.giorni-container');
+        if (this.value === '2giorni') {
+          giorniContainer.querySelector('label').textContent = 'Seleziona 2 giorni';
+          // Deseleziona tutti i checkbox quando si cambia frequenza
+          document.querySelectorAll('input[name="giorno"]').forEach(cb => cb.checked = false);
+        } else {
+          giorniContainer.querySelector('label').textContent = 'Seleziona giorno';
+        }
       });
-    }
+    });
+
+    // Aggiungi validazione per i giorni selezionati
+    document.getElementById('corsoForm').addEventListener('submit', function(e) {
+      const frequenza = document.querySelector('input[name="frequenza"]:checked').value;
+      const giorniSelezionati = document.querySelectorAll('input[name="giorno"]:checked').length;
+      
+      if ((frequenza === '1giorno' && giorniSelezionati !== 1) ||
+          (frequenza === '2giorni' && giorniSelezionati !== 2)) {
+        e.preventDefault();
+        showFeedback(`Seleziona esattamente ${frequenza === '1giorno' ? '1 giorno' : '2 giorni'}`, 'error');
+      }
+    });
 
   } catch (error) {
     console.error("Errore inizializzazione form:", error);
