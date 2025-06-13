@@ -114,7 +114,6 @@ async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
   const livello = document.getElementById('livello').value;
-  const orario = document.getElementById('orario').value;
   const pacchettiSelect = document.getElementById('pacchettiSelect');
   const pacchettiSelezionati = Array.from(pacchettiSelect.selectedOptions).map(opt => opt.value);
 
@@ -138,11 +137,6 @@ async function updateAnteprima() {
       corso.livello === livello
     );
 
-    // Filtra per orario se selezionato
-    if (orario) {
-      corsiFiltrati = corsiFiltrati.filter(corso => corso.orario === orario);
-    }
-
     // Filtra per pacchetti se sono selezionati
     if (pacchettiSelezionati.length > 0) {
       corsiFiltrati = corsiFiltrati.filter(corso =>
@@ -162,113 +156,99 @@ async function updateAnteprima() {
       return;
     }
 
-    // Calcola la disponibilità per ogni giorno/orario
-    const disponibilitaGiorni = {};
+    // Organizza i corsi per orario e giorno
+    const corsiPerOrario = {};
     const limiteCorso = LIMITI_CORSI[tipoCorso]?.max || 0;
 
-    // Inizializza la struttura per i giorni
-    GIORNI_SETTIMANA.forEach(g => {
-      disponibilitaGiorni[g.id] = {
-        nome: g.nome,
-        postiOccupati: 0,
-        corsi: []
-      };
-    });
-
-    // Popola la disponibilità
     corsiFiltrati.forEach(corso => {
+      if (!corsiPerOrario[corso.orario]) {
+        corsiPerOrario[corso.orario] = {};
+      }
+
       corso.giorni.forEach(giorno => {
-        if (disponibilitaGiorni[giorno]) {
-          disponibilitaGiorni[giorno].postiOccupati += corso.iscritti.length;
-          disponibilitaGiorni[giorno].corsi.push(corso);
+        if (!corsiPerOrario[corso.orario][giorno]) {
+          corsiPerOrario[corso.orario][giorno] = {
+            iscritti: new Set(),
+            pacchetti: new Set()
+          };
         }
+
+        // Aggiungi iscritti e pacchetti
+        corso.iscritti.forEach(id => corsiPerOrario[corso.orario][giorno].iscritti.add(id));
+        corso.pacchetti.forEach(p => corsiPerOrario[corso.orario][giorno].pacchetti.add(p));
       });
     });
 
-    // Costruisci la tabella HTML
+    // Costruisci l'HTML con una tabella
     let html = `
-      <div class="table-responsive">
-        <table class="anteprima-table">
-          <thead>
-            <tr>
-              <th>Giorno</th>
-              <th>Orario</th>
-              <th>Partecipanti</th>
-              <th>Disponibilità</th>
-              <th>Frequenza</th>
-              <th>Dettagli Corso</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-    // Popola la tabella con i giorni/orari disponibili
-    Object.entries(disponibilitaGiorni).forEach(([giornoId, data]) => {
-      if (data.corsi.length > 0) {
-        const postiDisponibili = limiteCorso - data.postiOccupati;
-        const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
+      <div class="anteprima-container">
+        <div class="limite-corso">
+          <strong>${tipoCorso} - Livello ${livello}</strong>
+          <div>Massimo partecipanti per orario/giorno: ${limiteCorso}</div>
+          <div>Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}</div>
+        </div>
         
-        // Raggruppa per orario
-        const corsiPerOrario = {};
-        data.corsi.forEach(corso => {
-          if (!corsiPerOrario[corso.orario]) {
-            corsiPerOrario[corso.orario] = {
-              iscritti: [],
-              pacchetti: new Set(),
-              frequenza: corso.frequenza
-            };
-          }
-          corsiPerOrario[corso.orario].iscritti.push(...corso.iscritti);
-          corso.pacchetti.forEach(p => corsiPerOrario[corso.orario].pacchetti.add(p));
-        });
+        <div class="table-responsive">
+          <table class="anteprima-table">
+            <thead>
+              <tr>
+                <th>Giorno</th>
+                ${Object.keys(corsiPerOrario).map(orario => `
+                  <th class="orario-header">
+                    <div>${orario}</div>
+                    <div class="pacchetti-header">
+                      ${Array.from(
+                        new Set(
+                          Object.values(corsiPerOrario[orario])
+                            .flatMap(giorno => Array.from(giorno.pacchetti))
+                            .map(pacchettoId => {
+                              const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
+                              return pacchetto ? pacchetto.nome : pacchettoId;
+                            })
+                        )
+                      ).join(', ')}
+                    </div>
+                  </th>
+                `).join('')}
+              </tr>
+            </thead>
+            <tbody>`;
 
-        Object.entries(corsiPerOrario).forEach(([orario, corsoData]) => {
-          // Converti ID pacchetti in nomi
-          const pacchettiNomi = Array.from(corsoData.pacchetti).map(pacchettoId => {
-            const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
-            return pacchetto ? pacchetto.nome : pacchettoId;
-          }).join(', ');
-
-          // Converti ID tesserati in nomi
-          const tesseratiNomi = corsoData.iscritti.map(tesseratoId => {
-            const tesserato = allTesserati.find(t => t.id === tesseratoId);
-            return tesserato ? tesserato.nomeCompleto : tesseratoId;
-          });
-
-          html += `
-            <tr>
-              <td>${data.nome}</td>
-              <td>${orario}</td>
-              <td>
-                <ul class="tesserati-list">
-                  ${tesseratiNomi.slice(0, 3).map(t => `<li>${t}</li>`).join('')}
-                  ${tesseratiNomi.length > 3 ? `<li>+${tesseratiNomi.length - 3} altri</li>` : ''}
-                </ul>
-              </td>
+    // Aggiungi le righe per ogni giorno
+    GIORNI_SETTIMANA.forEach(giorno => {
+      if (Object.values(corsiPerOrario).some(orario => orario[giorno.id])) {
+        html += `<tr><td>${giorno.nome}</td>`;
+        
+        // Per ogni orario, mostra la disponibilità per questo giorno
+        Object.entries(corsiPerOrario).forEach(([orario, giorni]) => {
+          if (giorni[giorno.id]) {
+            const iscritti = Array.from(giorni[giorno.id].iscritti);
+            const postiDisponibili = limiteCorso - iscritti.length;
+            const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
+            
+            html += `
               <td class="${disponibilitaClass}">
-                ${corsoData.iscritti.length}/${limiteCorso}
-                ${postiDisponibili <= 0 ? ' (COMPLETO)' : ''}
-              </td>
-              <td>
-                <span class="badge-frequenza badge-${corsoData.frequenza === '2giorni' ? '2giorni' : '1giorno'}">
-                  ${corsoData.frequenza === '2giorni' ? '2 giorni' : '1 giorno'}
-                </span>
-              </td>
-              <td>${pacchettiNomi}</td>
-            </tr>`;
+                <div class="partecipanti-count">${iscritti.length}/${limiteCorso}</div>
+                <div class="partecipanti-nomi">
+                  ${iscritti.slice(0, 2).map(id => {
+                    const tesserato = allTesserati.find(t => t.id === id);
+                    return tesserato ? tesserato.nomeCompleto.split(' ')[0] : '';
+                  }).filter(Boolean).join(', ')}
+                  ${iscritti.length > 2 ? ` +${iscritti.length - 2}` : ''}
+                </div>
+              </td>`;
+          } else {
+            html += '<td class="no-corso">-</td>';
+          }
         });
+        
+        html += `</tr>`;
       }
     });
 
     html += `
-          </tbody>
-        </table>
-        <div class="limite-corso">
-          <strong>Informazioni:</strong>
-          <ul>
-            <li>Massimo partecipanti: ${limiteCorso}</li>
-            <li>Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}</li>
-            <li>I posti disponibili sono calcolati per ogni giorno separatamente</li>
-          </ul>
+            </tbody>
+          </table>
         </div>
       </div>`;
     
@@ -279,6 +259,7 @@ async function updateAnteprima() {
     container.innerHTML = '<div class="errore-msg"><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento</div>';
   }
 }
+
 // Gestione submit del form
 async function handleSubmit(e) {
   e.preventDefault();
