@@ -4,15 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ricerca - Rari Nantes Trento</title>
-  
   <link rel="stylesheet" href="../assets/css/style.css" />
-   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+
+  
+  <!-- Firebase scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="firebase-config.js"></script> <!-- Il file con la tua configurazione -->
-  <script src="ricerca.js"></script> <!-- Il tuo file JS -->
+  <script src="../assets/js/firebase-config.js"></script>
+  
 </head>
 <body>
+  <!-- Il resto del tuo HTML rimane invariato -->
   <header>
     <div class="header-container">
       <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
@@ -30,10 +33,9 @@
   </nav>
 
   <main>
-  <div class="form-container">
-    <h2 class="form-title">Ricerca Tesserati e Corsi</h2>
-
-    <div class="filtri-ricerca">
+    <div class="form-container">
+      <h2 class="form-title">Ricerca Tesserati e Corsi</h2>
+      <div class="filtri-ricerca">
       <div class="form-grid">
         <div class="form-group">
           <label for="filtro-nome">Nome</label>
@@ -117,17 +119,17 @@
           </table>
         </div>
       </div>
-    </div>
-  </div>
-</main>
-
+    </div>   
+   </div>
+  </main>
 
   <footer>
     <div class="footer-container">
-      <p>&copy; 2023 Rari Nantes Trento. Tutti i diritti riservati.</p>
+      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
     </div>
   </footer>
 
+  <!-- Il tuo script JS -->
   <script src="../assets/js/ricerca.js"></script>
 </body>
 </html>
