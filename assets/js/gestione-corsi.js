@@ -1,21 +1,23 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, getDocs, addDoc, doc, updateDoc
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { firebaseConfig } from './firebase-config.js';
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(app);
 
 // Riferimenti al DOM
 const form = document.getElementById('corso-form');
 const pacchettiContainer = document.getElementById('pacchettiContainer');
 const anteprimaDiv = document.getElementById('anteprima-corsi');
 
+// Limiti per tipologia corso
+const limiti = {
+  avviamento: 6,
+  principianti: 7,
+  intermedio: 7,
+  perfezionamento: 8
+};
+
 // Carica pacchetti disponibili
 async function caricaPacchetti() {
-  const pacchettiSnapshot = await getDocs(collection(db, "pacchetti"));
-  pacchettiSnapshot.forEach(doc => {
+  const snapshot = await db.collection("pacchetti").get();
+  snapshot.forEach(doc => {
     const pacchetto = doc.data();
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -28,79 +30,63 @@ async function caricaPacchetti() {
     const div = document.createElement("div");
     div.appendChild(checkbox);
     div.appendChild(label);
-
     pacchettiContainer.appendChild(div);
   });
 }
 
-// Carica tesserati per selezione
+// Carica tesserati disponibili
 async function caricaTesserati() {
-  const tesseratiSnapshot = await getDocs(collection(db, "tesserati"));
+  const snapshot = await db.collection("tesserati").get();
   const container = document.getElementById("tesseratiContainer");
 
-  tesseratiSnapshot.forEach(doc => {
-    const tesserato = doc.data();
+  snapshot.forEach(doc => {
+    const t = doc.data();
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.name = "tesserati";
     checkbox.value = doc.id;
 
     const label = document.createElement("label");
-    label.textContent = `${tesserato.nome} ${tesserato.cognome}`;
+    label.textContent = `${t.nome} ${t.cognome}`;
 
     const div = document.createElement("div");
     div.appendChild(checkbox);
     div.appendChild(label);
-
     container.appendChild(div);
   });
 }
 
-// Limiti per tipologia
-const limiti = {
-  avviamento: 6,
-  principianti: 7,
-  intermedio: 7,
-  perfezionamento: 8
-};
-
-// Funzione anteprima corsi
+// Aggiorna anteprima corsi esistenti
 async function updateAnteprima() {
   anteprimaDiv.innerHTML = "";
-  const corsiSnapshot = await getDocs(collection(db, "corsi"));
-  const allCorsi = [];
-  corsiSnapshot.forEach(doc => {
-    allCorsi.push({ id: doc.id, ...doc.data() });
-  });
 
   const tipoCorso = document.getElementById('tipologia').value;
   const livello = document.getElementById('livello').value;
 
-  const corsiFiltrati = allCorsi.filter(corso =>
-    corso.tipologia === tipoCorso &&
-    corso.livello === livello
-  );
+  const snapshot = await db.collection("corsi").get();
+  for (const doc of snapshot.docs) {
+    const corso = doc.data();
 
-  for (const corso of corsiFiltrati) {
+    if (corso.tipologia !== tipoCorso || corso.livello !== livello) continue;
+
+    // Pacchetti
     const pacchettiNomi = [];
     for (const pacchettoId of corso.pacchetti || []) {
-      const pacchettoDoc = await getDocs(collection(db, "pacchetti"));
-      pacchettoDoc.forEach(p => {
-        if (p.id === pacchettoId) {
-          pacchettiNomi.push(p.data().nome);
-        }
-      });
+      const pacchettoDoc = await db.collection("pacchetti").doc(pacchettoId).get();
+      if (pacchettoDoc.exists) {
+        const pac = pacchettoDoc.data();
+        pacchettiNomi.push(pac.nome);
+      }
     }
 
+    // Tesserati iscritti
     const tesseratiNomi = [];
-    for (const id of corso.iscritti || []) {
-      const tesseratoDoc = await getDocs(collection(db, "tesserati"));
-      tesseratoDoc.forEach(t => {
-        if (t.id === id) {
-          const d = t.data();
-          tesseratiNomi.push(`${d.nome} ${d.cognome}`);
-        }
-      });
+    for (const tId of corso.iscritti || []) {
+      const tDoc = await db.collection("tesserati").doc(tId).get();
+      if (tDoc.exists) {
+        const t = tDoc.data();
+        tesseratiNomi.push(`${t.nome} ${t.cognome}`);
+      }
     }
 
     const limiteMax = limiti[corso.tipologia.toLowerCase()] || null;
@@ -118,17 +104,16 @@ async function updateAnteprima() {
         <div class="corso-tesserati">
           <h4><i class="fas fa-users"></i> Partecipanti (${tesseratiNomi.length}${limiteMax ? ` / ${limiteMax}` : ''})</h4>
           <ul class="tesserati-list">
-            ${tesseratiNomi.map(t => `<li>${t}</li>`).join('')}
+            ${tesseratiNomi.map(n => `<li>${n}</li>`).join('')}
           </ul>
           ${haRaggiuntoLimite ? `<div class="limite-msg"><i class="fas fa-exclamation-triangle"></i> Limite massimo raggiunto</div>` : ''}
         </div>
-      </div>`;
+      </div>
+    `;
   }
 }
 
-form.addEventListener("change", updateAnteprima);
-
-// Invio dati nuovo corso
+// Salva nuovo corso
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -141,11 +126,11 @@ form.addEventListener("submit", async (e) => {
 
   const limiteMax = limiti[tipologia.toLowerCase()];
   if (limiteMax && iscritti.length > limiteMax) {
-    alert(`Attenzione: il limite per ${tipologia} è di ${limiteMax} partecipanti.`);
+    alert(`Limite massimo per ${tipologia}: ${limiteMax} iscritti.`);
     return;
   }
 
-  const nuovoCorso = {
+  const corso = {
     tipologia,
     livello,
     orario,
@@ -153,26 +138,27 @@ form.addEventListener("submit", async (e) => {
     iscritti
   };
 
-  const docRef = await addDoc(collection(db, "corsi"), nuovoCorso);
+  const corsoRef = await db.collection("corsi").add(corso);
 
-  // Aggiorna ogni tesserato con riferimento al corso
+  // Aggiorna ciascun tesserato
   for (const tId of iscritti) {
-    const tDoc = doc(db, "tesserati", tId);
-    const snapshot = await getDocs(collection(db, "tesserati"));
-    snapshot.forEach(async (d) => {
-      if (d.id === tId) {
-        const tData = d.data();
-        const nuoviCorsi = (tData.corsi || []);
-        nuoviCorsi.push(docRef.id);
-        await updateDoc(tDoc, { corsi: nuoviCorsi });
-      }
-    });
+    const tDoc = await db.collection("tesserati").doc(tId).get();
+    if (tDoc.exists) {
+      const tData = tDoc.data();
+      const corsiAggiornati = tData.corsi || [];
+      corsiAggiornati.push(corsoRef.id);
+      await db.collection("tesserati").doc(tId).update({ corsi: corsiAggiornati });
+    }
   }
 
-  alert("Corso aggiunto con successo!");
+  alert("Corso salvato con successo!");
   form.reset();
   updateAnteprima();
 });
 
+// Cambi nei campi -> aggiorna anteprima
+form.addEventListener("change", updateAnteprima);
+
+// Caricamento iniziale
 caricaPacchetti();
 caricaTesserati();
