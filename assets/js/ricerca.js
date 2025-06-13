@@ -253,7 +253,7 @@ window.eliminaCorso = async function(idCorso) {
     window.eseguiRicerca = eseguiRicerca;
     window.resetRicerca = resetRicerca;
     window.modificaTesserato = function(idTesserato) {
-      window.location.href = `inserimento.html?id=${idTesserato}`;
+      window.location.href = `dettaglio-tesserato.html?id=${idTesserato}`;
     };
     window.modificaCorso = function(idCorso) {
       window.location.href = `modifica-corsi.html?id=${idCorso}`;
