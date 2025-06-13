@@ -114,6 +114,7 @@ async function updateAnteprima() {
   const container = document.getElementById('anteprimaContainer');
   const tipoCorso = document.getElementById('tipo_corso').value;
   const livello = document.getElementById('livello').value;
+  const orario = document.getElementById('orario').value;
   const pacchettiSelect = document.getElementById('pacchettiSelect');
   const pacchettiSelezionati = Array.from(pacchettiSelect.selectedOptions).map(opt => opt.value);
 
@@ -137,7 +138,12 @@ async function updateAnteprima() {
       corso.livello === livello
     );
 
-    // Filtra ulteriormente per pacchetti se sono selezionati
+    // Filtra per orario se selezionato
+    if (orario) {
+      corsiFiltrati = corsiFiltrati.filter(corso => corso.orario === orario);
+    }
+
+    // Filtra per pacchetti se sono selezionati
     if (pacchettiSelezionati.length > 0) {
       corsiFiltrati = corsiFiltrati.filter(corso =>
         corso.pacchetti.some(p => pacchettiSelezionati.includes(p))
@@ -166,14 +172,37 @@ async function updateAnteprima() {
               <th>Orario</th>
               <th>Frequenza</th>
               <th>Giorni</th>
-              <th>Partecipanti</th>
+              <th>Partecipanti (${corsiFiltrati.reduce((acc, corso) => acc + corso.iscritti.length, 0)})</th>
               <th>Disponibilità</th>
               <th>Pacchetti</th>
             </tr>
           </thead>
           <tbody>`;
 
+    // Raggruppa per orario e giorni
+    const corsiRaggruppati = {};
     corsiFiltrati.forEach(corso => {
+      const key = `${corso.orario}_${corso.giorni.join(',')}`;
+      if (!corsiRaggruppati[key]) {
+        corsiRaggruppati[key] = {
+          orario: corso.orario,
+          giorni: corso.giorni,
+          iscritti: [],
+          pacchetti: [...new Set(corso.pacchetti)],
+          tipologia: corso.tipologia,
+          livello: corso.livello,
+          frequenza: corso.frequenza
+        };
+      }
+      corsiRaggruppati[key].iscritti.push(...corso.iscritti);
+    });
+
+    // Popola la tabella con i corsi raggruppati
+    Object.values(corsiRaggruppati).forEach(corso => {
+      const limiteCorso = LIMITI_CORSI[corso.tipologia]?.max || 0;
+      const postiDisponibili = limiteCorso - corso.iscritti.length;
+      const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
+
       // Converti ID pacchetti in nomi
       const pacchettiNomi = corso.pacchetti.map(pacchettoId => {
         const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
@@ -185,10 +214,6 @@ async function updateAnteprima() {
         const tesserato = allTesserati.find(t => t.id === tesseratoId);
         return tesserato ? tesserato.nomeCompleto : tesseratoId;
       });
-
-      const limiteCorso = LIMITI_CORSI[corso.tipologia]?.max || 0;
-      const postiDisponibili = limiteCorso - corso.iscritti.length;
-      const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
 
       // Formatta i giorni
       const giorniFormattati = corso.giorni 
@@ -240,18 +265,17 @@ async function handleSubmit(e) {
   e.preventDefault();
   
   const form = e.target;
-  const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.innerHTML;
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
 
   try {
-    const tesseratoId = formData.get('tesserato');
-    const tipologia = formData.get('tipo_corso');
-    const livello = formData.get('livello');
-    const orario = formData.get('orario');
-    const note = formData.get('note') || '';
+    const tesseratoId = document.getElementById('tesserato').value;
+    const tipologia = document.getElementById('tipo_corso').value;
+    const livello = document.getElementById('livello').value;
+    const orario = document.getElementById('orario').value;
+    const note = document.getElementById('note').value || '';
     const pacchetti = Array.from(document.getElementById('pacchettiSelect').selectedOptions).map(opt => opt.value);
     const frequenza = document.querySelector('input[name="frequenza"]:checked').value;
     const giorniSelezionati = Array.from(document.querySelectorAll('input[name="giorno"]:checked')).map(el => el.value);
@@ -268,23 +292,26 @@ async function handleSubmit(e) {
       return;
     }
 
-    // Verifica limiti corso
+    // Verifica disponibilità posti per ogni giorno selezionato
     const limiteCorso = LIMITI_CORSI[tipologia]?.max || 0;
-    const corsiEsistenti = await db.collection("corsi")
-      .where("tipologia", "==", tipologia)
-      .where("livello", "==", livello)
-      .where("orario", "==", orario)
-      .where("giorni", "array-contains-any", giorniSelezionati)
-      .get();
+    
+    for (const giorno of giorniSelezionati) {
+      const querySnapshot = await db.collection("corsi")
+        .where("tipologia", "==", tipologia)
+        .where("livello", "==", livello)
+        .where("orario", "==", orario)
+        .where("giorni", "array-contains", giorno)
+        .get();
 
-    let postiOccupati = 0;
-    corsiEsistenti.forEach(doc => {
-      postiOccupati += doc.data().iscritti.length;
-    });
+      let postiOccupati = 0;
+      querySnapshot.forEach(doc => {
+        postiOccupati += doc.data().iscritti.length;
+      });
 
-    if (postiOccupati >= limiteCorso) {
-      showFeedback(`Il corso ha raggiunto il limite massimo di ${limiteCorso} partecipanti.`, 'error');
-      return;
+      if (postiOccupati >= limiteCorso) {
+        showFeedback(`Il corso del ${GIORNI_SETTIMANA.find(g => g.id === giorno)?.nome} ha raggiunto il limite massimo di ${limiteCorso} partecipanti.`, 'error');
+        return;
+      }
     }
 
     // Crea il documento corso
@@ -430,6 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
     document.getElementById('livello').addEventListener('change', updateAnteprima);
     document.getElementById('pacchettiSelect').addEventListener('change', updateAnteprima);
+    document.getElementById('orario').addEventListener('change', updateAnteprima);
     document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
     
   } catch (error) {
