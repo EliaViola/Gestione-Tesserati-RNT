@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dettaglio Tesserato - Rari Nantes Trento</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="../assets/js/firebase-config.js"></script>
+    
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+            <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
+        </div>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="inserimento.html">Anagrafica</a>
+            <a href="inserimento-dati-corsi.html">Corsi</a>
+            <a href="pagamenti.html">Pagamenti</a>
+            <a href="ricerca-dati.html">Ricerca</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="tesserato-container">
+            <!-- Sezione Dettagli Anagrafici -->
+            <section class="tesserato-section">
+                <h2><i class="fas fa-user"></i> Dettagli Anagrafici</h2>
+                <div class="tesserato-info-grid" id="anagraficaInfo">
+                    <!-- Popolato dinamicamente -->
+                </div>
+                <button class="btn btn-primary" onclick="modificaTesserato()">
+                    <i class="fas fa-edit"></i> Modifica Dati
+                </button>
+            </section>
+
+            <!-- Sezione Storico Corsi -->
+            <section class="tesserato-section">
+                <h2><i class="fas fa-swimming-pool"></i> Storico Corsi</h2>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo Corso</th>
+                                <th>Livello</th>
+                                <th>Giorni</th>
+                                <th>Orario</th>
+                                <th>Stagione</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storicoCorsi">
+                            <!-- Popolato dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sezione Storico Pagamenti -->
+            <section class="tesserato-section">
+                <h2><i class="fas fa-receipt"></i> Storico Pagamenti</h2>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Importo</th>
+                                <th>Metodo</th>
+                                <th>Fattura</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storicoPagamenti">
+                            <!-- Popolato dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sezione Documenti -->
+            <section class="tesserato-section">
+                <h2><i class="fas fa-file-alt"></i> Documenti</h2>
+                <div class="documenti-grid" id="documentiTesserato">
+                    <!-- Popolato dinamicamente -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+        </div>
+    </footer>
+
+    <script src="../assets/js/dettaglio-tesserato.js"></script>
+</body>
+</html>
