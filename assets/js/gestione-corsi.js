@@ -162,93 +162,113 @@ async function updateAnteprima() {
       return;
     }
 
+    // Calcola la disponibilità per ogni giorno/orario
+    const disponibilitaGiorni = {};
+    const limiteCorso = LIMITI_CORSI[tipoCorso]?.max || 0;
+
+    // Inizializza la struttura per i giorni
+    GIORNI_SETTIMANA.forEach(g => {
+      disponibilitaGiorni[g.id] = {
+        nome: g.nome,
+        postiOccupati: 0,
+        corsi: []
+      };
+    });
+
+    // Popola la disponibilità
+    corsiFiltrati.forEach(corso => {
+      corso.giorni.forEach(giorno => {
+        if (disponibilitaGiorni[giorno]) {
+          disponibilitaGiorni[giorno].postiOccupati += corso.iscritti.length;
+          disponibilitaGiorni[giorno].corsi.push(corso);
+        }
+      });
+    });
+
     // Costruisci la tabella HTML
     let html = `
       <div class="table-responsive">
         <table class="anteprima-table">
           <thead>
             <tr>
-              <th>Tipo/Livello</th>
+              <th>Giorno</th>
               <th>Orario</th>
-              <th>Frequenza</th>
-              <th>Giorni</th>
-              <th>Partecipanti (${corsiFiltrati.reduce((acc, corso) => acc + corso.iscritti.length, 0)})</th>
+              <th>Partecipanti</th>
               <th>Disponibilità</th>
-              <th>Pacchetti</th>
+              <th>Frequenza</th>
+              <th>Dettagli Corso</th>
             </tr>
           </thead>
           <tbody>`;
 
-    // Raggruppa per orario e giorni
-    const corsiRaggruppati = {};
-    corsiFiltrati.forEach(corso => {
-      const key = `${corso.orario}_${corso.giorni.join(',')}`;
-      if (!corsiRaggruppati[key]) {
-        corsiRaggruppati[key] = {
-          orario: corso.orario,
-          giorni: corso.giorni,
-          iscritti: [],
-          pacchetti: [...new Set(corso.pacchetti)],
-          tipologia: corso.tipologia,
-          livello: corso.livello,
-          frequenza: corso.frequenza
-        };
+    // Popola la tabella con i giorni/orari disponibili
+    Object.entries(disponibilitaGiorni).forEach(([giornoId, data]) => {
+      if (data.corsi.length > 0) {
+        const postiDisponibili = limiteCorso - data.postiOccupati;
+        const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
+        
+        // Raggruppa per orario
+        const corsiPerOrario = {};
+        data.corsi.forEach(corso => {
+          if (!corsiPerOrario[corso.orario]) {
+            corsiPerOrario[corso.orario] = {
+              iscritti: [],
+              pacchetti: new Set(),
+              frequenza: corso.frequenza
+            };
+          }
+          corsiPerOrario[corso.orario].iscritti.push(...corso.iscritti);
+          corso.pacchetti.forEach(p => corsiPerOrario[corso.orario].pacchetti.add(p));
+        });
+
+        Object.entries(corsiPerOrario).forEach(([orario, corsoData]) => {
+          // Converti ID pacchetti in nomi
+          const pacchettiNomi = Array.from(corsoData.pacchetti).map(pacchettoId => {
+            const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
+            return pacchetto ? pacchetto.nome : pacchettoId;
+          }).join(', ');
+
+          // Converti ID tesserati in nomi
+          const tesseratiNomi = corsoData.iscritti.map(tesseratoId => {
+            const tesserato = allTesserati.find(t => t.id === tesseratoId);
+            return tesserato ? tesserato.nomeCompleto : tesseratoId;
+          });
+
+          html += `
+            <tr>
+              <td>${data.nome}</td>
+              <td>${orario}</td>
+              <td>
+                <ul class="tesserati-list">
+                  ${tesseratiNomi.slice(0, 3).map(t => `<li>${t}</li>`).join('')}
+                  ${tesseratiNomi.length > 3 ? `<li>+${tesseratiNomi.length - 3} altri</li>` : ''}
+                </ul>
+              </td>
+              <td class="${disponibilitaClass}">
+                ${corsoData.iscritti.length}/${limiteCorso}
+                ${postiDisponibili <= 0 ? ' (COMPLETO)' : ''}
+              </td>
+              <td>
+                <span class="badge-frequenza badge-${corsoData.frequenza === '2giorni' ? '2giorni' : '1giorno'}">
+                  ${corsoData.frequenza === '2giorni' ? '2 giorni' : '1 giorno'}
+                </span>
+              </td>
+              <td>${pacchettiNomi}</td>
+            </tr>`;
+        });
       }
-      corsiRaggruppati[key].iscritti.push(...corso.iscritti);
-    });
-
-    // Popola la tabella con i corsi raggruppati
-    Object.values(corsiRaggruppati).forEach(corso => {
-      const limiteCorso = LIMITI_CORSI[corso.tipologia]?.max || 0;
-      const postiDisponibili = limiteCorso - corso.iscritti.length;
-      const disponibilitaClass = postiDisponibili <= 0 ? 'limite-raggiunto' : '';
-
-      // Converti ID pacchetti in nomi
-      const pacchettiNomi = corso.pacchetti.map(pacchettoId => {
-        const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
-        return pacchetto ? pacchetto.nome : pacchettoId;
-      }).join(', ');
-
-      // Converti ID tesserati in nomi
-      const tesseratiNomi = corso.iscritti.map(tesseratoId => {
-        const tesserato = allTesserati.find(t => t.id === tesseratoId);
-        return tesserato ? tesserato.nomeCompleto : tesseratoId;
-      });
-
-      // Formatta i giorni
-      const giorniFormattati = corso.giorni 
-        ? corso.giorni.map(g => GIORNI_SETTIMANA.find(gs => gs.id === g)?.nome || g).join(', ')
-        : 'N/D';
-
-      html += `
-        <tr>
-          <td>${corso.tipologia} - Liv.${corso.livello}</td>
-          <td>${corso.orario}</td>
-          <td>
-            <span class="badge-frequenza badge-${corso.frequenza === '2giorni' ? '2giorni' : '1giorno'}">
-              ${corso.frequenza === '2giorni' ? '2 giorni' : '1 giorno'}
-            </span>
-          </td>
-          <td>${giorniFormattati}</td>
-          <td>
-            <ul class="tesserati-list">
-              ${tesseratiNomi.map(t => `<li>${t}</li>`).join('')}
-            </ul>
-          </td>
-          <td class="${disponibilitaClass}">
-            ${corso.iscritti.length}/${limiteCorso}
-            ${postiDisponibili <= 0 ? ' (COMPLETO)' : ''}
-          </td>
-          <td>${pacchettiNomi}</td>
-        </tr>`;
     });
 
     html += `
           </tbody>
         </table>
         <div class="limite-corso">
-          Massimo partecipanti: ${LIMITI_CORSI[tipoCorso]?.max || 'N/D'} - 
-          Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}
+          <strong>Informazioni:</strong>
+          <ul>
+            <li>Massimo partecipanti: ${limiteCorso}</li>
+            <li>Durata lezione: ${LIMITI_CORSI[tipoCorso]?.durata || 'N/D'}</li>
+            <li>I posti disponibili sono calcolati per ogni giorno separatamente</li>
+          </ul>
         </div>
       </div>`;
     
@@ -259,7 +279,6 @@ async function updateAnteprima() {
     container.innerHTML = '<div class="errore-msg"><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento</div>';
   }
 }
-
 // Gestione submit del form
 async function handleSubmit(e) {
   e.preventDefault();
@@ -305,11 +324,16 @@ async function handleSubmit(e) {
 
       let postiOccupati = 0;
       querySnapshot.forEach(doc => {
-        postiOccupati += doc.data().iscritti.length;
+        // Conta solo gli iscritti che frequentano questo specifico giorno
+        const corsoData = doc.data();
+        if (corsoData.giorni.includes(giorno)) {
+          postiOccupati += corsoData.iscritti.length;
+        }
       });
 
       if (postiOccupati >= limiteCorso) {
-        showFeedback(`Il corso del ${GIORNI_SETTIMANA.find(g => g.id === giorno)?.nome} ha raggiunto il limite massimo di ${limiteCorso} partecipanti.`, 'error');
+        const nomeGiorno = GIORNI_SETTIMANA.find(g => g.id === giorno)?.nome || giorno;
+        showFeedback(`Il corso del ${nomeGiorno} alle ${orario} ha raggiunto il limite massimo di ${limiteCorso} partecipanti.`, 'error');
         return;
       }
     }
