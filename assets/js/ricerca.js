@@ -143,7 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
     // Mostra i corsi filtrati
-    function mostraCorsiFiltrati(corsi, tesserati, filtroCorso) {
+    // Modifica la funzione mostraCorsiFiltrati come segue:
+function mostraCorsiFiltrati(corsi, tesserati, filtroCorso) {
     const corpoCorsi = document.getElementById('corpoTabellaCorsi');
     corpoCorsi.innerHTML = '';
     
@@ -156,6 +157,42 @@ document.addEventListener('DOMContentLoaded', function() {
           </tr>`;
         return;
     }
+
+    const tesseratiMap = {};
+    tesserati.forEach(t => tesseratiMap[t.id] = t);
+    
+    // Applica filtro corso se specificato
+    const corsiFiltrati = filtroCorso 
+        ? corsi.filter(corso => 
+            corso.tipologia?.toLowerCase().includes(filtroCorso.toLowerCase()) ||
+            corso.livello?.toLowerCase().includes(filtroCorso.toLowerCase()) ||
+            corso.istruttore?.toLowerCase().includes(filtroCorso.toLowerCase()))
+        : corsi;
+    
+    corsiFiltrati.forEach(corso => {
+        const tesseratoId = corso.iscritti?.[0] || '';
+        const tesserato = tesseratiMap[tesseratoId];
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${tesserato ? tesserato.nomeCompleto : 'N/D'}</td>
+          <td>${getCorsoName(corso.tipologia)}</td>
+          <td>${corso.livello || 'N/D'}</td>
+          <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
+          <td>${corso.orario || 'N/D'}</td>
+          <td>${corso.istruttore || 'N/D'}</td>
+          <td class="actions-cell">
+            <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
+              <i class="fas fa-edit"></i> Modifica
+            </button>
+            <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
+              <i class="fas fa-trash-alt"></i> Elimina
+            </button>
+          </td>
+        `;
+        corpoCorsi.appendChild(row);
+    });
+}
 
     const tesseratiMap = {};
     tesserati.forEach(t => tesseratiMap[t.id] = t);
