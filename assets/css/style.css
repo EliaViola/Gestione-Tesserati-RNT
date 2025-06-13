@@ -919,3 +919,58 @@ select {
     display: none;
   }
 }
+
+/* Stili per le azioni */
+.actions-cell {
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* Miglioramenti alla tabella */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.data-table th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+}
+
+.data-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Messaggi */
+.nessun-risultato, .loading-msg {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.loading-msg i {
+    margin-right: 8px;
+}
