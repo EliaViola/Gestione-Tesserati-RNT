@@ -198,101 +198,93 @@ async function initForm() {
 }
 
 // Gestione submit del form
+// Continua da handleSubmit
 async function handleSubmit(e) {
   e.preventDefault();
   
   const form = e.target;
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-
-  // Verifica preliminare dell'autenticazione
-  const user = auth.currentUser;
-  if (!user) {
-    showFeedback('Devi essere loggato per effettuare questa operazione', 'error');
-    return;
-  }
-
-  // Ottieni il token per verificare i ruoli
-  let hasRole = false;
-  try {
-    const token = await user.getIdTokenResult();
-    hasRole = token.claims.secretary || token.claims.director;
-  } catch (error) {
-    console.error("Errore verifica ruoli:", error);
-  }
-
-  if (!hasRole) {
-    showFeedback('Non hai i permessi necessari', 'error');
-    return;
-  }
-
-  // Prepara i dati per Firestore
-  const corsoData = {
-    tipologia: formData.get('tipo_corso'),
-    livello: formData.get('livello'),
-    orario: formData.get('orario'),
-    pacchetti: Array.from(formData.getAll('pacchetti')),
-    iscritti: [formData.get('tesserato')],
-    note: formData.get('note') || '',
-    creato_il: firebase.firestore.FieldValue.serverTimestamp(),
-    creato_da: user.uid
-  };
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
 
   try {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
+    const tesseratoId = formData.get('tesserato');
+    const tipologia = formData.get('tipo_corso');
+    const livello = formData.get('livello');
+    const orario = formData.get('orario');
+    const note = formData.get('note') || '';
+    const pacchetti = Array.from(document.getElementById('pacchettiSelect').selectedOptions).map(opt => opt.value);
 
-    // Salva il corso
-    const corsoRef = await db.collection('corsi').add(corsoData);
-    
-    // Aggiorna il tesserato
-    await db.collection('tesserati').doc(corsoData.iscritti[0]).update({
-      corsi: firebase.firestore.FieldValue.arrayUnion(corsoRef.id),
-      pacchetti: firebase.firestore.FieldValue.arrayUnion(...corsoData.pacchetti)
-    });
-
-    // Aggiorna i pacchetti (solo se director)
-    if (user && (await user.getIdTokenResult()).claims.director) {
-      const batch = db.batch();
-      corsoData.pacchetti.forEach(pacchettoId => {
-        const pacchettoRef = db.collection('pacchetti').doc(pacchettoId);
-        batch.update(pacchettoRef, {
-          assegnato_a: firebase.firestore.FieldValue.arrayUnion(corsoData.iscritti[0])
-        });
-      });
-      await batch.commit();
+    if (!tesseratoId || !tipologia || !livello || !orario || pacchetti.length === 0) {
+      showFeedback('Compila tutti i campi richiesti.', 'error');
+      return;
     }
 
-    showFeedback('Corso assegnato con successo!', 'success');
+    // Crea il documento corso
+    const corsoData = {
+      tipologia,
+      livello,
+      orario,
+      note,
+      pacchetti,
+      iscritti: [tesseratoId],
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const corsoRef = await db.collection("corsi").add(corsoData);
+    const corsoId = corsoRef.id;
+
+    // Aggiorna profilo del tesserato
+    await db.collection("tesserati").doc(tesseratoId).update({
+      [`corsi.${corsoId}`]: {
+        tipologia,
+        livello,
+        orario,
+        pacchetti,
+        note
+      }
+    });
+
+    showFeedback('Corso assegnato con successo.');
     form.reset();
     updateAnteprima();
-    
+
   } catch (error) {
-    console.error('Errore salvataggio:', error);
-    showFeedback(`Errore durante il salvataggio: ${error.message}`, 'error');
+    console.error("Errore nell'assegnazione del corso:", error);
+    showFeedback('Errore durante il salvataggio del corso.', 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = originalText;
+    submitBtn.innerHTML = originalText;
   }
 }
 
-// Inizializzazione app
+
+
+// Inizializzazione dell'app all'avvio del DOM
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Imposta l'anno corrente
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
-    
-    // Inizializza form
+    // Mostra l'anno corrente nel footer o in un elemento designato
+    const currentYearElement = document.getElementById('currentYear');
+    if (currentYearElement) {
+      currentYearElement.textContent = new Date().getFullYear();
+    }
+
+    // Inizializza il form con i dati necessari (es. pacchetti, opzioni, etc.)
     await initForm();
-    
-    // Aggiungi event listeners
-    document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
-    document.getElementById('livello').addEventListener('change', updateAnteprima);
-    document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
-    
+
+    // Associa gli event listener ai campi del form
+    const tipoCorso = document.getElementById('tipo_corso');
+    const livello = document.getElementById('livello');
+    const corsoForm = document.getElementById('corsoForm');
+
+    if (tipoCorso) tipoCorso.addEventListener('change', updateAnteprima);
+    if (livello) livello.addEventListener('change', updateAnteprima);
+    if (corsoForm) corsoForm.addEventListener('submit', handleSubmit);
+
   } catch (error) {
-    console.error('Errore inizializzazione:', error);
+    console.error('Errore durante l\'inizializzazione:', error);
     showFeedback('Errore durante l\'inizializzazione dell\'applicazione', 'error');
   }
 });
