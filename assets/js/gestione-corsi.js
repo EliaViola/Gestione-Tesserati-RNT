@@ -260,6 +260,39 @@ async function handleSubmit(e) {
   }
 }
 
+async function aggiornaAnteprima() {
+  const corso = document.getElementById("tipo_corso").value;
+  const pacchetti = Array.from(document.getElementById("pacchettiSelect").selectedOptions).map(o => o.value);
+  const container = document.getElementById("anteprimaContainer");
+
+  if (!corso || pacchetti.length === 0) {
+    container.innerHTML = '<p class="nessun-risultato">Seleziona un corso e un pacchetto</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch("/corsi.json");
+    const corsi = await res.json();
+    const iscritti = corsi.filter(c => c.tipo_corso === corso && c.pacchetti.some(p => pacchetti.includes(p)));
+
+    if (iscritti.length === 0) {
+      container.innerHTML = '<p class="nessun-risultato">Nessun iscritto trovato</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    iscritti.forEach(i => {
+      const div = document.createElement("div");
+      div.classList.add("iscritto-card");
+      div.textContent = `Tesserato: ${i.tesserato}, Corso: ${i.tipo_corso}, Pacchetti: ${i.pacchetti.join(", ")}, Orario: ${i.orario}`;
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error("Errore anteprima:", e);
+    container.innerHTML = '<p class="nessun-risultato">Errore nel caricamento.</p>';
+  }
+}
+
 
 // Inizializzazione app
 document.addEventListener('DOMContentLoaded', async () => {
