@@ -351,44 +351,46 @@ async function initForm() {
       pacchettiSelect.appendChild(option);
     });
     
-    // Aggiungi sezione frequenza
-    const pacchettiGroup = document.querySelector('.form-group.required-field');
-    const frequenzaHTML = `
-      <div class="form-group required-field">
-        <label><i class="fas fa-calendar-week"></i> Frequenza</label>
-        <div class="frequenza-selector">
-          <label>
-            <input type="radio" name="frequenza" value="1giorno" checked> 1 giorno/settimana
-          </label>
-          <label>
-            <input type="radio" name="frequenza" value="2giorni"> 2 giorni/settimana
-          </label>
-        </div>
-      </div>
-      <div class="form-group required-field giorni-container">
-        <label><i class="fas fa-calendar-day"></i> Seleziona giorno/i</label>
-        <div class="giorni-selector">
-          ${GIORNI_SETTIMANA.map(g => `
+    // Aggiungi sezione frequenza SOLO SE NON ESISTE GIÀ
+    if (!document.querySelector('.frequenza-selector')) {
+      const pacchettiGroup = document.querySelector('.form-group.required-field');
+      const frequenzaHTML = `
+        <div class="form-group required-field">
+          <label><i class="fas fa-calendar-week"></i> Frequenza</label>
+          <div class="frequenza-selector">
             <label>
-              <input type="checkbox" name="giorno" value="${g.id}"> ${g.nome}
+              <input type="radio" name="frequenza" value="1giorno" checked> 1 giorno/settimana
             </label>
-          `).join('')}
+            <label>
+              <input type="radio" name="frequenza" value="2giorni"> 2 giorni/settimana
+            </label>
+          </div>
         </div>
-      </div>`;
-    
-    pacchettiGroup.insertAdjacentHTML('afterend', frequenzaHTML);
+        <div class="form-group required-field giorni-container">
+          <label><i class="fas fa-calendar-day"></i> Seleziona giorno/i</label>
+          <div class="giorni-selector">
+            ${GIORNI_SETTIMANA.map(g => `
+              <label>
+                <input type="checkbox" name="giorno" value="${g.id}"> ${g.nome}
+              </label>
+            `).join('')}
+          </div>
+        </div>`;
+      
+      pacchettiGroup.insertAdjacentHTML('afterend', frequenzaHTML);
 
-    // Gestione cambio frequenza
-    document.querySelectorAll('input[name="frequenza"]').forEach(radio => {
-      radio.addEventListener('change', function() {
-        const giorniContainer = document.querySelector('.giorni-container');
-        if (this.value === '2giorni') {
-          giorniContainer.querySelector('label').textContent = 'Seleziona 2 giorni';
-        } else {
-          giorniContainer.querySelector('label').textContent = 'Seleziona giorno';
-        }
+      // Gestione cambio frequenza
+      document.querySelectorAll('input[name="frequenza"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          const giorniContainer = document.querySelector('.giorni-container');
+          if (this.value === '2giorni') {
+            giorniContainer.querySelector('label').textContent = 'Seleziona 2 giorni';
+          } else {
+            giorniContainer.querySelector('label').textContent = 'Seleziona giorno';
+          }
+        });
       });
-    });
+    }
 
   } catch (error) {
     console.error("Errore inizializzazione form:", error);
