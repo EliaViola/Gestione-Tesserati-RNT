@@ -10,10 +10,10 @@ let cache = {
 
 // Configurazione limiti corsi
 const LIMITI_CORSI = {
-  avviamento: { max: 8, durata: '30 min' },
-  principianti: { max: 8, durata: '30 min' },
-  intermedio: { max: 8, durata: '30 min' },
-  perfezionamento: { max: 8, durata: '30 min' },
+  avviamento: { max: 6, durata: '30 min' },
+  principianti: { max: 7, durata: '40 min' },
+  intermedio: { max: 8, durata: '40 min' },
+  perfezionamento: { max: 8, durata: '40 min' },
   cuffiegb: { max: 12, durata: '30 min' },
   calottegb: { max: 12, durata: '30 min' },
   propaganda: { max: 15, durata: '40 min' },
