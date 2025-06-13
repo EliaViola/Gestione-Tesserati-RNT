@@ -1,185 +1,282 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // Inizializzazione Firebase in modalità compat
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore(app);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-  // Elementi dal DOM (verifica che gli ID corrispondano al tuo HTML)
-  const form = document.getElementById('corsoForm');
-  const tesseratoSelect = document.getElementById('tesserato');
-  const pacchettiSelect = document.getElementById('pacchettiSelect');
-  const anteprimaContainer = document.getElementById('anteprimaContainer');
+// Cache per i dati
+let cache = {
+  tesserati: [],
+  pacchetti: [],
+  corsi: []
+};
 
-  // Limiti per tipologia di corso
-  const limiti = {
-    avviamento: 6,
-    principianti: 7,
-    intermedio: 7,
-    perfezionamento: 8
-  };
+// Funzione per mostrare feedback
+function showFeedback(message, type = 'success') {
+  const feedback = document.getElementById('feedback');
+  feedback.textContent = message;
+  feedback.className = `feedback-msg ${type}`;
+  feedback.style.display = 'block';
+  
+  setTimeout(() => {
+    feedback.style.display = 'none';
+  }, 5000);
+}
 
-  // Carica tesserati e popola il select "tesserato"
-  async function loadTesserati() {
-    try {
-      const snapshot = await db.collection("tesserati")
-        .where("tesseramento.stato", "==", "attivo")
-        .orderBy("anagrafica.cognome")
-        .orderBy("anagrafica.nome")
-        .get();
-        
-      tesseratoSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const nomeCompleto = `${data.anagrafica?.cognome || ''} ${data.anagrafica?.nome || ''}`.trim();
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = `${nomeCompleto} (${data.anagrafica?.codice_fiscale || 'N/D'})`;
-        tesseratoSelect.appendChild(option);
-      });
-    } catch (error) {
-      console.error("Errore nel caricamento dei tesserati:", error);
-    }
+// Carica tesserati attivi
+async function loadTesserati() {
+  if (cache.tesserati.length > 0) return cache.tesserati;
+  
+  try {
+    const snapshot = await db.collection("tesserati")
+      .where("tesseramento.stato", "==", "attivo")
+      .orderBy("anagrafica.cognome")
+      .orderBy("anagrafica.nome")
+      .get();
+    
+    cache.tesserati = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data(),
+      nomeCompleto: `${doc.data().anagrafica?.cognome || ''} ${doc.data().anagrafica?.nome || ''}`.trim()
+    }));
+    
+    return cache.tesserati;
+  } catch (error) {
+    console.error("Errore caricamento tesserati:", error);
+    showFeedback("Errore nel caricamento dei tesserati", 'error');
+    throw error;
+  }
+}
+
+// Carica pacchetti
+async function loadPacchetti() {
+  if (cache.pacchetti.length > 0) return cache.pacchetti;
+  
+  try {
+    const snapshot = await db.collection("pacchetti")
+      .orderBy("nome")
+      .get();
+    
+    cache.pacchetti = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        dateRange: data.date?.length > 0 
+          ? `${data.date[0]} - ${data.date[data.date.length - 1]}`
+          : 'Nessuna data'
+      };
+    });
+    
+    return cache.pacchetti;
+  } catch (error) {
+    console.error("Errore caricamento pacchetti:", error);
+    showFeedback("Errore nel caricamento dei pacchetti", 'error');
+    throw error;
+  }
+}
+
+// Carica tutti i corsi
+async function loadAllCorsi() {
+  if (cache.corsi.length > 0) return cache.corsi;
+  
+  try {
+    const snapshot = await db.collection("corsi").get();
+    cache.corsi = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return cache.corsi;
+  } catch (error) {
+    console.error("Errore caricamento corsi:", error);
+    throw error;
+  }
+}
+
+// Aggiorna l'anteprima con grafica migliorata
+async function updateAnteprima() {
+  const container = document.getElementById('anteprimaContainer');
+  const tipoCorso = document.getElementById('tipo_corso').value;
+  const livello = document.getElementById('livello').value;
+  const orario = document.getElementById('orario').value;
+
+  if (!tipoCorso || !livello || !orario) {
+    container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Seleziona tipo, livello e orario</div>';
+    return;
   }
 
-  // Carica pacchetti e popola il select "pacchettiSelect"
-  async function loadPacchetti() {
-    try {
-      const snapshot = await db.collection("pacchetti")
-        .orderBy("nome")
-        .get();
-        
-      pacchettiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const dateRange = data.date && data.date.length > 0 ? `${data.date[0]} - ${data.date[data.date.length - 1]}` : "Nessuna data";
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = `${data.nome} (${dateRange})`;
-        pacchettiSelect.appendChild(option);
-      });
-    } catch (error) {
-      console.error("Errore nel caricamento dei pacchetti:", error);
+  container.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const [allCorsi, allTesserati, allPacchetti] = await Promise.all([
+      loadAllCorsi(),
+      loadTesserati(),
+      loadPacchetti()
+    ]);
+
+    // Filtra i corsi
+    const corsiFiltrati = allCorsi.filter(corso => 
+      corso.tipologia === tipoCorso && 
+      corso.livello === livello && 
+      corso.orario === orario
+    );
+
+    if (corsiFiltrati.length === 0) {
+      container.innerHTML = '<div class="nessun-risultato"><i class="fas fa-info-circle"></i> Nessun corso trovato</div>';
+      return;
     }
-  }
 
-  // Aggiorna l'anteprima dei corsi in base a tipo e livello (non filtra per orario)
-  async function updateAnteprima() {
-    anteprimaContainer.innerHTML = "";
+    // Costruisci l'HTML
+    let html = '<div class="anteprima-corsi-container">';
+    
+    corsiFiltrati.forEach(corso => {
+      // Converti ID pacchetti in nomi
+      const pacchettiNomi = corso.pacchetti.map(pacchettoId => {
+        const pacchetto = allPacchetti.find(p => p.id === pacchettoId);
+        return pacchetto ? pacchetto.nome : pacchettoId;
+      });
 
-    // Ottieni valori dai select relativi al corso
-    const tipoCorso = document.getElementById('tipo_corso').value;
-    const livello = document.getElementById('livello').value;
+      // Converti ID tesserati in nomi
+      const tesseratiNomi = corso.iscritti.map(tesseratoId => {
+        const tesserato = allTesserati.find(t => t.id === tesseratoId);
+        return tesserato ? tesserato.nomeCompleto : tesseratoId;
+      });
 
-    try {
-      const snapshot = await db.collection("corsi").get();
-      // Itera su tutti i corsi e filtra quelli in base a tipologia e livello
-      snapshot.docs.forEach(async doc => {
-        const corso = doc.data();
-        if (corso.tipologia !== tipoCorso || corso.livello !== livello) return;
-
-        // Ottieni nomi dei pacchetti associati al corso
-        let pacchettiNomi = [];
-        if (corso.pacchetti && Array.isArray(corso.pacchetti)) {
-          for (const pid of corso.pacchetti) {
-            const pacDoc = await db.collection("pacchetti").doc(pid).get();
-            if (pacDoc.exists) {
-              pacchettiNomi.push(pacDoc.data().nome);
-            } else {
-              pacchettiNomi.push(pid);
-            }
-          }
-        }
-
-        // Ottieni nomi dei tesserati iscritti
-        let tesseratiNomi = [];
-        if (corso.iscritti && Array.isArray(corso.iscritti)) {
-          for (const tid of corso.iscritti) {
-            const tDoc = await db.collection("tesserati").doc(tid).get();
-            if (tDoc.exists) {
-              const tData = tDoc.data();
-              const nome = tData.anagrafica ? `${tData.anagrafica.cognome || ""} ${tData.anagrafica.nome || ""}`.trim() : "";
-              tesseratiNomi.push(nome || tid);
-            } else {
-              tesseratiNomi.push(tid);
-            }
-          }
-        }
-
-        const limiteMax = limiti[corso.tipologia.toLowerCase()] || null;
-        const haRaggiuntoLimite = limiteMax !== null && corso.iscritti && corso.iscritti.length >= limiteMax;
-
-        // Aggiunge l'HTML del corso all'anteprima
-        anteprimaContainer.innerHTML += `
-          <div class="corso-card ${haRaggiuntoLimite ? 'limite-raggiunto' : ''}">
-            <div class="corso-header">
-              <span class="corso-tipo">${corso.tipologia} - Liv. ${corso.livello}</span>
-              <span class="corso-orario"><i class="fas fa-clock"></i> ${corso.orario}</span>
-            </div>
-            <div class="corso-pacchetti">
-              <i class="fas fa-box-open"></i> ${pacchettiNomi.join(', ')}
-            </div>
-            <div class="corso-tesserati">
-              <h4><i class="fas fa-users"></i> Partecipanti (${tesseratiNomi.length}${limiteMax ? ` / ${limiteMax}` : ''})</h4>
-              <ul class="tesserati-list">
-                ${tesseratiNomi.map(n => `<li>${n}</li>`).join('')}
-              </ul>
-              ${haRaggiuntoLimite ? `<div class="limite-msg"><i class="fas fa-exclamation-triangle"></i> Limite massimo raggiunto</div>` : ''}
-            </div>
+      html += `
+        <div class="corso-card">
+          <div class="corso-header">
+            <span class="corso-tipo">${corso.tipologia} - Liv. ${corso.livello}</span>
+            <span class="corso-orario">${corso.orario}</span>
           </div>
-        `;
-      });
-    } catch (error) {
-      console.error("Errore nell'aggiornamento dell'anteprima:", error);
-    }
+          <div class="corso-pacchetti">
+            <i class="fas fa-box-open"></i> ${pacchettiNomi.join(', ')}
+          </div>
+          <div class="corso-tesserati">
+            <h4><i class="fas fa-users"></i> Partecipanti (${tesseratiNomi.length})</h4>
+            <ul class="tesserati-list">
+              ${tesseratiNomi.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+          </div>
+        </div>`;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+  } catch (error) {
+    console.error("Errore aggiornamento anteprima:", error);
+    container.innerHTML = '<div class="errore-msg"><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento</div>';
   }
+}
 
-  // Gestione del submit del form per salvare un nuovo corso
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+// Inizializzazione form
+async function initForm() {
+  try {
+    const [tesserati, pacchetti] = await Promise.all([
+      loadTesserati(),
+      loadPacchetti()
+    ]);
+    
+    // Popola tesserati
+    const tesseratiSelect = document.getElementById('tesserato');
+    tesseratiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    tesserati.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;
+      option.textContent = `${t.nomeCompleto} (${t.anagrafica?.codice_fiscale || 'N/D'})`;
+      tesseratiSelect.appendChild(option);
+    });
+    
+    // Popola pacchetti
+    const pacchettiSelect = document.getElementById('pacchettiSelect');
+    pacchettiSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    pacchetti.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+      option.textContent = `${p.nome} (${p.dateRange})`;
+      pacchettiSelect.appendChild(option);
+    });
+    
+  } catch (error) {
+    console.error("Errore inizializzazione form:", error);
+    showFeedback("Errore nel caricamento dei dati iniziali", 'error');
+  }
+}
 
-    const tipologia = document.getElementById("tipo_corso").value;
-    const livello = document.getElementById("livello").value;
-    const orario = document.getElementById("orario").value;
+// Gestione submit del form
+// Continua da handleSubmit
+async function handleSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const formData = new FormData(form);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
 
-    // Nel tuo form, il tesserato è un select (singolo) e i pacchetti sono un select a scelta multipla
-    const pacchetti = Array.from(pacchettiSelect.selectedOptions)
-      .filter(opt => opt.value !== "")
-      .map(opt => opt.value);
-    const tesserato = document.getElementById("tesserato").value;
+  try {
+    const tesseratoId = formData.get('tesserato');
+    const tipologia = formData.get('tipo_corso');
+    const livello = formData.get('livello');
+    const orario = formData.get('orario');
+    const note = formData.get('note') || '';
+    const pacchetti = Array.from(document.getElementById('pacchettiSelect').selectedOptions).map(opt => opt.value);
 
-    const limiteMax = limiti[tipologia.toLowerCase()];
-    // Per il form, dal momento che si seleziona un solo tesserato, il check sul numero di iscritti è superfluo
-    // (ma in caso di modifiche, puoi implementare il controllo lato form)
+    if (!tesseratoId || !tipologia || !livello || !orario || pacchetti.length === 0) {
+      showFeedback('Compila tutti i campi richiesti.', 'error');
+      return;
+    }
 
-    const corso = {
+    // Crea il documento corso
+    const corsoData = {
       tipologia,
       livello,
       orario,
+      note,
       pacchetti,
-      iscritti: [tesserato]
+      iscritti: [tesseratoId],
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    try {
-      const docRef = await db.collection("corsi").add(corso);
-      // Aggiorna il tesserato aggiungendo il riferimento al corso
-      const tDoc = await db.collection("tesserati").doc(tesserato).get();
-      if (tDoc.exists) {
-        const tData = tDoc.data();
-        const corsiAggiornati = tData.corsi || [];
-        corsiAggiornati.push(docRef.id);
-        await db.collection("tesserati").doc(tesserato).update({ corsi: corsiAggiornati });
+    const corsoRef = await db.collection("corsi").add(corsoData);
+    const corsoId = corsoRef.id;
+
+    // Aggiorna profilo del tesserato
+    await db.collection("tesserati").doc(tesseratoId).update({
+      [`corsi.${corsoId}`]: {
+        tipologia,
+        livello,
+        orario,
+        pacchetti,
+        note
       }
-      alert("Corso salvato con successo!");
-      form.reset();
-      updateAnteprima();
-    } catch (error) {
-      console.error("Errore durante il salvataggio del corso:", error);
-    }
-  });
+    });
 
-  // Aggiorna l'anteprima al variare dei campi (tipo, livello, orario, ecc.)
-  form.addEventListener("change", updateAnteprima);
+    showFeedback('Corso assegnato con successo.');
+    form.reset();
+    updateAnteprima();
 
-  // Caricamento iniziale di tesserati e pacchetti
-  loadTesserati();
-  loadPacchetti();
+  } catch (error) {
+    console.error("Errore nell'assegnazione del corso:", error);
+    showFeedback('Errore durante il salvataggio del corso.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
+
+
+// Inizializzazione app
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // Imposta l'anno corrente
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Inizializza form
+    await initForm();
+    
+    // Aggiungi event listeners
+    document.getElementById('tipo_corso').addEventListener('change', updateAnteprima);
+    document.getElementById('livello').addEventListener('change', updateAnteprima);
+    document.getElementById('corsoForm').addEventListener('submit', handleSubmit);
+    
+  } catch (error) {
+    console.error('Errore inizializzazione:', error);
+    showFeedback('Errore durante l\'inizializzazione dell\'applicazione', 'error');
+  }
 });
