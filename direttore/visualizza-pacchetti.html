@@ -66,6 +66,12 @@
         }
       };
 
+      // Converte una data nel formato gg/mm/aaaa in oggetto Date
+      const convertiGGMMAAAA = (dataStr) => {
+        const [giorno, mese, anno] = dataStr.split('/');
+        return new Date(anno, mese - 1, giorno);
+      };
+
       // Mostra messaggi di feedback
       function mostraFeedback(msg, tipo) {
         feedbackElement.textContent = msg;
@@ -89,16 +95,14 @@
         try {
           const idToken = await user.getIdTokenResult();
           if (!idToken.claims.director) {
-            mostraFeedback('Non hai i permessi necessari', 'error');
             await firebase.auth().signOut();
-            setTimeout(() => window.location.href = '../index.html', 2000);
+            window.location.href = '../index.html';
           } else {
             await caricaPacchetti();
           }
         } catch (error) {
           console.error('Errore verifica ruolo:', error);
-          mostraFeedback('Errore di autenticazione', 'error');
-          setTimeout(() => window.location.href = '../index.html', 2000);
+          window.location.href = '../index.html';
         }
       });
 
@@ -116,27 +120,7 @@
       async function caricaPacchetti() {
         try {
           toggleLoading(true);
-          
-          // Verifica se l'utente è ancora autenticato
-          const user = firebase.auth().currentUser;
-          if (!user) {
-            window.location.href = '../index.html';
-            return;
-          }
-
-          // Ottieni il token per verificare i permessi
-          const idToken = await user.getIdTokenResult();
-          if (!idToken.claims.director) {
-            throw new Error('Permessi insufficienti');
-          }
-
-          const snapshot = await firebase.firestore()
-            .collection('pacchetti')
-            .orderBy('creatoIl', 'desc')
-            .get({
-              source: idToken.claims.director ? 'default' : 'cache'
-            });
-            
+          const snapshot = await firebase.firestore().collection('pacchetti').get();
           pacchettiList.innerHTML = '';
 
           if (snapshot.empty) {
@@ -144,42 +128,65 @@
             return;
           }
 
+          // Prepara array di pacchetti con data di ordinamento
+          const pacchettiOrdinabili = [];
+          
           snapshot.forEach(doc => {
             const data = doc.data();
-            
-            // Gestione delle date
-            let dateOrdinate = [];
-            if (data.date && Array.isArray(data.date)) {
-              dateOrdinate = data.date
-                .map(dateStr => {
-                  try {
-                    const [gg, mm, aaaa] = dateStr.split('/');
-                    return new Date(aaaa, mm - 1, gg);
-                  } catch (e) {
-                    return null;
-                  }
-                })
+            let dateFormattate = [];
+            let primaData = null;
+
+            if (data.date && Array.isArray(data.date) && data.date.length > 0) {
+              // Converti e ordina le date
+              const dateConvertite = data.date
+                .map(dataStr => convertiGGMMAAAA(dataStr))
                 .filter(date => date && !isNaN(date.getTime()))
-                .sort((a, b) => a - b)
+                .sort((a, b) => a - b); // Ordine crescente
+              
+              if (dateConvertite.length > 0) {
+                primaData = dateConvertite[0]; // Prendi la prima data (la più vecchia)
+              }
+
+              // Formatta le date per la visualizzazione
+              dateFormattate = dateConvertite
                 .map(date => formattaData(date));
             }
 
+            pacchettiOrdinabili.push({
+              id: doc.id,
+              ...data,
+              dateFormattate,
+              primaData // Usata per l'ordinamento
+            });
+          });
+
+          // Ordina i pacchetti in base alla prima data (dal più recente al più vecchio)
+          pacchettiOrdinabili.sort((a, b) => {
+            if (!a.primaData && !b.primaData) return 0;
+            if (!a.primaData) return 1; // Pacchetti senza data alla fine
+            if (!b.primaData) return -1; // Pacchetti senza data alla fine
+            return a.primaData - b.primaData; // Ordine crescente (per invertire: b.primaData - a.primaData)
+          });
+
+          // Visualizza i pacchetti ordinati
+          pacchettiOrdinabili.forEach(pacchetto => {
             const div = document.createElement('div');
             div.className = 'pacchetto-item';
             div.innerHTML = `
               <div class="pacchetto-header">
-                <h3>${data.nome || 'Pacchetto senza nome'}</h3>
-                <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
+                <h3>${pacchetto.nome || 'Pacchetto senza nome'}</h3>
+                <button class="btn btn-danger" data-id="${pacchetto.id}">Elimina</button>
               </div>
               <div class="pacchetto-body">
-                <p><strong>Date:</strong> ${dateOrdinate.join(', ') || 'Nessuna data specificata'}</p>
-                <p><strong>Creato il:</strong> ${formattaData(data.creatoIl)}</p>
+                <p><strong>Date:</strong> ${pacchetto.dateFormattate.length > 0 ? pacchetto.dateFormattate.join(', ') : 'Nessuna data specificata'}</p>
+                <p><strong>Prima data:</strong> ${pacchetto.primaData ? formattaData(pacchetto.primaData) : 'N/A'}</p>
+                <p><strong>Creato il:</strong> ${formattaData(pacchetto.creatoIl)}</p>
               </div>
             `;
             pacchettiList.appendChild(div);
           });
 
-          // Gestione eliminazione
+          // Aggiungi event listener per i pulsanti di eliminazione
           document.querySelectorAll('.btn-danger').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.stopPropagation();
@@ -190,14 +197,12 @@
                   mostraFeedback('Pacchetto eliminato con successo!', 'success');
                   btn.closest('.pacchetto-item').remove();
                   
-                  if (!pacchettiList.children.length) {
+                  if (pacchettiList.children.length === 0) {
                     pacchettiList.innerHTML = '<p class="no-data">Nessun pacchetto trovato.</p>';
                   }
                 } catch (err) {
                   console.error('Errore eliminazione:', err);
-                  mostraFeedback(err.code === 'permission-denied' ? 
-                    'Non hai i permessi per eliminare' : 
-                    'Errore durante l\'eliminazione', 'error');
+                  mostraFeedback('Errore durante l\'eliminazione.', 'error');
                 }
               }
             });
@@ -205,16 +210,7 @@
 
         } catch (err) {
           console.error('Errore caricamento pacchetti:', err);
-          mostraFeedback(
-            err.message.includes('permission') || err.code === 'permission-denied' ?
-              'Permessi insufficienti' :
-              'Errore durante il caricamento',
-            'error'
-          );
-          
-          if (err.code === 'permission-denied') {
-            setTimeout(() => firebase.auth().signOut(), 2000);
-          }
+          mostraFeedback('Errore durante il caricamento dei pacchetti.', 'error');
         } finally {
           toggleLoading(false);
         }
