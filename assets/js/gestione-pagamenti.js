@@ -175,13 +175,27 @@ async function caricaStoricoPagamenti(tesseratoId) {
   }
 }
 
+// Helper functions
+function resetCampi() {
+  document.getElementById("corsiSelect").innerHTML = '<option value="">-- Seleziona --</option>';
+  document.getElementById("pacchettiSelect").innerHTML = '<option value="">Seleziona un tesserato</option>';
+  storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Seleziona un tesserato</td></tr>';
+  currentTesseratoId = null;
+  tuttiPacchettiTesserato = [];
+}
+
+function showError(message) {
+  const feedback = document.getElementById("feedback");
+  feedback.textContent = message;
+  feedback.classList.add("error");
+}
+
 // Inizializzazione
 document.addEventListener("DOMContentLoaded", async () => {
   const tSelect = document.getElementById("tesseratiSelect");
   const cSelect = document.getElementById("corsiSelect");
   const pSelect = document.getElementById("pacchettiSelect");
   const form = document.getElementById("pagamentoForm");
-  const feedback = document.getElementById("feedback");
 
   // Imposta data odierna
   document.getElementById("data").valueAsDate = new Date();
@@ -194,6 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      const feedback = document.getElementById("feedback");
       feedback.textContent = "Caricamento tesserati...";
       const tesserati = await loadTesserati();
       
@@ -207,8 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       feedback.textContent = "";
     } catch (error) {
-      feedback.textContent = error.message;
-      feedback.classList.add("error");
+      showError(error.message);
     }
   });
 
@@ -222,6 +236,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      const feedback = document.getElementById("feedback");
       feedback.textContent = "Caricamento dati...";
       feedback.classList.remove("error", "success");
       
@@ -254,8 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       feedback.textContent = "";
     } catch (error) {
-      feedback.textContent = "Errore nel caricamento dei dati";
-      feedback.classList.add("error");
+      showError("Errore nel caricamento dei dati");
       console.error("Errore cambio tesserato:", error);
     }
   });
@@ -266,6 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Submit form
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const feedback = document.getElementById("feedback");
     feedback.textContent = "";
     feedback.className = "form-feedback";
 
@@ -279,7 +294,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       .filter(Boolean);
 
     // Validazioni
-    if (!tesseratoId || !corsoId || isNaN(importo) {
+    if (!tesseratoId || !corsoId || isNaN(importo)) {
       showError("Compila tutti i campi obbligatori");
       return;
     }
@@ -350,18 +365,4 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Errore submit form:", error);
     }
   });
-
-  // Helper functions
-  function resetCampi() {
-    cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-    pSelect.innerHTML = '<option value="">Seleziona un tesserato</option>';
-    storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Seleziona un tesserato</td></tr>';
-    currentTesseratoId = null;
-    tuttiPacchettiTesserato = [];
-  }
-
-  function showError(message) {
-    feedback.textContent = message;
-    feedback.classList.add("error");
-  }
 });
