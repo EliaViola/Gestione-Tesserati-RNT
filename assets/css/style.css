@@ -1190,3 +1190,14 @@ select {
 .actions-cell {
   white-space: nowrap;
 }
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+
+

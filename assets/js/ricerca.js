@@ -2,9 +2,8 @@
 window.eseguiRicerca = function() {};
 window.resetRicerca = function() {};
 window.modificaTesserato = function(id) { window.location.href = `dettaglio-tesserato.html?id=${id}`; };
-window.modificaCorso = function(id) { window.location.href = `modifica-corsi.html?id=${id}`; };
-window.eliminaTesserato = function(id) {};
-window.rimuoviTesseratoDaiCorsi = function(id) {};
+window.eliminaTesserato = function(id) {}; // Eliminazione definitiva
+window.rimuoviTesseratoDalCorso = function(idCorso, idTesserato) {}; // Rimozione dal corso specifico
 
 document.addEventListener('DOMContentLoaded', function() {
   try {
@@ -156,8 +155,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <button class="btn btn-small btn-detail" onclick="modificaTesserato('${tesserato.id}')">
           <i class="fas fa-info-circle"></i> Dettaglio
         </button>
-        <button class="btn btn-small btn-remove" onclick="rimuoviTesseratoDaiCorsi('${tesserato.id}')">
-  <i class="fas fa-user-minus"></i> Rimuovi da corsi
+        <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
+  <i class="fas fa-trash-alt"></i> Elimina definitivamente
 </button>
       </td>
     `;
@@ -190,13 +189,13 @@ document.addEventListener('DOMContentLoaded', function() {
       <td>${corso.orario || 'N/D'}</td>
       <td>${corso.istruttore || 'N/D'}</td>
       <td class="actions-cell">
-        <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
-          <i class="fas fa-edit"></i> Modifica
-        </button>
-        <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
-          <i class="fas fa-trash-alt"></i> Elimina
-        </button>
-      </td>
+  ${corso.iscritti && corso.iscritti.length > 0 ? 
+    `<button class="btn btn-small btn-remove" 
+            onclick="rimuoviTesseratoDalCorso('${corso.id}', '${corso.iscritti[0]}')">
+      <i class="fas fa-user-minus"></i> Rimuovi dal corso
+    </button>` : 
+    'Nessun iscritto'}
+</td>
       <td class="actions-cell">
         ${corso.iscritti && corso.iscritti.length > 0 ? 
           `<button class="btn btn-small btn-remove" 
@@ -302,12 +301,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzioni per eliminazione
     window.eliminaTesserato = async function(idTesserato) {
-  if (!confirm('Sei sicuro di voler ELIMINARE DEFINITIVAMENTE questo tesserato?\n\nVerrà rimosso dal database e da tutti i corsi a cui è iscritto.')) {
+  if (!confirm('ATTENZIONE: Eliminare definitivamente questo tesserato?\n\nVerrà rimosso completamente dal sistema.')) {
     return;
   }
 
   try {
-    // 1. Rimuovi il tesserato da tutti i corsi
+    // 1. Rimuovi da tutti i corsi
     const corsiSnapshot = await db.collection("corsi")
       .where("iscritti", "array-contains", idTesserato)
       .get();
@@ -320,25 +319,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     await batch.commit();
 
-    // 2. Elimina il tesserato dalla collezione tesserati
+    // 2. Elimina il tesserato
     await db.collection("tesserati").doc(idTesserato).delete();
 
-    showFeedback('Tesserato eliminato definitivamente con successo!', 'success');
+    showFeedback('Tesserato eliminato definitivamente!', 'success');
     eseguiRicerca();
     
   } catch (error) {
     console.error("Errore eliminazione tesserato:", error);
-    showFeedback("Errore durante l'eliminazione del tesserato", 'error');
+    showFeedback("Errore durante l'eliminazione", 'error');
   }
 };
 
     window.rimuoviTesseratoDalCorso = async function(idCorso, idTesserato) {
-  if (!confirm('Sei sicuro di voler rimuovere questo tesserato dal corso?\n\nIl tesserato rimarrà nel database ma non sarà più iscritto a questo corso specifico.')) {
+  if (!confirm('Rimuovere questo tesserato dal corso?\n\nRimarrà nel sistema ma non più iscritto a questo corso.')) {
     return;
   }
 
   try {
-    // Ottieni il corso corrente
     const corsoRef = db.collection("corsi").doc(idCorso);
     const corsoDoc = await corsoRef.get();
 
@@ -346,19 +344,15 @@ document.addEventListener('DOMContentLoaded', function() {
       throw new Error('Corso non trovato');
     }
 
-    // Filtra gli iscritti rimuovendo il tesserato
-    const currentIscritti = corsoDoc.data().iscritti || [];
-    const updatedIscritti = currentIscritti.filter(id => id !== idTesserato);
-
-    // Aggiorna il corso
+    const updatedIscritti = corsoDoc.data().iscritti.filter(id => id !== idTesserato);
     await corsoRef.update({ iscritti: updatedIscritti });
 
-    showFeedback('Tesserato rimosso dal corso con successo!', 'success');
+    showFeedback('Tesserato rimosso dal corso!', 'success');
     eseguiRicerca();
     
   } catch (error) {
-    console.error("Errore rimozione tesserato dal corso:", error);
-    showFeedback("Errore durante la rimozione dal corso", 'error');
+    console.error("Errore rimozione dal corso:", error);
+    showFeedback("Errore durante la rimozione", 'error');
   }
 };
 
