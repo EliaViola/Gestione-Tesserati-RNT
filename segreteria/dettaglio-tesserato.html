@@ -1,233 +1,244 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dettaglio Tesserato - Rari Nantes Trento</title>
-  <link rel="stylesheet" href="../assets/css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Firebase scripts -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="../assets/js/firebase-config.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dettaglio Tesserato - Rari Nantes Trento</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="../assets/js/firebase-config.js"></script>
 </head>
 <body>
-  <header>
-    <div class="header-container">
-      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
-      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
-    </div>
-  </header>
-
-  <nav>
-    <div class="nav-container">
-      <a href="inserimento.html">Anagrafica</a>
-      <a href="inserimento-dati-corsi.html">Corsi</a>
-      <a href="pagamenti.html">Pagamenti</a>
-      <a href="ricerca-dati.html">Ricerca</a>
-    </div>
-  </nav>
-
-  <main>
-    <div class="form-container">
-      <h1 class="form-title">Dettaglio Tesserato</h1>
-      
-      <div id="loading-indicator" class="loading-indicator hidden">
-        <i class="fas fa-spinner fa-spin"></i> Caricamento in corso...
-      </div>
-      
-      <div id="feedback-msg" class="feedback-msg hidden" role="alert" aria-live="polite"></div>
-      
-      <form id="form-tesserato" class="form-grid">
-        <!-- Sezione Anagrafica -->
-        <div class="form-section">
-          <h3 class="section-title"><i class="fas fa-id-card"></i> Dati Anagrafici</h3>
-          <div class="form-group required-field">
-            <label for="nome">Nome</label>
-            <input type="text" id="nome" name="nome" required pattern="[A-Za-zÀ-ÿ\s']{2,}">
-          </div>
-          <div class="form-group required-field">
-            <label for="cognome">Cognome</label>
-            <input type="text" id="cognome" name="cognome" required pattern="[A-Za-zÀ-ÿ\s']{2,}">
-          </div>
-          <div class="form-group required-field">
-            <label for="codice-fiscale">Codice Fiscale</label>
-            <input type="text" id="codice-fiscale" name="codice-fiscale" required>
-          </div>
-          <div class="form-group required-field">
-            <label for="data-nascita">Data di Nascita</label>
-            <input type="date" id="data-nascita" name="data-nascita" required>
-          </div>
-          <div class="form-group required-field">
-            <label for="luogo-nascita">Luogo di Nascita</label>
-            <input type="text" id="luogo-nascita" name="luogo-nascita" required>
-          </div>
-          <div class="form-group required-field">
-            <label for="sesso">Sesso</label>
-            <select id="sesso" name="sesso" required>
-              <option value="M">Maschio</option>
-              <option value="F">Femmina</option>
-              <option value="Altro">Altro</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="nazionalita">Nazionalità</label>
-            <input type="text" id="nazionalita" name="nazionalita">
-          </div>
+    <header>
+        <div class="header-container">
+            <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+            <button class="logout-btn" onclick="location.href='../index.html'" aria-label="Esci dal sistema">Logout</button>
         </div>
+    </header>
 
-        <!-- Sezione Contatti -->
-        <div class="form-section">
-          <h3 class="section-title"><i class="fas fa-address-book"></i> Contatti</h3>
-          <div class="form-group">
-            <label for="indirizzo">Indirizzo</label>
-            <input type="text" id="indirizzo" name="indirizzo">
-          </div>
-          <div class="form-group">
-            <label for="citta">Città</label>
-            <input type="text" id="citta" name="citta">
-          </div>
-          <div class="form-group">
-            <label for="provincia">Provincia</label>
-            <input type="text" id="provincia" name="provincia" maxlength="2">
-          </div>
-          <div class="form-group">
-            <label for="cap">CAP</label>
-            <input type="text" id="cap" name="cap" maxlength="5">
-          </div>
-          <div class="form-group required-field">
-            <label for="telefono">Telefono</label>
-            <input type="tel" id="telefono" name="telefono" required>
-          </div>
-          <div class="form-group required-field">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
-          </div>
+    <nav aria-label="Navigazione principale">
+        <div class="nav-container">
+            <a href="inserimento.html">Anagrafica</a>
+            <a href="inserimento-dati-corsi.html">Corsi</a>
+            <a href="pagamenti.html">Pagamenti</a>
+            <a href="ricerca-dati.html">Ricerca</a>
         </div>
+    </nav>
 
-        <!-- Sezione Documenti -->
-        <div class="form-section">
-          <h3 class="section-title"><i class="fas fa-passport"></i> Documenti</h3>
-          <div class="form-group">
-            <label for="tipo-documento">Tipo Documento</label>
-            <select id="tipo-documento" name="tipo-documento">
-              <option value="">Seleziona</option>
-              <option value="Carta Identità">Carta Identità</option>
-              <option value="Passaporto">Passaporto</option>
-              <option value="Patente">Patente</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="numero-documento">Numero Documento</label>
-            <input type="text" id="numero-documento" name="numero-documento">
-          </div>
-          <div class="form-group">
-            <label for="rilasciato-da">Rilasciato da</label>
-            <input type="text" id="rilasciato-da" name="rilasciato-da">
-          </div>
-          <div class="form-group">
-            <label for="data-rilascio">Data Rilascio</label>
-            <input type="date" id="data-rilascio" name="data-rilascio">
-          </div>
-          <div class="form-group">
-            <label for="data-scadenza">Data Scadenza</label>
-            <input type="date" id="data-scadenza" name="data-scadenza">
-          </div>
+    <main>
+        <div class="form-container">
+            <h1 class="form-title" id="formTitle">
+                <i class="fas fa-user-circle"></i> Dettaglio Tesserato
+            </h1>
+            
+            <div id="loading-indicator" class="loading-indicator hidden">
+                <i class="fas fa-spinner fa-spin"></i> Caricamento in corso...
+            </div>
+            
+            <div id="feedback-msg" class="feedback-msg hidden" role="alert" aria-live="polite"></div>
+            
+            <form id="form-tesserato" class="form-grid">
+                <!-- Sezione Anagrafica -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-id-card"></i> Dati Anagrafici
+                    </h3>
+                    <div class="form-group required-field">
+                        <label for="nome">
+                            <i class="fas fa-signature"></i> Nome
+                        </label>
+                        <input type="text" id="nome" name="nome" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="cognome">
+                            <i class="fas fa-signature"></i> Cognome
+                        </label>
+                        <input type="text" id="cognome" name="cognome" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="codice-fiscale">
+                            <i class="fas fa-id-badge"></i> Codice Fiscale
+                        </label>
+                        <input type="text" id="codice-fiscale" name="codice-fiscale" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="data-nascita">
+                            <i class="fas fa-birthday-cake"></i> Data di Nascita
+                        </label>
+                        <input type="date" id="data-nascita" name="data-nascita" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="luogo-nascita">
+                            <i class="fas fa-map-marker-alt"></i> Luogo di Nascita
+                        </label>
+                        <input type="text" id="luogo-nascita" name="luogo-nascita" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="sesso">
+                            <i class="fas fa-venus-mars"></i> Sesso
+                        </label>
+                        <select id="sesso" name="sesso" class="form-control" required>
+                            <option value="M">Maschio</option>
+                            <option value="F">Femmina</option>
+                            <option value="Altro">Altro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sezione Contatti -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-address-book"></i> Contatti
+                    </h3>
+                    <div class="form-group">
+                        <label for="indirizzo">
+                            <i class="fas fa-home"></i> Indirizzo
+                        </label>
+                        <input type="text" id="indirizzo" name="indirizzo" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="citta">
+                            <i class="fas fa-city"></i> Città
+                        </label>
+                        <input type="text" id="citta" name="citta" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="provincia">
+                            <i class="fas fa-map-pin"></i> Provincia
+                        </label>
+                        <input type="text" id="provincia" name="provincia" class="form-control" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label for="cap">
+                            <i class="fas fa-mail-bulk"></i> CAP
+                        </label>
+                        <input type="text" id="cap" name="cap" class="form-control" maxlength="5">
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="telefono">
+                            <i class="fas fa-phone"></i> Telefono
+                        </label>
+                        <input type="tel" id="telefono" name="telefono" class="form-control" required>
+                    </div>
+                    <div class="form-group required-field">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- Sezione Documenti -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-passport"></i> Documenti
+                    </h3>
+                    <div class="form-group">
+                        <label for="tipo-documento">
+                            <i class="fas fa-id-card"></i> Tipo Documento
+                        </label>
+                        <select id="tipo-documento" name="tipo-documento" class="form-control">
+                            <option value="">-- Seleziona --</option>
+                            <option value="Carta Identità">Carta Identità</option>
+                            <option value="Passaporto">Passaporto</option>
+                            <option value="Patente">Patente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="numero-documento">
+                            <i class="fas fa-hashtag"></i> Numero Documento
+                        </label>
+                        <input type="text" id="numero-documento" name="numero-documento" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="rilasciato-da">
+                            <i class="fas fa-building"></i> Rilasciato da
+                        </label>
+                        <input type="text" id="rilasciato-da" name="rilasciato-da" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="data-rilascio">
+                            <i class="fas fa-calendar-alt"></i> Data Rilascio
+                        </label>
+                        <input type="date" id="data-rilascio" name="data-rilascio" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="data-scadenza">
+                            <i class="fas fa-calendar-times"></i> Data Scadenza
+                        </label>
+                        <input type="date" id="data-scadenza" name="data-scadenza" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Sezione Corsi Attuali -->
+                <div class="form-section full-width">
+                    <h3 class="section-title">
+                        <i class="fas fa-swimming-pool"></i> Corsi Attuali
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo Corso</th>
+                                    <th>Livello</th>
+                                    <th>Giorni</th>
+                                    <th>Orario</th>
+                                    <th>Pacchetto</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corsi-attuali-body">
+                                <!-- Popolato dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sezione Storico Corsi -->
+                <div class="form-section full-width">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i> Storico Corsi
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo Corso</th>
+                                    <th>Livello</th>
+                                    <th>Giorni</th>
+                                    <th>Stagione</th>
+                                    <th>Pacchetto</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storico-corsi-body">
+                                <!-- Popolato dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="form-actions full-width">
+                    <button type="button" class="btn btn-secondary" id="btn-annulla" onclick="annullaModifiche()">
+                        <i class="fas fa-times"></i> Annulla
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-salva" onclick="salvaModificheTesserato()">
+                        <i class="fas fa-save"></i> Salva Modifiche
+                    </button>
+                </div>
+            </form>
         </div>
+    </main>
 
-        <!-- Sezione Tesseramento -->
-        <div class="form-section">
-          <h3 class="section-title"><i class="fas fa-id-badge"></i> Tesseramento</h3>
-          <div class="form-group">
-            <label for="data-tesseramento">Data Tesseramento</label>
-            <input type="date" id="data-tesseramento" name="data-tesseramento">
-          </div>
-          <div class="form-group">
-            <label for="tipo-tessera">Tipo Tessera</label>
-            <select id="tipo-tessera" name="tipo-tessera">
-              <option value="">Seleziona</option>
-              <option value="Atleta">Atleta</option>
-              <option value="Amico">Amico</option>
-              <option value="Sostenitore">Sostenitore</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="numero-tessera">Numero Tessera</label>
-            <input type="text" id="numero-tessera" name="numero-tessera">
-          </div>
-          <div class="form-group">
-            <label for="stato-tessera">Stato Tessera</label>
-            <select id="stato-tessera" name="stato-tessera">
-              <option value="Attiva">Attiva</option>
-              <option value="Scaduta">Scaduta</option>
-              <option value="Sospesa">Sospesa</option>
-            </select>
-          </div>
+    <footer>
+        <div class="footer-container">
+            <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
         </div>
-
-        <!-- Sezione Corsi Attuali -->
-<div class="form-section full-width">
-  <h3 class="section-title"><i class="fas fa-swimming-pool"></i> Corsi Attuali</h3>
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Tipo Corso</th>
-          <th>Livello</th>
-          <th>Giorni</th>
-          <th>Orario</th>
-          <th>Pacchetto</th>
-          <th>Azioni</th>
-        </tr>
-      </thead>
-      <tbody id="corsi-attuali-body">
-        <!-- Popolato dinamicamente -->
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Sezione Storico Corsi -->
-<div class="form-section full-width">
-  <h3 class="section-title"><i class="fas fa-history"></i> Storico Corsi</h3>
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Tipo Corso</th>
-          <th>Livello</th>
-          <th>Giorni</th>
-          <th>Stagione</th>
-          <th>Pacchetto</th>
-          <th>Stato</th>
-        </tr>
-      </thead>
-      <tbody id="storico-corsi-body">
-        <!-- Popolato dinamicamente -->
-      </tbody>
-    </table>
-  </div>
-</div>
-
-        <div class="form-actions full-width">
-          <button type="button" class="btn btn-secondary" id="btn-annulla" onclick="annullaModifiche()">
-            <i class="fas fa-times"></i> Annulla
-          </button>
-          <button type="button" class="btn btn-primary" id="btn-salva" onclick="salvaModificheTesserato()">
-            <i class="fas fa-save"></i> Salva Modifiche
-          </button>
-        </div>
-      </form>
-    </div>
-  </main>
-
-  <footer>
-    <div class="footer-container">
-      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
-    </div>
-  </footer>
+    </footer>
   <!-- JS -->
   <script src="../assets/js/dettaglio-tesserato.js"></script>
 </body>
