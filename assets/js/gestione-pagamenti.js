@@ -295,14 +295,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Validazioni
     if (!tesseratoId || !corsoId || isNaN(importo)) {
-      showError("Compila tutti i campi obbligatori");
-      return;
-    }
+    showError("Compila tutti i campi obbligatori");
+    return;
+}
 
-    if (importo <= 0) {
-      showError("L'importo deve essere positivo");
-      return;
-    }
+if (importo <= 0) {
+    showError("L'importo deve essere positivo");
+    return;
+}
 
     try {
       feedback.textContent = "Registrazione in corso...";
