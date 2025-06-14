@@ -4,7 +4,7 @@ window.resetRicerca = function() {};
 window.modificaTesserato = function(id) { window.location.href = `dettaglio-tesserato.html?id=${id}`; };
 window.modificaCorso = function(id) { window.location.href = `modifica-corsi.html?id=${id}`; };
 window.eliminaTesserato = function(id) {};
-window.eliminaCorso = function(id) {};
+window.rimuoviTesseratoDaiCorsi = function(id) {};
 
 document.addEventListener('DOMContentLoaded', function() {
   try {
@@ -156,9 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <button class="btn btn-small btn-detail" onclick="modificaTesserato('${tesserato.id}')">
           <i class="fas fa-info-circle"></i> Dettaglio
         </button>
-        <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
-          <i class="fas fa-trash-alt"></i> Elimina
-        </button>
+        <button class="btn btn-small btn-remove" onclick="rimuoviTesseratoDaiCorsi('${tesserato.id}')">
+  <i class="fas fa-user-minus"></i> Rimuovi da corsi
+</button>
       </td>
     `;
     corpoTesserati.appendChild(row);
@@ -293,30 +293,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzioni per eliminazione
     window.eliminaTesserato = async function(idTesserato) {
-      if (!confirm('Sei sicuro di voler eliminare questo tesserato?')) return;
-      
-      try {
-          await db.collection("tesserati").doc(idTesserato).delete();
-          showFeedback('Tesserato eliminato con successo!');
-          eseguiRicerca();
-      } catch (error) {
-          console.error("Errore eliminazione tesserato:", error);
-          showFeedback("Errore durante l'eliminazione del tesserato", 'error');
-      }
-    };
+  if (!confirm('Sei sicuro di voler eliminare questo tesserato da tutti i corsi e dal database?')) return;
+  
+  try {
+    // 1. Prima rimuovi il tesserato da tutti i corsi a cui è iscritto
+    const corsiSnapshot = await db.collection("corsi")
+      .where("iscritti", "array-contains", idTesserato)
+      .get();
 
-    window.eliminaCorso = async function(idCorso) {
-      if (!confirm('Sei sicuro di voler eliminare questo corso?')) return;
+    // Aggiorna tutti i corsi in parallelo
+    const updatePromises = corsiSnapshot.docs.map(async (doc) => {
+      const corsoData = doc.data();
+      const updatedIscritti = corsoData.iscritti.filter(id => id !== idTesserato);
       
-      try {
-          await db.collection("corsi").doc(idCorso).delete();
-          showFeedback('Corso eliminato con successo!');
-          eseguiRicerca();
-      } catch (error) {
-          console.error("Errore eliminazione corso:", error);
-          showFeedback("Errore durante l'eliminazione del corso", 'error');
-      }
-    };
+      await db.collection("corsi").doc(doc.id).update({
+        iscritti: updatedIscritti
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    // 2. Poi elimina il tesserato dalla collezione tesserati
+    await db.collection("tesserati").doc(idTesserato).delete();
+    
+    showFeedback('Tesserato rimosso con successo da tutti i corsi e dal database!');
+    eseguiRicerca(); // Ricarica i risultati
+    
+  } catch (error) {
+    console.error("Errore durante l'eliminazione del tesserato:", error);
+    showFeedback("Errore durante l'eliminazione del tesserato", 'error');
+  }
+};
+
+    window.rimuoviTesseratoDaiCorsi = async function(idTesserato) {
+  if (!confirm('Sei sicuro di voler rimuovere questo tesserato da tutti i corsi?')) return;
+  
+  try {
+    const corsiSnapshot = await db.collection("corsi")
+      .where("iscritti", "array-contains", idTesserato)
+      .get();
+
+    const updatePromises = corsiSnapshot.docs.map(async (doc) => {
+      const updatedIscritti = doc.data().iscritti.filter(id => id !== idTesserato);
+      await db.collection("corsi").doc(doc.id).update({
+        iscritti: updatedIscritti
+      });
+    });
+
+    await Promise.all(updatePromises);
+    
+    showFeedback('Tesserato rimosso con successo da tutti i corsi!');
+    eseguiRicerca();
+    
+  } catch (error) {
+    console.error("Errore durante la rimozione del tesserato dai corsi:", error);
+    showFeedback("Errore durante la rimozione del tesserato dai corsi", 'error');
+  }
+};
 
     // Sovrascrivi le funzioni globali
     window.eseguiRicerca = eseguiRicerca;
