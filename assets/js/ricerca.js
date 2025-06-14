@@ -15,6 +15,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const db = firebase.firestore();
     const auth = firebase.auth();
 
+    // Funzioni helper
+    function getCorsoName(tipo) {
+      const names = {
+        'avviamento': 'Avviamento',
+        'principianti': 'Principianti',
+        'intermedio': 'Intermedio',
+        'perfezionamento': 'Perfezionamento',
+        'cuffiegb': 'Cuffie Giallo Blu',
+        'calottegb': 'Calottine Giallo Blu',
+        'propaganda': 'Propaganda',
+        'agonisti': 'Agonisti',
+        'pallanuoto': 'Pallanuoto'
+      };
+      return names[tipo] || tipo;
+    }
+
+    function formatGiorni(giorni) {
+      const giorniMap = {
+        'lun': 'Lunedì',
+        'mar': 'Martedì',
+        'mer': 'Mercoledì',
+        'gio': 'Giovedì',
+        'ven': 'Venerdì'
+      };
+      return Array.isArray(giorni) ? 
+        giorni.map(g => giorniMap[g] || g).join(', ') : 
+        'N/D';
+    }
+
     // Mostra feedback all'utente
     function showFeedback(message, type = 'success') {
       const feedback = document.createElement('div');
@@ -30,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         let query = db.collection("tesserati");
         
-        // Aggiungi filtri alla query solo se presenti
         if (filtroNome) {
           query = query.where("anagrafica.nome", ">=", filtroNome)
                        .where("anagrafica.nome", "<=", filtroNome + '\uf8ff');
@@ -79,6 +107,83 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    // Mostra i tesserati filtrati
+    function mostraTesseratiFiltrati(tesserati) {
+      const corpoTesserati = document.getElementById('corpoTabellaTesserati');
+      corpoTesserati.innerHTML = '';
+      
+      if (tesserati.length === 0) {
+          corpoTesserati.innerHTML = `
+            <tr>
+              <td colspan="7" class="nessun-risultato">
+                Nessun tesserato trovato con i filtri selezionati
+              </td>
+            </tr>`;
+          return;
+      }
+
+      tesserati.forEach(tesserato => {
+        const anagrafica = tesserato.anagrafica || {};
+        const contatti = tesserato.contatti || {};
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${anagrafica.nome || 'N/D'}</td>
+          <td>${anagrafica.cognome || 'N/D'}</td>
+          <td>${anagrafica.codice_fiscale || 'N/D'}</td>
+          <td>${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
+          <td>${contatti.telefono || 'N/D'}</td>
+          <td>${contatti.email || 'N/D'}</td>
+          <td class="actions-cell">
+            <button class="btn btn-small btn-edit" onclick="modificaTesserato('${tesserato.id}')">
+              <i class="fas fa-edit"></i> Modifica
+            </button>
+            <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
+              <i class="fas fa-trash-alt"></i> Elimina
+            </button>
+          </td>
+        `;
+        corpoTesserati.appendChild(row);
+      });
+    }
+
+    // Mostra i corsi filtrati
+    function mostraCorsiFiltrati(corsi) {
+      const corpoCorsi = document.getElementById('corpoTabellaCorsi');
+      corpoCorsi.innerHTML = '';
+      
+      if (corsi.length === 0) {
+          corpoCorsi.innerHTML = `
+            <tr>
+              <td colspan="7" class="nessun-risultato">
+                Nessun corso trovato con i filtri selezionati
+              </td>
+            </tr>`;
+          return;
+      }
+
+      corsi.forEach(corso => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${corso.iscritti?.length ? corso.iscritti[0] : 'N/D'}</td>
+            <td>${getCorsoName(corso.tipologia)}</td>
+            <td>${corso.livello || 'N/D'}</td>
+            <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
+            <td>${corso.orario || 'N/D'}</td>
+            <td>${corso.istruttore || 'N/D'}</td>
+            <td class="actions-cell">
+              <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
+                <i class="fas fa-edit"></i> Modifica
+              </button>
+              <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
+                <i class="fas fa-trash-alt"></i> Elimina
+              </button>
+            </td>
+          `;
+          corpoCorsi.appendChild(row);
+      });
+    }
+
     // Funzione principale di ricerca
     async function eseguiRicerca() {
       const filtroNome = document.getElementById('filtro-nome').value.toLowerCase();
@@ -121,182 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Errore durante la ricerca:", error);
         showFeedback("Errore durante la ricerca dei dati", 'error');
       }
-    }
-
-    // Mostra i tesserati filtrati
-    function mostraTesseratiFiltrati(tesserati) {
-      const corpoTesserati = document.getElementById('corpoTabellaTesserati');
-      corpoTesserati.innerHTML = '';
-      
-      if (tesserati.length === 0) {
-          corpoTesserati.innerHTML = `
-            <tr>
-              <td colspan="7" class="nessun-risultato">
-                Nessun tesserato trovato con i filtri selezionati
-              </td>
-            </tr>`;
-          return;
-      }
-
-      tesserati.forEach(tesserato => {
-        const anagrafica = tesserato.anagrafica || {};
-        const contatti = tesserato.contatti || {};
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${anagrafica.nome || 'N/D'}</td>
-          <td>${anagrafica.cognome || 'N/D'}</td>
-          <td>${anagrafica.codice_fiscale || 'N/D'}</td>
-          <td>${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
-          <td>${contatti.telefono || 'N/D'}</td>
-          <td>${contatti.email || 'N/D'}</td>
-          <td class="actions-cell">
-            <button class="btn btn-small btn-edit" onclick="modificaTesserato('${tesserato.id}')">
-              <i class="fas fa-edit"></i> Modifica
-            </button>
-            <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
-              <i class="fas fa-trash-alt"></i> Elimina
-            </button>
-          </td>
-        `;
-        corpoTesserati.appendChild(row);
-      });
-    }
-
-    // Aggiungi questa funzione PRIMA di dove viene usata (prima di mostraCorsiFiltrati)
-function getCorsoName(tipo) {
-  const names = {
-    'avviamento': 'Avviamento',
-    'principianti': 'Principianti',
-    'intermedio': 'Intermedio',
-    'perfezionamento': 'Perfezionamento',
-    'cuffiegb': 'Cuffie Giallo Blu',
-    'calottegb': 'Calottine Giallo Blu',
-    'propaganda': 'Propaganda',
-    'agonisti': 'Agonisti',
-    'pallanuoto': 'Pallanuoto'
-  };
-  return names[tipo] || tipo;
-}
-
-// Aggiungi anche questa funzione per formattare i giorni
-function formatGiorni(giorni) {
-  const giorniMap = {
-    'lun': 'Lunedì',
-    'mar': 'Martedì',
-    'mer': 'Mercoledì',
-    'gio': 'Giovedì',
-    'ven': 'Venerdì'
-  };
-  
-  return Array.isArray(giorni) ? 
-    giorni.map(g => giorniMap[g] || g).join(', ') : 
-    'N/D';
-}
-
-// Poi modifica la funzione mostraCorsiFiltrati così:
-function mostraCorsiFiltrati(corsi) {
-  const corpoCorsi = document.getElementById('corpoTabellaCorsi');
-  corpoCorsi.innerHTML = '';
-  
-  if (corsi.length === 0) {
-    corpoCorsi.innerHTML = `
-      <tr>
-        <td colspan="7" class="nessun-risultato">
-          Nessun corso trovato con i filtri selezionati
-        </td>
-      </tr>`;
-    return;
-  }
-
-  corsi.forEach(corso => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${corso.iscritti?.length ? corso.iscritti[0] : 'N/D'}</td>
-      <td>${getCorsoName(corso.tipologia)}</td>
-      <td>${corso.livello || 'N/D'}</td>
-      <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
-      <td>${corso.orario || 'N/D'}</td>
-      <td>${corso.istruttore || 'N/D'}</td>
-      <td class="actions-cell">
-        <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
-          <i class="fas fa-edit"></i> Modifica
-        </button>
-        <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
-          <i class="fas fa-trash-alt"></i> Elimina
-        </button>
-      </td>
-    `;
-    corpoCorsi.appendChild(row);
-  });
-}
-
-// Funzione helper per i nomi dei corsi
-function getCorsoName(tipo) {
-  const names = {
-    'avviamento': 'Avviamento',
-    'principianti': 'Principianti',
-    'intermedio': 'Intermedio',
-    'perfezionamento': 'Perfezionamento',
-    'cuffiegb': 'Cuffie Giallo Blu',
-    'calottegb': 'Calottine Giallo Blu',
-    'propaganda': 'Propaganda',
-    'agonisti': 'Agonisti',
-    'pallanuoto': 'Pallanuoto'
-  };
-  return names[tipo] || tipo;
-}
-
-// Funzione helper per formattare i giorni
-function formatGiorni(giorni) {
-  const giorniMap = {
-    'lun': 'Lunedì',
-    'mar': 'Martedì',
-    'mer': 'Mercoledì',
-    'gio': 'Giovedì',
-    'ven': 'Venerdì'
-  };
-  
-  return Array.isArray(giorni) ? 
-    giorni.map(g => giorniMap[g] || g).join(', ') : 
-    'N/D';
-} 
-
-    // Mostra i corsi filtrati
-    function mostraCorsiFiltrati(corsi) {
-      const corpoCorsi = document.getElementById('corpoTabellaCorsi');
-      corpoCorsi.innerHTML = '';
-      
-      if (corsi.length === 0) {
-          corpoCorsi.innerHTML = `
-            <tr>
-              <td colspan="7" class="nessun-risultato">
-                Nessun corso trovato con i filtri selezionati
-              </td>
-            </tr>`;
-          return;
-      }
-
-      corsi.forEach(corso => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${corso.iscritti?.length ? corso.iscritti[0] : 'N/D'}</td>
-            <td>${getCorsoName(corso.tipologia)}</td>
-            <td>${corso.livello || 'N/D'}</td>
-            <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
-            <td>${corso.orario || 'N/D'}</td>
-            <td>${corso.istruttore || 'N/D'}</td>
-            <td class="actions-cell">
-              <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
-                <i class="fas fa-edit"></i> Modifica
-              </button>
-              <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
-                <i class="fas fa-trash-alt"></i> Elimina
-              </button>
-            </td>
-          `;
-          corpoCorsi.appendChild(row);
-      });
     }
 
     // Resetta i filtri di ricerca
