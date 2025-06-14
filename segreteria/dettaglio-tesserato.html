@@ -1,274 +1,115 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Modifica Tesserato - Rari Nantes Trento</title>
-    <link rel="stylesheet" href="../assets/css/style.css" />
+    <meta charset="UTF-8">
+    <title>Dettaglio Tesserato</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase scripts -->
+    <!-- Firebase compat 10.12.0 -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="../assets/js/firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="/firebase-config.js"></script>
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
-            <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
-        </div>
-    </header>
+    <div class="container">
+        <h1>Dettaglio Tesserato</h1>
+        
+        <form id="form-tesserato">
+            <fieldset>
+                <legend>Anagrafica</legend>
+                <input id="nome" placeholder="Nome">
+                <input id="cognome" placeholder="Cognome">
+                <input id="codice-fiscale" placeholder="Codice Fiscale">
+                <input id="data-nascita" type="date" placeholder="Data di Nascita">
+                <input id="luogo-nascita" placeholder="Luogo di Nascita">
+                <select id="sesso">
+                    <option value="">Sesso</option>
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                </select>
+                <input id="nazionalita" placeholder="Nazionalità">
+            </fieldset>
 
-    <nav>
-        <div class="nav-container">
-            <a href="dettaglio-tesserato.html"class="active" aria-current="page">Dettaglio Tesserato</a>
-            <a href="inserimento.html">Anagrafica</a>
-            <a href="inserimento-dati-corsi.html">Corsi</a>
-            <a href="pagamenti.html">Pagamenti</a>
-            <a href="ricerca-dati.html">Ricerca</a>
-        </div>
-    </nav>
+            <fieldset>
+                <legend>Contatti</legend>
+                <input id="indirizzo" placeholder="Indirizzo">
+                <input id="citta" placeholder="Città">
+                <input id="provincia" placeholder="Provincia">
+                <input id="cap" placeholder="CAP">
+                <input id="telefono" placeholder="Telefono">
+                <input id="email" type="email" placeholder="Email">
+            </fieldset>
 
-    <main>
-        <div class="form-container">
-            <h1><i class="fas fa-user-edit"></i> Modifica Tesserato</h1>
-            
-            <div id="loading-indicator" class="loading-indicator" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Caricamento in corso...
+            <fieldset>
+                <legend>Documenti</legend>
+                <select id="tipo-documento">
+                    <option value="">Tipo Documento</option>
+                    <option value="Carta Identità">Carta Identità</option>
+                    <option value="Passaporto">Passaporto</option>
+                </select>
+                <input id="numero-documento" placeholder="Numero Documento">
+                <input id="rilasciato-da" placeholder="Rilasciato da">
+                <input id="data-rilascio" type="date" placeholder="Data Rilascio">
+                <input id="data-scadenza" type="date" placeholder="Data Scadenza">
+            </fieldset>
+
+            <fieldset>
+                <legend>Tesseramento</legend>
+                <input id="data-tesseramento" type="date" placeholder="Data Tesseramento">
+                <input id="tipo-tessera" placeholder="Tipo Tessera">
+                <input id="numero-tessera" placeholder="Numero Tessera">
+                <select id="stato-tessera">
+                    <option value="">Stato Tessera</option>
+                    <option value="Attiva">Attiva</option>
+                    <option value="Scaduta">Scaduta</option>
+                </select>
+            </fieldset>
+
+            <fieldset>
+                <legend>Medica</legend>
+                <select id="certificato-medico">
+                    <option value="">Certificato Medico</option>
+                    <option value="Agonistico">Agonistico</option>
+                    <option value="Non Agonistico">Non Agonistico</option>
+                </select>
+                <input id="data-certificato" type="date" placeholder="Data Certificato">
+                <input id="scadenza-certificato" type="date" placeholder="Scadenza Certificato">
+                <textarea id="note-mediche" placeholder="Note Mediche"></textarea>
+            </fieldset>
+
+            <fieldset>
+                <legend>Pagamenti</legend>
+                <input id="quota-iscrizione" type="number" placeholder="Quota Iscrizione">
+                <input id="data-pagamento" type="date" placeholder="Data Pagamento">
+                <select id="metodo-pagamento">
+                    <option value="">Metodo</option>
+                    <option value="Contanti">Contanti</option>
+                    <option value="Bonifico">Bonifico</option>
+                    <option value="POS">POS</option>
+                </select>
+                <select id="stato-pagamento">
+                    <option value="">Stato</option>
+                    <option value="Pagato">Pagato</option>
+                    <option value="Non Pagato">Non Pagato</option>
+                </select>
+                <textarea id="note-pagamenti" placeholder="Note"></textarea>
+            </fieldset>
+
+            <div class="form-actions">
+                <button type="button" id="btn-salva" onclick="salvaModificheTesserato()">Salva</button>
+                <button type="button" id="btn-annulla" onclick="annullaModifiche()">Annulla</button>
             </div>
-            
-            <div id="feedback-msg" class="feedback-msg" style="display: none;"></div>
-            
-            <form id="form-tesserato" class="form-tesserato">
-                <!-- Sezione Anagrafica -->
-                <fieldset>
-                    <legend><i class="fas fa-id-card"></i> Dati Anagrafici</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="nome">Nome*</label>
-                            <input type="text" id="nome" name="nome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cognome">Cognome*</label>
-                            <input type="text" id="cognome" name="cognome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="codice-fiscale">Codice Fiscale*</label>
-                            <input type="text" id="codice-fiscale" name="codice-fiscale" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="data-nascita">Data di Nascita*</label>
-                            <input type="date" id="data-nascita" name="data-nascita" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="luogo-nascita">Luogo di Nascita*</label>
-                            <input type="text" id="luogo-nascita" name="luogo-nascita" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="sesso">Sesso*</label>
-                            <select id="sesso" name="sesso" required>
-                                <option value="M">Maschio</option>
-                                <option value="F">Femmina</option>
-                                <option value="Altro">Altro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="nazionalita">Nazionalità</label>
-                            <input type="text" id="nazionalita" name="nazionalita">
-                        </div>
-                    </div>
-                </fieldset>
+        </form>
 
-                <!-- Sezione Contatti -->
-                <fieldset>
-                    <legend><i class="fas fa-address-book"></i> Contatti</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="indirizzo">Indirizzo</label>
-                            <input type="text" id="indirizzo" name="indirizzo">
-                        </div>
-                        <div class="form-group">
-                            <label for="citta">Città</label>
-                            <input type="text" id="citta" name="citta">
-                        </div>
-                        <div class="form-group">
-                            <label for="provincia">Provincia</label>
-                            <input type="text" id="provincia" name="provincia" maxlength="2">
-                        </div>
-                        <div class="form-group">
-                            <label for="cap">CAP</label>
-                            <input type="text" id="cap" name="cap" maxlength="5">
-                        </div>
-                        <div class="form-group">
-                            <label for="telefono">Telefono</label>
-                            <input type="tel" id="telefono" name="telefono">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email">
-                        </div>
-                    </div>
-                </fieldset>
+        <div id="loading-indicator" style="display: none;">Caricamento...</div>
+        <div id="feedback-msg" class="feedback-msg"></div>
 
-                <!-- Sezione Documenti -->
-                <fieldset>
-                    <legend><i class="fas fa-passport"></i> Documenti</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="tipo-documento">Tipo Documento</label>
-                            <select id="tipo-documento" name="tipo-documento">
-                                <option value="">Seleziona</option>
-                                <option value="Carta Identità">Carta Identità</option>
-                                <option value="Passaporto">Passaporto</option>
-                                <option value="Patente">Patente</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="numero-documento">Numero Documento</label>
-                            <input type="text" id="numero-documento" name="numero-documento">
-                        </div>
-                        <div class="form-group">
-                            <label for="rilasciato-da">Rilasciato da</label>
-                            <input type="text" id="rilasciato-da" name="rilasciato-da">
-                        </div>
-                        <div class="form-group">
-                            <label for="data-rilascio">Data Rilascio</label>
-                            <input type="date" id="data-rilascio" name="data-rilascio">
-                        </div>
-                        <div class="form-group">
-                            <label for="data-scadenza">Data Scadenza</label>
-                            <input type="date" id="data-scadenza" name="data-scadenza">
-                        </div>
-                    </div>
-                </fieldset>
+        <h2>Corsi Attivi</h2>
+        <div id="corsi-attuali"></div>
+    </div>
 
-                <!-- Sezione Tesseramento -->
-                <fieldset>
-                    <legend><i class="fas fa-id-badge"></i> Tesseramento</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="data-tesseramento">Data Tesseramento</label>
-                            <input type="date" id="data-tesseramento" name="data-tesseramento">
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo-tessera">Tipo Tessera</label>
-                            <select id="tipo-tessera" name="tipo-tessera">
-                                <option value="">Seleziona</option>
-                                <option value="Atleta">Atleta</option>
-                                <option value="Amico">Amico</option>
-                                <option value="Sostenitore">Sostenitore</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="numero-tessera">Numero Tessera</label>
-                            <input type="text" id="numero-tessera" name="numero-tessera">
-                        </div>
-                        <div class="form-group">
-                            <label for="stato-tessera">Stato Tessera</label>
-                            <select id="stato-tessera" name="stato-tessera">
-                                <option value="Attiva">Attiva</option>
-                                <option value="Scaduta">Scaduta</option>
-                                <option value="Sospesa">Sospesa</option>
-                            </select>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <!-- Sezione Medica -->
-                <fieldset>
-                    <legend><i class="fas fa-heartbeat"></i> Informazioni Mediche</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="certificato-medico">Certificato Medico</label>
-                            <select id="certificato-medico" name="certificato-medico">
-                                <option value="">Seleziona</option>
-                                <option value="Non necessario">Non necessario</option>
-                                <option value="In corso">In corso</option>
-                                <option value="Presente">Presente</option>
-                                <option value="Scaduto">Scaduto</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="data-certificato">Data Certificato</label>
-                            <input type="date" id="data-certificato" name="data-certificato">
-                        </div>
-                        <div class="form-group">
-                            <label for="scadenza-certificato">Scadenza Certificato</label>
-                            <input type="date" id="scadenza-certificato" name="scadenza-certificato">
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="note-mediche">Note Mediche</label>
-                            <textarea id="note-mediche" name="note-mediche" rows="3"></textarea>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <!-- Sezione Pagamenti -->
-                <fieldset>
-                    <legend><i class="fas fa-euro-sign"></i> Pagamenti</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="quota-iscrizione">Quota Iscrizione</label>
-                            <input type="number" id="quota-iscrizione" name="quota-iscrizione" step="0.01">
-                        </div>
-                        <div class="form-group">
-                            <label for="data-pagamento">Data Pagamento</label>
-                            <input type="date" id="data-pagamento" name="data-pagamento">
-                        </div>
-                        <div class="form-group">
-                            <label for="metodo-pagamento">Metodo Pagamento</label>
-                            <select id="metodo-pagamento" name="metodo-pagamento">
-                                <option value="">Seleziona</option>
-                                <option value="Contanti">Contanti</option>
-                                <option value="Bonifico">Bonifico</option>
-                                <option value="Carta">Carta</option>
-                                <option value="Altro">Altro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="stato-pagamento">Stato Pagamento</label>
-                            <select id="stato-pagamento" name="stato-pagamento">
-                                <option value="In attesa">In attesa</option>
-                                <option value="Pagato">Pagato</option>
-                                <option value="Parziale">Parziale</option>
-                                <option value="Annullato">Annullato</option>
-                            </select>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="note-pagamenti">Note Pagamenti</label>
-                            <textarea id="note-pagamenti" name="note-pagamenti" rows="3"></textarea>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <!-- Sezione Corsi Attuali -->
-                <fieldset>
-                    <legend><i class="fas fa-swimming-pool"></i> Corsi Attuali</legend>
-                    <div id="corsi-attuali">
-                        <!-- Popolato dinamicamente con JavaScript -->
-                        <p class="no-data">Caricamento corsi in corso...</p>
-                    </div>
-                </fieldset>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="btn-annulla" onclick="annullaModifiche()">
-                        <i class="fas fa-times"></i> Annulla
-                    </button>
-                    <button type="button" class="btn btn-primary" id="btn-salva" onclick="salvaModificheTesserato()">
-                        <i class="fas fa-save"></i> Salva Modifiche
-                    </button>
-                </div>
-            </form>
-        </div>
-    </main>
-
-    <footer>
-        <div class="footer-container">
-            <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
-        </div>
-    </footer>
-
-    <script src="../assets/js/dettaglio-tesserato.js"></script>
+    <script src="dettaglio-tesserato.js"></script>
 </body>
 </html>
