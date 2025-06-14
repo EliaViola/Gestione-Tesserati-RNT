@@ -170,7 +170,7 @@
         <!-- Sezione Corsi Attuali -->
 <div class="form-section full-width">
   <h3 class="section-title"><i class="fas fa-swimming-pool"></i> Corsi Attuali</h3>
-  <div id="corsi-attuali" class="table-responsive">
+  <div class="table-responsive">
     <table class="data-table">
       <thead>
         <tr>
@@ -178,11 +178,33 @@
           <th>Livello</th>
           <th>Giorni</th>
           <th>Orario</th>
-          <th>Stagione</th>
+          <th>Pacchetto</th>
           <th>Azioni</th>
         </tr>
       </thead>
-      <tbody id="corsi-tesserato-body">
+      <tbody id="corsi-attuali-body">
+        <!-- Popolato dinamicamente -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sezione Storico Corsi -->
+<div class="form-section full-width">
+  <h3 class="section-title"><i class="fas fa-history"></i> Storico Corsi</h3>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tipo Corso</th>
+          <th>Livello</th>
+          <th>Giorni</th>
+          <th>Stagione</th>
+          <th>Pacchetto</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody id="storico-corsi-body">
         <!-- Popolato dinamicamente -->
       </tbody>
     </table>
