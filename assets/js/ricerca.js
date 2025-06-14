@@ -86,88 +86,92 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    // Carica corsi con filtri
+    // Carica corsi con filtri e nomi dei tesserati
     async function loadCorsiFiltrati(filtroCorso) {
-  try {
-    let query = db.collection("corsi");
-    
-    if (filtroCorso) {
-      query = query.where("tipologia", "==", filtroCorso);
+      try {
+        let query = db.collection("corsi");
+        
+        if (filtroCorso) {
+          query = query.where("tipologia", "==", filtroCorso);
+        }
+
+        const snapshot = await query.get();
+        const corsi = [];
+        
+        // Carica in parallelo i nomi dei tesserati
+        await Promise.all(snapshot.docs.map(async (doc) => {
+          const corsoData = doc.data();
+          const corso = {
+            id: doc.id,
+            ...corsoData,
+            nomeTesserato: 'N/D' // Valore di default
+          };
+          
+          // Se ci sono iscritti, carica il nome del primo tesserato
+          if (corsoData.iscritti?.length > 0) {
+            try {
+              const tesseratoDoc = await db.collection("tesserati").doc(corsoData.iscritti[0]).get();
+              if (tesseratoDoc.exists) {
+                const tesseratoData = tesseratoDoc.data();
+                corso.nomeTesserato = `${tesseratoData.anagrafica?.cognome || ''} ${tesseratoData.anagrafica?.nome || ''}`.trim();
+              }
+            } catch (error) {
+              console.error("Errore caricamento tesserato:", error);
+            }
+          }
+          
+          corsi.push(corso);
+        }));
+        
+        return corsi;
+      } catch (error) {
+        console.error("Errore caricamento corsi:", error);
+        showFeedback("Errore nel caricamento dei corsi", 'error');
+        throw error;
+      }
     }
 
-    const snapshot = await query.get();
-    const corsi = [];
-    
-    // Carica in parallelo i nomi dei tesserati
-    await Promise.all(snapshot.docs.map(async (doc) => {
-      const corsoData = doc.data();
-      const corso = {
-        id: doc.id,
-        ...corsoData,
-        nomeTesserato: 'N/D' // Valore di default
-      };
-      
-      // Se ci sono iscritti, carica il nome del primo tesserato
-      if (corsoData.iscritti?.length > 0) {
-        try {
-          const tesseratoDoc = await db.collection("tesserati").doc(corsoData.iscritti[0]).get();
-          if (tesseratoDoc.exists) {
-            const tesseratoData = tesseratoDoc.data();
-            corso.nomeTesserato = `${tesseratoData.anagrafica?.cognome || ''} ${tesseratoData.anagrafica?.nome || ''}`.trim();
-          }
-        } catch (error) {
-          console.error("Errore caricamento tesserato:", error);
-        }
-      }
-      
-      corsi.push(corso);
-    })
-    
-    return corsi;
-  } catch (error) {
-    console.error("Errore caricamento corsi:", error);
-    showFeedback("Errore nel caricamento dei corsi", 'error');
-    throw error;
-  }
-}
-
     // Mostra i tesserati filtrati
-    function mostraCorsiFiltrati(corsi) {
-  const corpoCorsi = document.getElementById('corpoTabellaCorsi');
-  corpoCorsi.innerHTML = '';
-  
-  if (corsi.length === 0) {
-    corpoCorsi.innerHTML = `
-      <tr>
-        <td colspan="7" class="nessun-risultato">
-          Nessun corso trovato con i filtri selezionati
-        </td>
-      </tr>`;
-    return;
-  }
+    function mostraTesseratiFiltrati(tesserati) {
+      const corpoTesserati = document.getElementById('corpoTabellaTesserati');
+      corpoTesserati.innerHTML = '';
+      
+      if (tesserati.length === 0) {
+          corpoTesserati.innerHTML = `
+            <tr>
+              <td colspan="7" class="nessun-risultato">
+                Nessun tesserato trovato con i filtri selezionati
+              </td>
+            </tr>`;
+          return;
+      }
 
-  corsi.forEach(corso => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${corso.nomeTesserato || 'N/D'}</td>
-      <td>${getCorsoName(corso.tipologia)}</td>
-      <td>${corso.livello || 'N/D'}</td>
-      <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
-      <td>${corso.orario || 'N/D'}</td>
-      <td>${corso.istruttore || 'N/D'}</td>
-      <td class="actions-cell">
-        <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
-          <i class="fas fa-edit"></i> Modifica
-        </button>
-        <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
-          <i class="fas fa-trash-alt"></i> Elimina
-        </button>
-      </td>
-    `;
-    corpoCorsi.appendChild(row);
-  });
-}
-    // Mostra i corsi filtrati
+      tesserati.forEach(tesserato => {
+        const anagrafica = tesserato.anagrafica || {};
+        const contatti = tesserato.contatti || {};
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${anagrafica.nome || 'N/D'}</td>
+          <td>${anagrafica.cognome || 'N/D'}</td>
+          <td>${anagrafica.codice_fiscale || 'N/D'}</td>
+          <td>${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
+          <td>${contatti.telefono || 'N/D'}</td>
+          <td>${contatti.email || 'N/D'}</td>
+          <td class="actions-cell">
+            <button class="btn btn-small btn-edit" onclick="modificaTesserato('${tesserato.id}')">
+              <i class="fas fa-edit"></i> Modifica
+            </button>
+            <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
+              <i class="fas fa-trash-alt"></i> Elimina
+            </button>
+          </td>
+        `;
+        corpoTesserati.appendChild(row);
+      });
+    }
+
+    // Mostra i corsi filtrati (versione corretta)
     function mostraCorsiFiltrati(corsi) {
       const corpoCorsi = document.getElementById('corpoTabellaCorsi');
       corpoCorsi.innerHTML = '';
@@ -185,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
       corsi.forEach(corso => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td>${corso.iscritti?.length ? corso.iscritti[0] : 'N/D'}</td>
+            <td>${corso.nomeTesserato || 'N/D'}</td>
             <td>${getCorsoName(corso.tipologia)}</td>
             <td>${corso.livello || 'N/D'}</td>
             <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
