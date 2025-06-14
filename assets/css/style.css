@@ -1169,3 +1169,12 @@ select {
 .no-data {
   color: #7f8c8d;
 }
+
+.btn-detail {
+  background-color: #17a2b8; /* Colore azzurro per dettaglio */
+  color: white;
+}
+
+.btn-detail:hover {
+  background-color: #138496;
+}
