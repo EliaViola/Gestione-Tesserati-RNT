@@ -28,47 +28,23 @@ async function loadTesserati() {
 
 // Carica i corsi di un tesserato
 async function loadCorsiPerTesserato(tesseratoId) {
-  try {
-    console.log(`Caricamento corsi per tesserato: ${tesseratoId}`);
-    const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    
-    if (!doc.exists) {
-      console.log("Tesserato non trovato");
-      return [];
-    }
-
-    const corsiIds = doc.data()?.corsi || [];
-    console.log(`ID corsi trovati: ${JSON.stringify(corsiIds)}`);
-    
-    if (corsiIds.length === 0) {
-      console.log("Nessun corso associato a questo tesserato");
-      return [];
-    }
-
-    const results = [];
-    for (let i = 0; i < corsiIds.length; i += 10) {
-      const chunk = corsiIds.slice(i, i + 10);
-      const snapshot = await db.collection("corsi")
-        .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
-        .get();
-      
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        results.push({
-          id: doc.id,
-          nomeCorso: data.tipologia && data.livello 
-            ? `${data.tipologia} - ${data.livello}` 
-            : data.nome || `Corso ${doc.id}`
-        });
+  const doc = await db.collection("tesserati").doc(tesseratoId).get();
+  const corsiIds = doc.data()?.corsi || [];
+  
+  const results = [];
+  for (const corsoId of corsiIds) {
+    const doc = await db.collection("corsi").doc(corsoId).get();
+    if (doc.exists) {
+      const data = doc.data();
+      results.push({
+        id: doc.id,
+        nomeCorso: data.tipologia && data.livello 
+          ? `${data.tipologia} - ${data.livello}`
+          : data.nome || `Corso ${doc.id}`
       });
     }
-    
-    console.log(`Corsi caricati: ${results.length}`);
-    return results;
-  } catch (error) {
-    console.error("Errore nel caricamento corsi:", error);
-    throw error;
   }
+  return results;
 }
 
 async function loadPacchettiPerTesserato(tesseratoId) {
