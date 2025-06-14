@@ -332,7 +332,14 @@ document.addEventListener('DOMContentLoaded', function() {
 };
 
     window.rimuoviTesseratoDalCorso = async function(idCorso, idTesserato) {
-  if (!confirm('Rimuovere questo tesserato dal corso?\n\nRimarrà nel sistema ma non più iscritto a questo corso.')) {
+  // Verifica che l'utente sia autenticato
+  const user = auth.currentUser;
+  if (!user) {
+    showFeedback('Devi essere loggato per eseguire questa operazione', 'error');
+    return;
+  }
+
+  if (!confirm('Rimuovere questo tesserato dal corso?')) {
     return;
   }
 
@@ -344,6 +351,11 @@ document.addEventListener('DOMContentLoaded', function() {
       throw new Error('Corso non trovato');
     }
 
+    // Verifica che l'utente abbia i permessi
+    if (!corsoDoc.data().iscritti.includes(idTesserato)) {
+      throw new Error('Tesserato non iscritto a questo corso');
+    }
+
     const updatedIscritti = corsoDoc.data().iscritti.filter(id => id !== idTesserato);
     await corsoRef.update({ iscritti: updatedIscritti });
 
@@ -352,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
   } catch (error) {
     console.error("Errore rimozione dal corso:", error);
-    showFeedback("Errore durante la rimozione", 'error');
+    showFeedback(`Errore: ${error.message}`, 'error');
   }
 };
 
