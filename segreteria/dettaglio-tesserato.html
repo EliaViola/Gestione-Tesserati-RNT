@@ -2,142 +2,196 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Dettaglio Tesserato</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Stile -->
-  <link rel="stylesheet" href="style.css" />
-  <!-- Firebase compat 10.12.0 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dettaglio Tesserato - Rari Nantes Trento</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase scripts -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="../assets/js/firebase-config.js"></script>
 </head>
 <body>
-
-  <!-- INTESTAZIONE -->
-  <header class="header">
-    <h1>Gestione Tesserati RNT</h1>
-    <nav>
-      <a href="dettaglio-tesserato.html"class="active" aria-current="page">Home</a>  
-      <a href="index.html">Home</a>
-      <a href="ricerca-tesserati.html">Ricerca</a>
-      <a href="gestione-corsi.html">Corsi</a>
-      <a href="pagamenti.html">Pagamenti</a>
-    </nav>
+  <header>
+    <div class="header-container">
+      <img src="../assets/images/logo.png" alt="Logo Rari Nantes Trento" class="logo" />
+      <button class="logout-btn" onclick="location.href='../index.html'">Logout</button>
+    </div>
   </header>
 
-  <!-- CONTENUTO PRINCIPALE -->
-  <main class="main-card">
-    <h2>Dettaglio Tesserato</h2>
+  <nav>
+    <div class="nav-container">
+      <a href="inserimento.html">Anagrafica</a>
+      <a href="inserimento-dati-corsi.html">Corsi</a>
+      <a href="pagamenti.html">Pagamenti</a>
+      <a href="ricerca-dati.html">Ricerca</a>
+    </div>
+  </nav>
 
-    <form id="form-tesserato" class="form-grid">
-      <!-- ANAGRAFICA -->
-      <fieldset>
-        <legend>Anagrafica</legend>
-        <input id="nome" placeholder="Nome" />
-        <input id="cognome" placeholder="Cognome" />
-        <input id="codice-fiscale" placeholder="Codice Fiscale" />
-        <input id="data-nascita" type="date" placeholder="Data di Nascita" />
-        <input id="luogo-nascita" placeholder="Luogo di Nascita" />
-        <select id="sesso">
-          <option value="">Sesso</option>
-          <option value="M">M</option>
-          <option value="F">F</option>
-        </select>
-        <input id="nazionalita" placeholder="Nazionalità" />
-      </fieldset>
-
-      <!-- CONTATTI -->
-      <fieldset>
-        <legend>Contatti</legend>
-        <input id="indirizzo" placeholder="Indirizzo" />
-        <input id="citta" placeholder="Città" />
-        <input id="provincia" placeholder="Provincia" />
-        <input id="cap" placeholder="CAP" />
-        <input id="telefono" placeholder="Telefono" />
-        <input id="email" type="email" placeholder="Email" />
-      </fieldset>
-
-      <!-- DOCUMENTI -->
-      <fieldset>
-        <legend>Documenti</legend>
-        <select id="tipo-documento">
-          <option value="">Tipo Documento</option>
-          <option value="Carta Identità">Carta Identità</option>
-          <option value="Passaporto">Passaporto</option>
-        </select>
-        <input id="numero-documento" placeholder="Numero Documento" />
-        <input id="rilasciato-da" placeholder="Rilasciato da" />
-        <input id="data-rilascio" type="date" placeholder="Data Rilascio" />
-        <input id="data-scadenza" type="date" placeholder="Data Scadenza" />
-      </fieldset>
-
-      <!-- TESSERAMENTO -->
-      <fieldset>
-        <legend>Tesseramento</legend>
-        <input id="data-tesseramento" type="date" placeholder="Data Tesseramento" />
-        <input id="tipo-tessera" placeholder="Tipo Tessera" />
-        <input id="numero-tessera" placeholder="Numero Tessera" />
-        <select id="stato-tessera">
-          <option value="">Stato Tessera</option>
-          <option value="Attiva">Attiva</option>
-          <option value="Scaduta">Scaduta</option>
-        </select>
-      </fieldset>
-
-      <!-- CERTIFICATO MEDICO -->
-      <fieldset>
-        <legend>Certificato Medico</legend>
-        <select id="certificato-medico">
-          <option value="">Tipo</option>
-          <option value="Agonistico">Agonistico</option>
-          <option value="Non Agonistico">Non Agonistico</option>
-        </select>
-        <input id="data-certificato" type="date" placeholder="Data Certificato" />
-        <input id="scadenza-certificato" type="date" placeholder="Scadenza Certificato" />
-        <textarea id="note-mediche" placeholder="Note Mediche"></textarea>
-      </fieldset>
-
-      <!-- PAGAMENTI -->
-      <fieldset>
-        <legend>Pagamenti</legend>
-        <input id="quota-iscrizione" type="number" placeholder="Quota Iscrizione" />
-        <input id="data-pagamento" type="date" placeholder="Data Pagamento" />
-        <select id="metodo-pagamento">
-          <option value="">Metodo</option>
-          <option value="Contanti">Contanti</option>
-          <option value="Bonifico">Bonifico</option>
-          <option value="POS">POS</option>
-        </select>
-        <select id="stato-pagamento">
-          <option value="">Stato</option>
-          <option value="Pagato">Pagato</option>
-          <option value="Non Pagato">Non Pagato</option>
-        </select>
-        <textarea id="note-pagamenti" placeholder="Note"></textarea>
-      </fieldset>
-
-      <!-- AZIONI -->
-      <div class="form-actions">
-        <button type="button" onclick="salvaModificheTesserato()">Salva</button>
-        <button type="button" onclick="annullaModifiche()">Annulla</button>
+  <main>
+    <div class="form-container">
+      <h1 class="form-title">Dettaglio Tesserato</h1>
+      
+      <div id="loading-indicator" class="loading-indicator hidden">
+        <i class="fas fa-spinner fa-spin"></i> Caricamento in corso...
       </div>
-    </form>
+      
+      <div id="feedback-msg" class="feedback-msg hidden" role="alert" aria-live="polite"></div>
+      
+      <form id="form-tesserato" class="form-grid">
+        <!-- Sezione Anagrafica -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="fas fa-id-card"></i> Dati Anagrafici</h3>
+          <div class="form-group required-field">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" required pattern="[A-Za-zÀ-ÿ\s']{2,}">
+          </div>
+          <div class="form-group required-field">
+            <label for="cognome">Cognome</label>
+            <input type="text" id="cognome" name="cognome" required pattern="[A-Za-zÀ-ÿ\s']{2,}">
+          </div>
+          <div class="form-group required-field">
+            <label for="codice-fiscale">Codice Fiscale</label>
+            <input type="text" id="codice-fiscale" name="codice-fiscale" required>
+          </div>
+          <div class="form-group required-field">
+            <label for="data-nascita">Data di Nascita</label>
+            <input type="date" id="data-nascita" name="data-nascita" required>
+          </div>
+          <div class="form-group required-field">
+            <label for="luogo-nascita">Luogo di Nascita</label>
+            <input type="text" id="luogo-nascita" name="luogo-nascita" required>
+          </div>
+          <div class="form-group required-field">
+            <label for="sesso">Sesso</label>
+            <select id="sesso" name="sesso" required>
+              <option value="M">Maschio</option>
+              <option value="F">Femmina</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="nazionalita">Nazionalità</label>
+            <input type="text" id="nazionalita" name="nazionalita">
+          </div>
+        </div>
 
-    <!-- CORSI ATTUALI -->
-    <h3>Corsi Attivi</h3>
-    <div id="corsi-attuali" class="corsi-grid"></div>
+        <!-- Sezione Contatti -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="fas fa-address-book"></i> Contatti</h3>
+          <div class="form-group">
+            <label for="indirizzo">Indirizzo</label>
+            <input type="text" id="indirizzo" name="indirizzo">
+          </div>
+          <div class="form-group">
+            <label for="citta">Città</label>
+            <input type="text" id="citta" name="citta">
+          </div>
+          <div class="form-group">
+            <label for="provincia">Provincia</label>
+            <input type="text" id="provincia" name="provincia" maxlength="2">
+          </div>
+          <div class="form-group">
+            <label for="cap">CAP</label>
+            <input type="text" id="cap" name="cap" maxlength="5">
+          </div>
+          <div class="form-group required-field">
+            <label for="telefono">Telefono</label>
+            <input type="tel" id="telefono" name="telefono" required>
+          </div>
+          <div class="form-group required-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
 
-    <!-- FEEDBACK -->
-    <div id="loading-indicator" style="display: none;">Caricamento...</div>
-    <div id="feedback-msg" class="feedback-msg"></div>
+        <!-- Sezione Documenti -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="fas fa-passport"></i> Documenti</h3>
+          <div class="form-group">
+            <label for="tipo-documento">Tipo Documento</label>
+            <select id="tipo-documento" name="tipo-documento">
+              <option value="">Seleziona</option>
+              <option value="Carta Identità">Carta Identità</option>
+              <option value="Passaporto">Passaporto</option>
+              <option value="Patente">Patente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="numero-documento">Numero Documento</label>
+            <input type="text" id="numero-documento" name="numero-documento">
+          </div>
+          <div class="form-group">
+            <label for="rilasciato-da">Rilasciato da</label>
+            <input type="text" id="rilasciato-da" name="rilasciato-da">
+          </div>
+          <div class="form-group">
+            <label for="data-rilascio">Data Rilascio</label>
+            <input type="date" id="data-rilascio" name="data-rilascio">
+          </div>
+          <div class="form-group">
+            <label for="data-scadenza">Data Scadenza</label>
+            <input type="date" id="data-scadenza" name="data-scadenza">
+          </div>
+        </div>
+
+        <!-- Sezione Tesseramento -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="fas fa-id-badge"></i> Tesseramento</h3>
+          <div class="form-group">
+            <label for="data-tesseramento">Data Tesseramento</label>
+            <input type="date" id="data-tesseramento" name="data-tesseramento">
+          </div>
+          <div class="form-group">
+            <label for="tipo-tessera">Tipo Tessera</label>
+            <select id="tipo-tessera" name="tipo-tessera">
+              <option value="">Seleziona</option>
+              <option value="Atleta">Atleta</option>
+              <option value="Amico">Amico</option>
+              <option value="Sostenitore">Sostenitore</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="numero-tessera">Numero Tessera</label>
+            <input type="text" id="numero-tessera" name="numero-tessera">
+          </div>
+          <div class="form-group">
+            <label for="stato-tessera">Stato Tessera</label>
+            <select id="stato-tessera" name="stato-tessera">
+              <option value="Attiva">Attiva</option>
+              <option value="Scaduta">Scaduta</option>
+              <option value="Sospesa">Sospesa</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sezione Corsi Attuali -->
+        <div class="form-section full-width">
+          <h3 class="section-title"><i class="fas fa-swimming-pool"></i> Corsi Attuali</h3>
+          <div id="corsi-attuali" class="corsi-grid">
+            <p class="no-data">Caricamento corsi in corso...</p>
+          </div>
+        </div>
+
+        <div class="form-actions full-width">
+          <button type="button" class="btn btn-secondary" id="btn-annulla" onclick="annullaModifiche()">
+            <i class="fas fa-times"></i> Annulla
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-salva" onclick="salvaModificheTesserato()">
+            <i class="fas fa-save"></i> Salva Modifiche
+          </button>
+        </div>
+      </form>
+    </div>
   </main>
 
-  <!-- PIE DI PAGINA -->
-  <footer class="footer">
-    <p>&copy; 2025 Rari Nantes Torino | Tutti i diritti riservati</p>
+  <footer>
+    <div class="footer-container">
+      <p>&copy; <span id="currentYear"></span> Rari Nantes Trento. Tutti i diritti riservati.</p>
+    </div>
   </footer>
-
   <!-- JS -->
   <script src="../assets/js/dettaglio-tesserato.js"></script>
 </body>
