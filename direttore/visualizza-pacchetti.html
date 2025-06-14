@@ -41,54 +41,34 @@
 
   <script type="module">
     document.addEventListener('DOMContentLoaded', () => {
-      // ... (codice precedente rimane uguale fino alla funzione caricaPacchetti)
+      const logoutBtn = document.getElementById('logoutBtn');
+      const pacchettiList = document.getElementById('pacchettiList');
+      const feedbackElement = document.getElementById('feedbackMessage');
+      const spinner = document.getElementById('loadingSpinner');
 
-      async function caricaPacchetti() {
-        try {
-          toggleLoading(true);
-          const snapshot = await firebase.firestore().collection('pacchetti').orderBy('creatoIl', 'desc').get();
-          pacchettiList.innerHTML = '';
+      document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-          if (snapshot.empty) {
-            pacchettiList.innerHTML = '<p>Nessun pacchetto trovato.</p>';
-            return;
-          }
-
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            // Ordina le date in ordine cronologico
-            const dateOrdinate = data.date ? 
-              [...data.date].sort((a, b) => new Date(a) - new Date(b)) : 
-              [];
-              
-            // Formatta le date per la visualizzazione
-            const dateFormattate = dateOrdinate.map(date => {
-              try {
-                return new Date(date).toLocaleDateString('it-IT');
-              } catch {
-                return date;
-              }
-            });
-
-            const div = document.createElement('div');
-            div.className = 'pacchetto-item';
-            div.innerHTML = `
-              <h3>${data.nome}</h3>
-              <p><strong>Date:</strong> ${dateFormattate.join(', ') || 'Nessuna'}</p>
-              <p><strong>Creato il:</strong> ${data.creatoIl?.toDate().toLocaleDateString('it-IT') || 'N/A'}</p>
-              <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
-            `;
-            pacchettiList.appendChild(div);
-          });
-
-          // ... (resto del codice rimane uguale)
-        } catch (err) {
-          console.error('Errore caricamento pacchetti:', err);
-          mostraFeedback('Errore durante il caricamento.', 'error');
-        } finally {
-          toggleLoading(false);
+      // Verifica autenticazione e ruolo
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = '../index.html';
+          return;
         }
-      }
+
+        try {
+          const idToken = await user.getIdTokenResult();
+          if (!idToken.claims.director) {
+            await firebase.auth().signOut();
+            window.location.href = '../index.html';
+          } else {
+            caricaPacchetti();
+          }
+        } catch (error) {
+          console.error('Errore verifica ruolo:', error);
+          window.location.href = '../index.html';
+        }
+      });
+
       // Logout
       logoutBtn.addEventListener('click', async () => {
         try {
