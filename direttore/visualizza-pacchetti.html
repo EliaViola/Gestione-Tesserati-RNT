@@ -46,7 +46,37 @@
       const feedbackElement = document.getElementById('feedbackMessage');
       const spinner = document.getElementById('loadingSpinner');
 
+      // Imposta l'anno corrente nel footer
       document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+      // Funzione per formattare la data in gg/mm/aaaa
+      const formattaData = (data) => {
+        if (!data) return 'N/A';
+        try {
+          const dateObj = data.toDate ? data.toDate() : new Date(data);
+          if (isNaN(dateObj.getTime())) return 'Data non valida';
+          
+          const giorno = String(dateObj.getDate()).padStart(2, '0');
+          const mese = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const anno = dateObj.getFullYear();
+          return `${giorno}/${mese}/${anno}`;
+        } catch (e) {
+          return 'Data non valida';
+        }
+      };
+
+      // Mostra messaggi di feedback
+      function mostraFeedback(msg, tipo) {
+        feedbackElement.textContent = msg;
+        feedbackElement.className = `feedback-msg ${tipo}`;
+        feedbackElement.classList.remove('hidden');
+        setTimeout(() => feedbackElement.classList.add('hidden'), 4000);
+      }
+
+      // Mostra/nascondi spinner di caricamento
+      function toggleLoading(isLoading) {
+        spinner.classList.toggle('hidden', !isLoading);
+      }
 
       // Verifica autenticazione e ruolo
       firebase.auth().onAuthStateChanged(async (user) => {
@@ -61,7 +91,7 @@
             await firebase.auth().signOut();
             window.location.href = '../index.html';
           } else {
-            caricaPacchetti();
+            await caricaPacchetti();
           }
         } catch (error) {
           console.error('Errore verifica ruolo:', error);
@@ -79,7 +109,7 @@
         }
       });
 
-      // Caricamento pacchetti
+      // Carica i pacchetti dal database
       async function caricaPacchetti() {
         try {
           toggleLoading(true);
@@ -87,32 +117,53 @@
           pacchettiList.innerHTML = '';
 
           if (snapshot.empty) {
-            pacchettiList.innerHTML = '<p>Nessun pacchetto trovato.</p>';
+            pacchettiList.innerHTML = '<p class="no-data">Nessun pacchetto trovato.</p>';
             return;
           }
 
           snapshot.forEach(doc => {
             const data = doc.data();
+            
+            // Ordina le date in ordine cronologico
+            let dateOrdinate = [];
+            if (data.date && Array.isArray(data.date)) {
+              dateOrdinate = [...data.date]
+                .map(date => new Date(date))
+                .filter(date => !isNaN(date.getTime()))
+                .sort((a, b) => a - b)
+                .map(date => formattaData(date));
+            }
+
             const div = document.createElement('div');
             div.className = 'pacchetto-item';
             div.innerHTML = `
-              <h3>${data.nome}</h3>
-              <p><strong>Date:</strong> ${data.date?.join(', ') || 'Nessuna'}</p>
-              <p><strong>Creato il:</strong> ${data.creatoIl?.toDate().toLocaleDateString() || 'N/A'}</p>
-              <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
+              <div class="pacchetto-header">
+                <h3>${data.nome || 'Pacchetto senza nome'}</h3>
+                <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
+              </div>
+              <div class="pacchetto-body">
+                <p><strong>Date:</strong> ${dateOrdinate.join(', ') || 'Nessuna data specificata'}</p>
+                <p><strong>Creato il:</strong> ${formattaData(data.creatoIl)}</p>
+              </div>
             `;
             pacchettiList.appendChild(div);
           });
 
-          // Aggiungi eventi per i pulsanti "Elimina"
+          // Aggiungi event listener per i pulsanti di eliminazione
           document.querySelectorAll('.btn-danger').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
               const id = btn.getAttribute('data-id');
               if (confirm('Sei sicuro di voler eliminare questo pacchetto?')) {
                 try {
                   await firebase.firestore().collection('pacchetti').doc(id).delete();
                   mostraFeedback('Pacchetto eliminato con successo!', 'success');
                   btn.closest('.pacchetto-item').remove();
+                  
+                  // Se non ci sono più pacchetti, mostra messaggio
+                  if (pacchettiList.children.length === 0) {
+                    pacchettiList.innerHTML = '<p class="no-data">Nessun pacchetto trovato.</p>';
+                  }
                 } catch (err) {
                   console.error('Errore eliminazione:', err);
                   mostraFeedback('Errore durante l\'eliminazione.', 'error');
@@ -123,21 +174,10 @@
 
         } catch (err) {
           console.error('Errore caricamento pacchetti:', err);
-          mostraFeedback('Errore durante il caricamento.', 'error');
+          mostraFeedback('Errore durante il caricamento dei pacchetti.', 'error');
         } finally {
           toggleLoading(false);
         }
-      }
-
-      function mostraFeedback(msg, tipo) {
-        feedbackElement.textContent = msg;
-        feedbackElement.className = `feedback-msg ${tipo}`;
-        feedbackElement.classList.remove('hidden');
-        setTimeout(() => feedbackElement.classList.add('hidden'), 4000);
-      }
-
-      function toggleLoading(isLoading) {
-        spinner.classList.toggle('hidden', !isLoading);
       }
     });
   </script>
