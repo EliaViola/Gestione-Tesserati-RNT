@@ -127,43 +127,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mostra i tesserati filtrati
     function mostraTesseratiFiltrati(tesserati) {
-      const corpoTesserati = document.getElementById('corpoTabellaTesserati');
-      corpoTesserati.innerHTML = '';
-      
-      if (!tesserati || tesserati.length === 0) {
-          corpoTesserati.innerHTML = `
-            <tr>
-              <td colspan="7" class="nessun-risultato">
-                Nessun tesserato trovato con i filtri selezionati
-              </td>
-            </tr>`;
-          return;
-      }
-
-      tesserati.forEach(tesserato => {
-        const anagrafica = tesserato.anagrafica || {};
-        const contatti = tesserato.contatti || {};
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${anagrafica.nome || 'N/D'}</td>
-          <td>${anagrafica.cognome || 'N/D'}</td>
-          <td>${anagrafica.codice_fiscale || 'N/D'}</td>
-          <td>${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
-          <td>${contatti.telefono || 'N/D'}</td>
-          <td>${contatti.email || 'N/D'}</td>
-          <td class="actions-cell">
-            <button class="btn btn-small btn-edit" onclick="modificaTesserato('${tesserato.id}')">
-              <i class="fas fa-edit"></i> Modifica
-            </button>
-            <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
-              <i class="fas fa-trash-alt"></i> Elimina
-            </button>
+  const corpoTesserati = document.getElementById('corpoTabellaTesserati');
+  corpoTesserati.innerHTML = '';
+  
+  if (!tesserati || tesserati.length === 0) {
+      corpoTesserati.innerHTML = `
+        <tr>
+          <td colspan="7" class="nessun-risultato">
+            Nessun tesserato trovato con i filtri selezionati
           </td>
-        `;
-        corpoTesserati.appendChild(row);
-      });
-    }
+        </tr>`;
+      return;
+  }
+
+  tesserati.forEach(tesserato => {
+    const anagrafica = tesserato.anagrafica || {};
+    const contatti = tesserato.contatti || {};
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${anagrafica.nome || 'N/D'}</td>
+      <td>${anagrafica.cognome || 'N/D'}</td>
+      <td>${anagrafica.codice_fiscale || 'N/D'}</td>
+      <td>${anagrafica.data_nascita ? new Date(anagrafica.data_nascita).toLocaleDateString('it-IT') : 'N/D'}</td>
+      <td>${contatti.telefono || 'N/D'}</td>
+      <td>${contatti.email || 'N/D'}</td>
+      <td class="actions-cell">
+        <button class="btn btn-small btn-detail" onclick="modificaTesserato('${tesserato.id}')">
+          <i class="fas fa-info-circle"></i> Dettaglio
+        </button>
+        <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
+          <i class="fas fa-trash-alt"></i> Elimina
+        </button>
+      </td>
+    `;
+    corpoTesserati.appendChild(row);
+  });
+}
 
     // Mostra i corsi filtrati
     function mostraCorsiFiltrati(corsi) {
