@@ -61,8 +61,48 @@
           const anno = dateObj.getFullYear();
           return `${giorno}/${mese}/${anno}`;
         } catch (e) {
+          console.error('Errore formattazione data:', data, e);
           return 'Data non valida';
         }
+      };
+
+      // Converte qualsiasi formato di data in oggetto Date
+      const convertiInData = (item) => {
+        try {
+          // Se è un timestamp Firebase
+          if (item && typeof item === 'object' && 'toDate' in item) {
+            return item.toDate();
+          }
+          // Se è già un oggetto Date
+          if (item instanceof Date) {
+            return item;
+          }
+          // Se è una stringa nel formato ISO
+          if (typeof item === 'string') {
+            // Prova il formato ISO standard
+            const isoDate = new Date(item);
+            if (!isNaN(isoDate.getTime())) return isoDate;
+            
+            // Prova il formato gg/mm/aaaa
+            const parts = item.split('/');
+            if (parts.length === 3) {
+              return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            
+            // Prova il formato aaaa-mm-gg
+            const parts2 = item.split('-');
+            if (parts2.length === 3) {
+              return new Date(parts2[0], parts2[1] - 1, parts2[2]);
+            }
+          }
+          // Se è un numero (timestamp)
+          if (typeof item === 'number') {
+            return new Date(item);
+          }
+        } catch (e) {
+          console.error('Errore conversione data:', item, e);
+        }
+        return null;
       };
 
       // Mostra messaggi di feedback
@@ -124,24 +164,13 @@
           snapshot.forEach(doc => {
             const data = doc.data();
             
-            // Gestione avanzata delle date
+            // Processa tutte le date
             let dateOrdinate = [];
             if (data.date && Array.isArray(data.date)) {
               dateOrdinate = data.date
-                // Converti ogni data in un oggetto Date valido
-                .map(dateStr => {
-                  // Se è già un oggetto Date, usalo direttamente
-                  if (dateStr instanceof Date) return dateStr;
-                  // Se è un timestamp Firebase, convertilo
-                  if (dateStr.toDate) return dateStr.toDate();
-                  // Altrimenti parsalo come stringa
-                  return new Date(dateStr);
-                })
-                // Filtra solo le date valide
-                .filter(date => !isNaN(date.getTime()))
-                // Ordina cronologicamente
+                .map(item => convertiInData(item))
+                .filter(date => date && !isNaN(date.getTime()))
                 .sort((a, b) => a - b)
-                // Formatta nel formato gg/mm/aaaa
                 .map(date => {
                   const giorno = String(date.getDate()).padStart(2, '0');
                   const mese = String(date.getMonth() + 1).padStart(2, '0');
@@ -158,7 +187,7 @@
                 <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
               </div>
               <div class="pacchetto-body">
-                <p><strong>Date:</strong> ${dateOrdinate.join(', ') || 'Nessuna data specificata'}</p>
+                <p><strong>Date:</strong> ${dateOrdinate.length > 0 ? dateOrdinate.join(', ') : 'Nessuna data specificata'}</p>
                 <p><strong>Creato il:</strong> ${formattaData(data.creatoIl)}</p>
               </div>
             `;
@@ -176,7 +205,6 @@
                   mostraFeedback('Pacchetto eliminato con successo!', 'success');
                   btn.closest('.pacchetto-item').remove();
                   
-                  // Se non ci sono più pacchetti, mostra messaggio
                   if (pacchettiList.children.length === 0) {
                     pacchettiList.innerHTML = '<p class="no-data">Nessun pacchetto trovato.</p>';
                   }
