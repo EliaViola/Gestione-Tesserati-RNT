@@ -28,98 +28,110 @@ async function loadTesserati() {
 // Carica i corsi associati a un tesserato
 async function loadCorsiPerTesserato(tesseratoId) {
   try {
+    // 1. Ottieni il documento del tesserato
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) {
-      throw new Error("Tesserato non trovato");
-    }
-
-    const corsi = doc.data()?.corsi || [];
     
-    // Se non ci sono corsi, restituisci array vuoto immediatamente
-    if (!corsi || corsi.length === 0) {
+    // 2. Verifica se il tesserato esiste
+    if (!doc.exists) {
+      console.warn(`Tesserato ${tesseratoId} non trovato`);
       return [];
     }
 
-    // Firestore limita a 10 elementi negli array per le query 'in'
-    // Dividiamo in chunk se necessario
-    const MAX_IN_CLAUSE = 10;
-    const chunks = [];
-    for (let i = 0; i < corsi.length; i += MAX_IN_CLAUSE) {
-      chunks.push(corsi.slice(i, i + MAX_IN_CLAUSE));
+    // 3. Ottieni l'array dei corsi (con fallback a array vuoto)
+    const corsiIds = doc.data()?.corsi || [];
+    
+    // 4. Se non ci sono corsi, restituisci array vuoto
+    if (corsiIds.length === 0) {
+      console.log(`Nessun corso associato al tesserato ${tesseratoId}`);
+      return [];
     }
 
-    // Esegui le query in parallelo
-    const promises = chunks.map(chunk => 
-      db.collection("corsi")
+    // 5. Firestore ha un limite di 10 elementi per le query 'in'
+    const MAX_IN_CLAUSE = 10;
+    const results = [];
+
+    // 6. Dividi gli ID in gruppi da max 10 elementi
+    for (let i = 0; i < corsiIds.length; i += MAX_IN_CLAUSE) {
+      const chunk = corsiIds.slice(i, i + MAX_IN_CLAUSE);
+      
+      // 7. Esegui la query per ogni chunk
+      const snapshot = await db.collection("corsi")
         .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
         .select("tipologia", "livello", "nome")
-        .get()
-    );
+        .get();
 
-    const snapshots = await Promise.all(promises);
-    const results = snapshots.flatMap(snapshot => 
-      snapshot.docs.map(doc => {
+      // 8. Aggiungi i risultati
+      snapshot.docs.forEach(doc => {
         const data = doc.data();
-        return {
+        results.push({
           id: doc.id,
-          ...data,
+          tipologia: data.tipologia,
+          livello: data.livello,
+          nome: data.nome,
           nomeCorso: data.tipologia && data.livello 
             ? `${data.tipologia} - ${data.livello}` 
             : (data.nome || `Corso ${doc.id}`)
-        };
-      })
-    );
+        });
+      });
+    }
 
     return results;
   } catch (error) {
-    console.error("Errore nel caricamento corsi:", error);
-    throw new Error("Impossibile caricare i corsi del tesserato");
+    console.error("Errore nel caricamento corsi per tesserato", tesseratoId, error);
+    throw new Error(`Impossibile caricare i corsi: ${error.message}`);
   }
 }
 
 // Carica i pacchetti associati a un tesserato
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
+    // 1. Ottieni il documento del tesserato
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) {
-      throw new Error("Tesserato non trovato");
-    }
-
-    const pacchetti = doc.data()?.pacchetti || [];
     
-    // Se non ci sono pacchetti, restituisci array vuoto immediatamente
-    if (!pacchetti || pacchetti.length === 0) {
+    // 2. Verifica se il tesserato esiste
+    if (!doc.exists) {
+      console.warn(`Tesserato ${tesseratoId} non trovato`);
       return [];
     }
 
-    // Firestore limita a 10 elementi negli array per le query 'in'
-    const MAX_IN_CLAUSE = 10;
-    const chunks = [];
-    for (let i = 0; i < pacchetti.length; i += MAX_IN_CLAUSE) {
-      chunks.push(pacchetti.slice(i, i + MAX_IN_CLAUSE));
+    // 3. Ottieni l'array dei pacchetti (con fallback a array vuoto)
+    const pacchettiIds = doc.data()?.pacchetti || [];
+    
+    // 4. Se non ci sono pacchetti, restituisci array vuoto
+    if (pacchettiIds.length === 0) {
+      console.log(`Nessun pacchetto associato al tesserato ${tesseratoId}`);
+      return [];
     }
 
-    // Esegui le query in parallelo
-    const promises = chunks.map(chunk => 
-      db.collection("pacchetti")
+    // 5. Firestore ha un limite di 10 elementi per le query 'in'
+    const MAX_IN_CLAUSE = 10;
+    const results = [];
+
+    // 6. Dividi gli ID in gruppi da max 10 elementi
+    for (let i = 0; i < pacchettiIds.length; i += MAX_IN_CLAUSE) {
+      const chunk = pacchettiIds.slice(i, i + MAX_IN_CLAUSE);
+      
+      // 7. Esegui la query per ogni chunk
+      const snapshot = await db.collection("pacchetti")
         .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
         .select("nome", "corsoId")
-        .get()
-    );
+        .get();
 
-    const snapshots = await Promise.all(promises);
-    const results = snapshots.flatMap(snapshot => 
-      snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        nome: doc.data().nome || `Pacchetto ${doc.id}`
-      }))
-    );
+      // 8. Aggiungi i risultati
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        results.push({
+          id: doc.id,
+          nome: data.nome || `Pacchetto ${doc.id}`,
+          corsoId: data.corsoId
+        });
+      });
+    }
 
     return results;
   } catch (error) {
-    console.error("Errore nel caricamento pacchetti:", error);
-    throw new Error("Impossibile caricare i pacchetti del tesserato");
+    console.error("Errore nel caricamento pacchetti per tesserato", tesseratoId, error);
+    throw new Error(`Impossibile caricare i pacchetti: ${error.message}`);
   }
 }
 
