@@ -56,35 +56,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Carica tesserati con filtri
     async function loadTesseratiFiltrati(filtroNome, filtroCognome, filtroCodiceFiscale) {
-      try {
-        let query = db.collection("tesserati");
-        
-        if (filtroNome) {
-          query = query.where("anagrafica.nome", ">=", filtroNome)
-                       .where("anagrafica.nome", "<=", filtroNome + '\uf8ff');
-        }
-        
-        if (filtroCognome) {
-          query = query.where("anagrafica.cognome", ">=", filtroCognome)
-                       .where("anagrafica.cognome", "<=", filtroCognome + '\uf8ff');
-        }
-        
-        if (filtroCodiceFiscale) {
-          query = query.where("anagrafica.codice_fiscale", "==", filtroCodiceFiscale.toUpperCase());
-        }
+  try {
+    let query = db.collection("tesserati");
+    
+    // DEBUG: Verifica i parametri ricevuti
+    console.log('Parametri ricerca:', {filtroNome, filtroCognome, filtroCodiceFiscale});
 
-        const snapshot = await query.get();
-        return snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          nomeCompleto: `${doc.data().anagrafica?.cognome || ''} ${doc.data().anagrafica?.nome || ''}`.trim()
-        }));
-      } catch (error) {
-        console.error("Errore caricamento tesserati:", error);
-        showFeedback("Errore nel caricamento dei tesserati", 'error');
-        throw error;
-      }
+    if (filtroNome) {
+      query = query.where("anagrafica.nome", ">=", filtroNome)
+                   .where("anagrafica.nome", "<=", filtroNome + '\uf8ff');
     }
+    
+    if (filtroCognome) {
+      query = query.where("anagrafica.cognome", ">=", filtroCognome)
+                   .where("anagrafica.cognome", "<=", filtroCognome + '\uf8ff');
+    }
+    
+    if (filtroCodiceFiscale) {
+      query = query.where("anagrafica.codice_fiscale", "==", filtroCodiceFiscale);
+    }
+
+    const snapshot = await query.get();
+    
+    // Estrai i dati con controlli aggiuntivi
+    const risultati = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // DEBUG: Verifica la struttura del documento
+      console.log('Documento tesserato:', doc.id, data);
+      
+      return {
+        id: doc.id,
+        ...data,
+        nomeCompleto: `${data.anagrafica?.cognome || ''} ${data.anagrafica?.nome || ''}`.trim(),
+        // Aggiungi controlli per tutti i campi
+        anagrafica: {
+          nome: data.anagrafica?.nome || 'N/D',
+          cognome: data.anagrafica?.cognome || 'N/D',
+          codice_fiscale: data.anagrafica?.codice_fiscale || 'N/D',
+          data_nascita: data.anagrafica?.data_nascita || null
+        },
+        contatti: {
+          telefono: data.contatti?.telefono || 'N/D',
+          email: data.contatti?.email || 'N/D'
+        }
+      };
+    });
+
+    // DEBUG: Verifica i risultati finali
+    console.log('Risultati finali tesserati:', risultati);
+    return risultati;
+
+  } catch (error) {
+    console.error("Errore caricamento tesserati:", error);
+    showFeedback("Errore nel caricamento dei tesserati", 'error');
+    throw error;
+  }
+}
 
     // Carica corsi con filtri e nomi dei tesserati
     async function loadCorsiFiltrati(filtroCorso) {
@@ -210,42 +237,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzione principale di ricerca
     async function eseguiRicerca() {
-      const filtroNome = document.getElementById('filtro-nome').value.toLowerCase();
-      const filtroCognome = document.getElementById('filtro-cognome').value.toLowerCase();
-      const filtroCodiceFiscale = document.getElementById('filtro-codice-fiscale').value;
-      const filtroCorso = document.getElementById('filtro-corso').value;
+  const filtroNome = document.getElementById('filtro-nome').value.trim().toLowerCase();
+  const filtroCognome = document.getElementById('filtro-cognome').value.trim().toLowerCase();
+  const filtroCodiceFiscale = document.getElementById('filtro-codice-fiscale').value.trim().toUpperCase();
+  const filtroCorso = document.getElementById('filtro-corso').value;
+  
+  try {
+    // Mostra spinner durante il caricamento
+    document.getElementById('corpoTabellaTesserati').innerHTML = `
+      <tr>
+        <td colspan="7" class="loading-msg">
+          <i class="fas fa-spinner fa-spin"></i> Ricerca tesserati in corso...
+        </td>
+      </tr>`;
+    
+    document.getElementById('corpoTabellaCorsi').innerHTML = `
+      <tr>
+        <td colspan="7" class="loading-msg">
+          <i class="fas fa-spinner fa-spin"></i> Ricerca corsi in corso...
+        </td>
+      </tr>`;
+    
+    // DEBUG: Verifica i valori dei filtri
+    console.log('Filtri applicati:', {
+      nome: filtroNome,
+      cognome: filtroCognome,
+      cf: filtroCodiceFiscale,
+      corso: filtroCorso
+    });
+
+    // Carica i tesserati solo se almeno un filtro è attivo
+    let tesserati = [];
+    if (filtroNome || filtroCognome || filtroCodiceFiscale) {
+      tesserati = await loadTesseratiFiltrati(
+        filtroNome || null, 
+        filtroCognome || null, 
+        filtroCodiceFiscale || null
+      );
       
-      try {
-        // Mostra spinner durante il caricamento
-        document.getElementById('corpoTabellaTesserati').innerHTML = `
-          <tr>
-            <td colspan="7" class="loading-msg">
-              <i class="fas fa-spinner fa-spin"></i> Ricerca tesserati in corso...
-            </td>
-          </tr>`;
-        
-        document.getElementById('corpoTabellaCorsi').innerHTML = `
-          <tr>
-            <td colspan="7" class="loading-msg">
-              <i class="fas fa-spinner fa-spin"></i> Ricerca corsi in corso...
-            </td>
-          </tr>`;
-        
-        // Esegui le query in parallelo
-        const tesserati = (filtroNome || filtroCognome || filtroCodiceFiscale) ? 
-          await loadTesseratiFiltrati(filtroNome, filtroCognome, filtroCodiceFiscale) : [];
-        
-        const corsi = filtroCorso ? await loadCorsiFiltrati(filtroCorso) : [];
-        
-        // Mostra i risultati
-        mostraTesseratiFiltrati(tesserati);
-        mostraCorsiFiltrati(corsi);
-        
-      } catch (error) {
-        console.error("Errore durante la ricerca:", error);
-        showFeedback("Errore durante la ricerca dei dati", 'error');
-      }
+      // DEBUG: Verifica i risultati della query
+      console.log('Tesserati trovati:', tesserati);
     }
+
+    // Carica i corsi solo se il filtro è attivo
+    let corsi = [];
+    if (filtroCorso) {
+      corsi = await loadCorsiFiltrati(filtroCorso);
+    }
+
+    // Mostra i risultati
+    mostraTesseratiFiltrati(tesserati);
+    mostraCorsiFiltrati(corsi);
+
+  } catch (error) {
+    console.error("Errore durante la ricerca:", error);
+    showFeedback("Errore durante la ricerca dei dati", 'error');
+  }
+}
 
     // Resetta i filtri di ricerca
     function resetRicerca() {
