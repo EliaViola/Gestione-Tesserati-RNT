@@ -124,14 +124,30 @@
           snapshot.forEach(doc => {
             const data = doc.data();
             
-            // Ordina le date in ordine cronologico
+            // Gestione avanzata delle date
             let dateOrdinate = [];
             if (data.date && Array.isArray(data.date)) {
-              dateOrdinate = [...data.date]
-                .map(date => new Date(date))
+              dateOrdinate = data.date
+                // Converti ogni data in un oggetto Date valido
+                .map(dateStr => {
+                  // Se è già un oggetto Date, usalo direttamente
+                  if (dateStr instanceof Date) return dateStr;
+                  // Se è un timestamp Firebase, convertilo
+                  if (dateStr.toDate) return dateStr.toDate();
+                  // Altrimenti parsalo come stringa
+                  return new Date(dateStr);
+                })
+                // Filtra solo le date valide
                 .filter(date => !isNaN(date.getTime()))
+                // Ordina cronologicamente
                 .sort((a, b) => a - b)
-                .map(date => formattaData(date));
+                // Formatta nel formato gg/mm/aaaa
+                .map(date => {
+                  const giorno = String(date.getDate()).padStart(2, '0');
+                  const mese = String(date.getMonth() + 1).padStart(2, '0');
+                  const anno = date.getFullYear();
+                  return `${giorno}/${mese}/${anno}`;
+                });
             }
 
             const div = document.createElement('div');
