@@ -29,20 +29,27 @@ async function loadTesserati() {
 // Carica i corsi di un tesserato
 async function loadCorsiPerTesserato(tesseratoId) {
   try {
+    console.log(`Caricamento corsi per tesserato: ${tesseratoId}`);
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) return [];
     
+    if (!doc.exists) {
+      console.log("Tesserato non trovato");
+      return [];
+    }
+
     const corsiIds = doc.data()?.corsi || [];
-    if (corsiIds.length === 0) return [];
+    console.log(`ID corsi trovati: ${JSON.stringify(corsiIds)}`);
     
-    const MAX_IN_CLAUSE = 10;
+    if (corsiIds.length === 0) {
+      console.log("Nessun corso associato a questo tesserato");
+      return [];
+    }
+
     const results = [];
-    
-    for (let i = 0; i < corsiIds.length; i += MAX_IN_CLAUSE) {
-      const chunk = corsiIds.slice(i, i + MAX_IN_CLAUSE);
+    for (let i = 0; i < corsiIds.length; i += 10) {
+      const chunk = corsiIds.slice(i, i + 10);
       const snapshot = await db.collection("corsi")
         .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
-        .select("tipologia", "livello", "nome")
         .get();
       
       snapshot.docs.forEach(doc => {
@@ -50,51 +57,61 @@ async function loadCorsiPerTesserato(tesseratoId) {
         results.push({
           id: doc.id,
           nomeCorso: data.tipologia && data.livello 
-            ? `${data.tipologia} - ${data.livello}`
-            : (data.nome || `Corso ${doc.id}`)
+            ? `${data.tipologia} - ${data.livello}` 
+            : data.nome || `Corso ${doc.id}`
         });
       });
     }
     
+    console.log(`Corsi caricati: ${results.length}`);
     return results;
   } catch (error) {
-    console.error("Errore caricamento corsi:", error);
-    throw new Error("Impossibile caricare i corsi del tesserato");
+    console.error("Errore nel caricamento corsi:", error);
+    throw error;
   }
 }
 
 // Carica i pacchetti di un tesserato
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
+    console.log(`Caricamento pacchetti per tesserato: ${tesseratoId}`);
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) return [];
     
+    if (!doc.exists) {
+      console.log("Tesserato non trovato");
+      return [];
+    }
+
     const pacchettiIds = doc.data()?.pacchetti || [];
-    if (pacchettiIds.length === 0) return [];
+    console.log(`ID pacchetti trovati: ${JSON.stringify(pacchettiIds)}`);
     
-    const MAX_IN_CLAUSE = 10;
+    if (pacchettiIds.length === 0) {
+      console.log("Nessun pacchetto associato a questo tesserato");
+      return [];
+    }
+
     const results = [];
-    
-    for (let i = 0; i < pacchettiIds.length; i += MAX_IN_CLAUSE) {
-      const chunk = pacchettiIds.slice(i, i + MAX_IN_CLAUSE);
+    for (let i = 0; i < pacchettiIds.length; i += 10) {
+      const chunk = pacchettiIds.slice(i, i + 10);
       const snapshot = await db.collection("pacchetti")
         .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
-        .select("nome", "corsoId")
         .get();
       
       snapshot.docs.forEach(doc => {
+        const data = doc.data();
         results.push({
           id: doc.id,
-          nome: doc.data().nome || `Pacchetto ${doc.id}`,
-          corsoId: doc.data().corsoId
+          nome: data.nome || `Pacchetto ${doc.id}`,
+          corsoId: data.corsoId
         });
       });
     }
     
+    console.log(`Pacchetti caricati: ${results.length}`);
     return results;
   } catch (error) {
-    console.error("Errore caricamento pacchetti:", error);
-    throw new Error("Impossibile caricare i pacchetti del tesserato");
+    console.error("Errore nel caricamento pacchetti:", error);
+    throw error;
   }
 }
 
@@ -228,51 +245,57 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Cambio tesserato
   tSelect.addEventListener("change", async () => {
-    const tesseratoId = tSelect.value;
+  const tesseratoId = tSelect.value;
+  
+  if (!tesseratoId) {
+    resetCampi();
+    return;
+  }
+
+  try {
+    console.log(`Tesserato selezionato: ${tesseratoId}`);
+    feedback.textContent = "Caricamento dati...";
     
-    if (!tesseratoId) {
-      resetCampi();
-      return;
+    // Reset campi
+    cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    pSelect.innerHTML = '<option value="">Caricamento...</option>';
+
+    // Carica dati in parallelo
+    const [corsi, pacchetti] = await Promise.all([
+      loadCorsiPerTesserato(tesseratoId),
+      loadPacchettiPerTesserato(tesseratoId)
+    ]);
+
+    console.log(`Totale corsi: ${corsi.length}, pacchetti: ${pacchetti.length}`);
+    
+    // Aggiorna stato globale
+    currentTesseratoId = tesseratoId;
+    tuttiPacchettiTesserato = pacchetti;
+
+    // Popola corsi
+    if (corsi.length > 0) {
+      corsi.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c.id;
+        option.textContent = c.nomeCorso;
+        cSelect.appendChild(option);
+      });
+    } else {
+      cSelect.innerHTML = '<option value="" disabled>Nessun corso associato</option>';
+      console.warn("Nessun corso trovato per questo tesserato");
     }
 
-    try {
-      const feedback = document.getElementById("feedback");
-      feedback.textContent = "Caricamento dati...";
-      feedback.classList.remove("error", "success");
-      
-      cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-      pSelect.innerHTML = '<option value="">Caricamento...</option>';
-      
-      const [corsi, pacchetti] = await Promise.all([
-        loadCorsiPerTesserato(tesseratoId),
-        loadPacchettiPerTesserato(tesseratoId)
-      ]);
-      
-      currentTesseratoId = tesseratoId;
-      tuttiPacchettiTesserato = pacchetti;
-      
-      // Popola corsi
-      if (corsi.length > 0) {
-        corsi.forEach(c => {
-          const option = document.createElement("option");
-          option.value = c.id;
-          option.textContent = c.nomeCorso;
-          cSelect.appendChild(option);
-        });
-      } else {
-        cSelect.innerHTML = '<option value="" disabled>Nessun corso</option>';
-      }
-      
-      // Aggiorna pacchetti e storico
-      updatePacchettiList();
-      await caricaStoricoPagamenti(tesseratoId);
-      
-      feedback.textContent = "";
-    } catch (error) {
-      showError("Errore nel caricamento dei dati");
-      console.error("Errore cambio tesserato:", error);
-    }
-  });
+    // Aggiorna pacchetti e storico
+    updatePacchettiList();
+    await caricaStoricoPagamenti(tesseratoId);
+    
+    feedback.textContent = "";
+  } catch (error) {
+    console.error("Errore nel cambio tesserato:", error);
+    feedback.textContent = "Errore nel caricamento dei dati";
+    feedback.classList.add("error");
+  }
+});
 
   // Cambio corso
   cSelect.addEventListener("change", updatePacchettiList);
