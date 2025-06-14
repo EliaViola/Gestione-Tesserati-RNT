@@ -148,7 +148,7 @@
               <td>${contatti.email || 'N/D'}</td>
               <td class="actions-cell">
                 <button class="btn btn-small btn-edit" onclick="modificaTesserato('${tesserato.id}')">
-                  <i class="fas fa-edit"></i> Modifica
+                  <i class="fas fa-edit"></i> Tesserato
                 </button>
                 <button class="btn btn-small btn-delete" onclick="eliminaTesserato('${tesserato.id}')">
                   <i class="fas fa-trash-alt"></i> Elimina
@@ -274,18 +274,44 @@
           }
         };
 
-        window.eliminaCorso = async function(idCorso) {
-          if (!confirm('Sei sicuro di voler eliminare questo corso?')) return;
-          
-          try {
-              await db.collection("corsi").doc(idCorso).delete();
-              showFeedback('Corso eliminato con successo!');
-              eseguiRicerca();
-          } catch (error) {
-              console.error("Errore eliminazione corso:", error);
-              showFeedback("Errore durante l'eliminazione del corso", 'error');
-          }
-        };
+        window.eliminaTesseratoDalCorso = async function(idTesserato, idCorso = null) {
+  if (!confirm('Sei sicuro di voler rimuovere questo tesserato dal corso?')) return;
+
+  try {
+    const db = firebase.firestore();
+    const batch = db.batch();
+
+    // 1. Se è specificato un corso, rimuovi solo da quello
+    if (idCorso) {
+      const corsoRef = db.collection("corsi").doc(idCorso);
+      batch.update(corsoRef, {
+        iscritti: firebase.firestore.FieldValue.arrayRemove(idTesserato)
+      });
+    } 
+    // 2. Altrimenti rimuovi da tutti i corsi
+    else {
+      const corsiSnapshot = await db.collection("corsi")
+        .where("iscritti", "array-contains", idTesserato)
+        .get();
+
+      corsiSnapshot.forEach(doc => {
+        batch.update(doc.ref, {
+          iscritti: firebase.firestore.FieldValue.arrayRemove(idTesserato)
+        });
+      });
+    }
+
+    await batch.commit();
+    showFeedback('Tesserato rimosso dai corsi con successo!');
+    
+    // Ricarica i dati se siamo nella pagina di ricerca
+    if (typeof eseguiRicerca === 'function') eseguiRicerca();
+    
+  } catch (error) {
+    console.error("Errore durante la rimozione:", error);
+    showFeedback("Errore durante la rimozione del tesserato", 'error');
+  }
+};
 
         // Sovrascrivi le funzioni globali
         window.eseguiRicerca = eseguiRicerca;
