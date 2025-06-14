@@ -33,7 +33,6 @@
 
       <form id="pacchettoForm" class="form-grid">
         <div class="form-section">
-
           <!-- Nome pacchetto -->
           <div class="form-group required-field">
             <label for="nome">Nome Pacchetto</label>
@@ -45,32 +44,35 @@
           <!-- Date inizio/fine -->
           <div class="form-group required-field">
             <label for="startDate">Data Inizio</label>
-            <input type="date" id="startDate" class="form-control" required />
+            <input type="date" id="startDate" name="startDate" class="form-control" required />
           </div>
 
           <div class="form-group required-field">
             <label for="endDate">Data Fine</label>
-            <input type="date" id="endDate" class="form-control" required />
+            <input type="date" id="endDate" name="endDate" class="form-control" required />
           </div>
 
           <!-- Giorni da includere -->
           <div class="form-group required-field">
             <label>Giorni della settimana</label>
             <div class="checkbox-group">
-              <label><input type="checkbox" value="1" /> Lunedì</label>
-              <label><input type="checkbox" value="2" /> Martedì</label>
-              <label><input type="checkbox" value="3" /> Mercoledì</label>
-              <label><input type="checkbox" value="4" /> Giovedì</label>
-              <label><input type="checkbox" value="5" /> Venerdì</label>
-              <label><input type="checkbox" value="6" /> Sabato</label>
-              <label><input type="checkbox" value="0" /> Domenica</label>
+              <label><input type="checkbox" name="weekdays" value="1" /> Lunedì</label>
+              <label><input type="checkbox" name="weekdays" value="2" /> Martedì</label>
+              <label><input type="checkbox" name="weekdays" value="3" /> Mercoledì</label>
+              <label><input type="checkbox" name="weekdays" value="4" /> Giovedì</label>
+              <label><input type="checkbox" name="weekdays" value="5" /> Venerdì</label>
+              <label><input type="checkbox" name="weekdays" value="6" /> Sabato</label>
+              <label><input type="checkbox" name="weekdays" value="0" /> Domenica</label>
             </div>
           </div>
 
           <!-- Giorni da evitare -->
           <div class="form-group">
             <label for="giorniDaEvitare">Giorni da evitare (opzionale)</label>
-            <input type="text" id="giorniDaEvitare" class="form-control" placeholder="gg/mm/aaaa, separati da virgole" />
+            <input type="text" id="giorniDaEvitare" name="giorniDaEvitare" class="form-control" 
+                   placeholder="gg/mm/aaaa, separati da virgole" 
+                   pattern="^(?:\d{2}\/\d{2}\/\d{4}(?:,\s?)?)*$"
+                   title="Inserisci date nel formato gg/mm/aaaa, separate da virgole" />
           </div>
 
           <div class="form-group">
@@ -78,7 +80,7 @@
           </div>
 
           <!-- Date generate -->
-          <div id="dateContainer"></div>
+          <div id="dateContainer" class="date-container"></div>
         </div>
 
         <div class="form-actions full-width">
@@ -100,12 +102,16 @@
 
   <script type="module">
     document.addEventListener('DOMContentLoaded', () => {
+      // Elementi del DOM
       const logoutBtn = document.getElementById('logoutBtn');
       const feedbackElement = document.getElementById('feedbackMessage');
       const spinner = document.getElementById('formSpinner');
       const form = document.getElementById('pacchettoForm');
       const dateContainer = document.getElementById('dateContainer');
+      const generaDateBtn = document.getElementById('generaDateBtn');
+      const submitBtn = document.getElementById('submitBtn');
 
+      // Formatta la data in gg/mm/aaaa
       const formatDate = (dateObj) => {
         const day = String(dateObj.getDate()).padStart(2, '0');
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -113,104 +119,186 @@
         return `${day}/${month}/${year}`;
       };
 
+      // Converte una stringa in formato gg/mm/aaaa in un oggetto Date
+      const parseDateString = (dateString) => {
+        const [day, month, year] = dateString.split('/');
+        return new Date(`${year}-${month}-${day}`);
+      };
+
+      // Analizza le date da evitare inserite dall'utente
       const parseAvoidDates = (input) => {
+        if (!input.trim()) return [];
+        
         return input.split(',')
           .map(s => s.trim())
-          .filter(Boolean)
-          .map(d => {
-            const [day, month, year] = d.split('/');
-            return new Date(`${year}-${month}-${day}`);
-          })
+          .filter(s => s.match(/^\d{2}\/\d{2}\/\d{4}$/))
+          .map(parseDateString)
+          .filter(date => !isNaN(date.getTime()))
           .map(d => d.toDateString());
       };
 
+      // Verifica se l'utente è autenticato e ha i permessi necessari
       firebase.auth().onAuthStateChanged(async (user) => {
-        if (!user) window.location.href = '../index.html';
-        else {
+        if (!user) {
+          window.location.href = '../index.html';
+          return;
+        }
+        
+        try {
           const token = await user.getIdTokenResult();
           if (!token.claims.director) {
             await firebase.auth().signOut();
             window.location.href = '../index.html';
           }
+        } catch (error) {
+          console.error("Errore verifica permessi:", error);
+          await firebase.auth().signOut();
+          window.location.href = '../index.html';
         }
       });
 
+      // Logout
       logoutBtn.addEventListener('click', async () => {
-        await firebase.auth().signOut();
-        window.location.href = '../index.html';
+        try {
+          await firebase.auth().signOut();
+          window.location.href = '../index.html';
+        } catch (error) {
+          console.error("Errore durante il logout:", error);
+          showFeedback('Errore durante il logout', 'error');
+        }
       });
 
-      // Generazione automatica date
-      document.getElementById('generaDateBtn').addEventListener('click', () => {
+      // Genera le date in base ai parametri selezionati
+      generaDateBtn.addEventListener('click', () => {
         dateContainer.innerHTML = '';
+        
         const startDate = new Date(document.getElementById('startDate').value);
         const endDate = new Date(document.getElementById('endDate').value);
-        const giorniSelezionati = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
+        const giorniSelezionati = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .map(cb => parseInt(cb.value));
         const avoidDatesInput = document.getElementById('giorniDaEvitare').value;
         const giorniDaEvitare = parseAvoidDates(avoidDatesInput);
 
-        if (isNaN(startDate) || isNaN(endDate) || giorniSelezionati.length === 0 || endDate < startDate) {
-          showFeedback('Controlla date e seleziona almeno un giorno della settimana.', 'error');
-          return;
-        }
+        // Validazione input
+        // Validazione input
+if (isNaN(startDate.getTime())) {
+  showFeedback('Inserisci una data di inizio valida', 'error');
+  return;
+}
 
+if (isNaN(endDate.getTime())) {
+  showFeedback('Inserisci una data di fine valida', 'error');
+  return;
+}
+
+if (endDate < startDate) {
+  showFeedback('La data di fine deve essere successiva alla data di inizio', 'error');
+  return;
+}
+
+if (giorniSelezionati.length === 0) {
+  showFeedback('Seleziona almeno un giorno della settimana', 'error');
+  return;
+}
+
+        // Genera le date
         let current = new Date(startDate);
+        const dateList = [];
+        
         while (current <= endDate) {
-          if (giorniSelezionati.includes(current.getDay()) && !giorniDaEvitare.includes(current.toDateString())) {
-            const formatted = formatDate(current);
-            const dateBox = document.createElement('div');
-            dateBox.className = 'date-box';
-            dateBox.textContent = formatted;
-            dateContainer.appendChild(dateBox);
+          const dayOfWeek = current.getDay();
+          const dateString = current.toDateString();
+          
+          if (giorniSelezionati.includes(dayOfWeek) && !giorniDaEvitare.includes(dateString)) {
+            dateList.push(new Date(current));
           }
           current.setDate(current.getDate() + 1);
         }
+
+        // Visualizza le date generate
+        if (dateList.length === 0) {
+          showFeedback('Nessuna data generata con i parametri specificati', 'warning');
+          return;
+        }
+
+        dateContainer.innerHTML = '';
+        dateList.forEach(date => {
+          const dateBox = document.createElement('div');
+          dateBox.className = 'date-box';
+          dateBox.textContent = formatDate(date);
+          dateContainer.appendChild(dateBox);
+        });
+
+        showFeedback(`Generate ${dateList.length} date`, 'success');
       });
 
+      // Salva il pacchetto nel database
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         const nome = document.getElementById('nome').value.trim();
         const dateBoxes = document.querySelectorAll('#dateContainer .date-box');
         const dateList = Array.from(dateBoxes).map(el => el.textContent);
 
-        if (!nome || dateList.length === 0) {
-          showFeedback('Inserisci un nome valido e genera almeno una data.', 'error');
+        // Validazione
+        if (!nome || nome.length < 3) {
+          showFeedback('Inserisci un nome valido (almeno 3 caratteri)', 'error');
+          return;
+        }
+        
+        if (dateList.length === 0) {
+          showFeedback('Genera almeno una data valida', 'error');
           return;
         }
 
         try {
           toggleLoading(true);
           const user = firebase.auth().currentUser;
+          
           await firebase.firestore().collection('pacchetti').add({
             nome,
             date: dateList,
             creatoIl: firebase.firestore.FieldValue.serverTimestamp(),
-            creatoDa: user.uid
+            creatoDa: user.uid,
+            creatoDaEmail: user.email
           });
+          
           showFeedback('Pacchetto salvato con successo!', 'success');
           form.reset();
           dateContainer.innerHTML = '';
         } catch (err) {
-          console.error(err);
-          showFeedback('Errore durante il salvataggio.', 'error');
+          console.error("Errore salvataggio pacchetto:", err);
+          showFeedback('Errore durante il salvataggio: ' + err.message, 'error');
         } finally {
           toggleLoading(false);
         }
       });
 
+      // Mostra un messaggio di feedback all'utente
       const showFeedback = (message, type) => {
         feedbackElement.textContent = message;
         feedbackElement.className = `feedback-msg ${type}`;
         feedbackElement.classList.remove('hidden');
-        setTimeout(() => feedbackElement.classList.add('hidden'), 5000);
+        
+        // Nascondi il messaggio dopo 5 secondi
+        setTimeout(() => {
+          feedbackElement.classList.add('hidden');
+        }, 5000);
       };
 
+      // Attiva/disattiva lo stato di caricamento
       const toggleLoading = (isLoading) => {
-        document.getElementById('submitBtn').disabled = isLoading;
+        submitBtn.disabled = isLoading;
         spinner.classList.toggle('hidden', !isLoading);
       };
 
+      // Imposta l'anno corrente nel footer
       document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+      // Imposta la data minima per i campi data (oggi)
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').min = today;
+      document.getElementById('endDate').min = today;
     });
   </script>
 </body>
