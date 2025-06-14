@@ -27,26 +27,63 @@ async function loadTesserati() {
 }
 
 // Carica i corsi di un tesserato
+
+
 async function loadCorsiPerTesserato(tesseratoId) {
-  const doc = await db.collection("tesserati").doc(tesseratoId).get();
-  const corsiIds = doc.data()?.corsi || [];
-  
-  const results = [];
-  for (const corsoId of corsiIds) {
-    const doc = await db.collection("corsi").doc(corsoId).get();
-    if (doc.exists) {
-      const data = doc.data();
-      results.push({
-        id: doc.id,
-        nomeCorso: data.tipologia && data.livello 
-          ? `${data.tipologia} - ${data.livello}`
-          : data.nome || `Corso ${doc.id}`
+  try {
+    console.log(`Caricamento corsi per tesserato: ${tesseratoId}`);
+    const doc = await db.collection("tesserati").doc(tesseratoId).get();
+    
+    if (!doc.exists) {
+      console.log("Tesserato non trovato");
+      return [];
+    }
+
+    // Gestione sia per array che per oggetto
+    const corsiData = doc.data()?.corsi;
+    let corsiIds = [];
+    
+    if (Array.isArray(corsiData)) {
+      // Se è un array, usalo direttamente
+      corsiIds = corsiData;
+    } else if (typeof corsiData === 'object' && corsiData !== null) {
+      // Se è un oggetto, prendi le chiavi
+      corsiIds = Object.keys(corsiData);
+    }
+    
+    console.log(`ID corsi trovati: ${JSON.stringify(corsiIds)}`);
+    
+    if (corsiIds.length === 0) {
+      console.log("Nessun corso associato a questo tesserato");
+      return [];
+    }
+
+    const results = [];
+    // Processa gli ID a gruppi di 10 per limiti Firestore
+    for (let i = 0; i < corsiIds.length; i += 10) {
+      const chunk = corsiIds.slice(i, i + 10);
+      const snapshot = await db.collection("corsi")
+        .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
+        .get();
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        results.push({
+          id: doc.id,
+          nomeCorso: data.tipologia && data.livello 
+            ? `${data.tipologia} - ${data.livello}`
+            : data.nome || `Corso ${doc.id}`
+        });
       });
     }
+    
+    console.log(`Corsi caricati: ${results.length}`);
+    return results;
+  } catch (error) {
+    console.error("Errore nel caricamento corsi:", error);
+    throw new Error("Impossibile caricare i corsi del tesserato");
   }
-  return results;
 }
-
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
     console.log(`Caricamento pacchetti per tesserato: ${tesseratoId}`);
@@ -57,7 +94,16 @@ async function loadPacchettiPerTesserato(tesseratoId) {
       return [];
     }
 
-    const pacchettiIds = doc.data()?.pacchetti || [];
+    // Gestione sia per array che per oggetto
+    const pacchettiData = doc.data()?.pacchetti;
+    let pacchettiIds = [];
+    
+    if (Array.isArray(pacchettiData)) {
+      pacchettiIds = pacchettiData;
+    } else if (typeof pacchettiData === 'object' && pacchettiData !== null) {
+      pacchettiIds = Object.keys(pacchettiData);
+    }
+    
     console.log(`ID pacchetti trovati: ${JSON.stringify(pacchettiIds)}`);
     
     if (pacchettiIds.length === 0) {
@@ -86,7 +132,7 @@ async function loadPacchettiPerTesserato(tesseratoId) {
     return results;
   } catch (error) {
     console.error("Errore nel caricamento pacchetti:", error);
-    throw error;
+    throw new Error("Impossibile caricare i pacchetti del tesserato");
   }
 }
 
