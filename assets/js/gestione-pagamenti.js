@@ -29,32 +29,48 @@ async function loadTesserati() {
 async function loadCorsiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) throw new Error("Tesserato non trovato");
-    
+    if (!doc.exists) {
+      throw new Error("Tesserato non trovato");
+    }
+
     const corsi = doc.data()?.corsi || [];
     
-    // Aggiungi questo controllo per array vuoto
-    if (corsi.length === 0) {
-      console.log("Nessun corso associato al tesserato");
+    // Se non ci sono corsi, restituisci array vuoto immediatamente
+    if (!corsi || corsi.length === 0) {
       return [];
     }
-    
-    // Ottimizzazione: carica solo i campi necessari
-    const snap = await db.collection("corsi")
-      .where(firebase.firestore.FieldPath.documentId(), "in", corsi)
-      .select("tipologia", "livello", "nome")
-      .get();
-    
-    return snap.docs.map(doc => {
-      const data = doc.data();
-      return { 
-        id: doc.id, 
-        ...data,
-        nomeCorso: data.tipologia && data.livello 
-          ? `${data.tipologia} - ${data.livello}` 
-          : (data.nome || `Corso ${doc.id}`)
-      };
-    });
+
+    // Firestore limita a 10 elementi negli array per le query 'in'
+    // Dividiamo in chunk se necessario
+    const MAX_IN_CLAUSE = 10;
+    const chunks = [];
+    for (let i = 0; i < corsi.length; i += MAX_IN_CLAUSE) {
+      chunks.push(corsi.slice(i, i + MAX_IN_CLAUSE));
+    }
+
+    // Esegui le query in parallelo
+    const promises = chunks.map(chunk => 
+      db.collection("corsi")
+        .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
+        .select("tipologia", "livello", "nome")
+        .get()
+    );
+
+    const snapshots = await Promise.all(promises);
+    const results = snapshots.flatMap(snapshot => 
+      snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          nomeCorso: data.tipologia && data.livello 
+            ? `${data.tipologia} - ${data.livello}` 
+            : (data.nome || `Corso ${doc.id}`)
+        };
+      })
+    );
+
+    return results;
   } catch (error) {
     console.error("Errore nel caricamento corsi:", error);
     throw new Error("Impossibile caricare i corsi del tesserato");
@@ -65,27 +81,42 @@ async function loadCorsiPerTesserato(tesseratoId) {
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    if (!doc.exists) throw new Error("Tesserato non trovato");
-    
+    if (!doc.exists) {
+      throw new Error("Tesserato non trovato");
+    }
+
     const pacchetti = doc.data()?.pacchetti || [];
     
-    // Aggiungi questo controllo per array vuoto
-    if (pacchetti.length === 0) {
-      console.log("Nessun pacchetto associato al tesserato");
+    // Se non ci sono pacchetti, restituisci array vuoto immediatamente
+    if (!pacchetti || pacchetti.length === 0) {
       return [];
     }
-    
-    // Ottimizzazione: carica solo i campi necessari
-    const snap = await db.collection("pacchetti")
-      .where(firebase.firestore.FieldPath.documentId(), "in", pacchetti)
-      .select("nome", "corsoId")
-      .get();
-    
-    return snap.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data(),
-      nome: doc.data().nome || `Pacchetto ${doc.id}`
-    }));
+
+    // Firestore limita a 10 elementi negli array per le query 'in'
+    const MAX_IN_CLAUSE = 10;
+    const chunks = [];
+    for (let i = 0; i < pacchetti.length; i += MAX_IN_CLAUSE) {
+      chunks.push(pacchetti.slice(i, i + MAX_IN_CLAUSE));
+    }
+
+    // Esegui le query in parallelo
+    const promises = chunks.map(chunk => 
+      db.collection("pacchetti")
+        .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
+        .select("nome", "corsoId")
+        .get()
+    );
+
+    const snapshots = await Promise.all(promises);
+    const results = snapshots.flatMap(snapshot => 
+      snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        nome: doc.data().nome || `Pacchetto ${doc.id}`
+      }))
+    );
+
+    return results;
   } catch (error) {
     console.error("Errore nel caricamento pacchetti:", error);
     throw new Error("Impossibile caricare i pacchetti del tesserato");
