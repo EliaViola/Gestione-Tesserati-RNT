@@ -1178,3 +1178,15 @@ select {
 .btn-detail:hover {
   background-color: #138496;
 }
+.btn-remove {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btn-remove:hover {
+  background-color: #e0a800;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}

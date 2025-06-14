@@ -167,40 +167,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mostra i corsi filtrati
     function mostraCorsiFiltrati(corsi) {
-      const corpoCorsi = document.getElementById('corpoTabellaCorsi');
-      corpoCorsi.innerHTML = '';
-      
-      if (!corsi || corsi.length === 0) {
-          corpoCorsi.innerHTML = `
-            <tr>
-              <td colspan="7" class="nessun-risultato">
-                Nessun corso trovato con i filtri selezionati
-              </td>
-            </tr>`;
-          return;
-      }
+  const corpoCorsi = document.getElementById('corpoTabellaCorsi');
+  corpoCorsi.innerHTML = '';
+  
+  if (!corsi || corsi.length === 0) {
+    corpoCorsi.innerHTML = `
+      <tr>
+        <td colspan="8" class="nessun-risultato">
+          Nessun corso trovato con i filtri selezionati
+        </td>
+      </tr>`;
+    return;
+  }
 
-      corsi.forEach(corso => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${corso.nomeTesserato || 'N/D'}</td>
-            <td>${getCorsoName(corso.tipologia)}</td>
-            <td>${corso.livello || 'N/D'}</td>
-            <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
-            <td>${corso.orario || 'N/D'}</td>
-            <td>${corso.istruttore || 'N/D'}</td>
-            <td class="actions-cell">
-              <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
-                <i class="fas fa-edit"></i> Modifica
-              </button>
-              <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
-                <i class="fas fa-trash-alt"></i> Elimina
-              </button>
-            </td>
-          `;
-          corpoCorsi.appendChild(row);
-      });
-    }
+  corsi.forEach(corso => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${corso.nomeTesserato || 'N/D'}</td>
+      <td>${getCorsoName(corso.tipologia)}</td>
+      <td>${corso.livello || 'N/D'}</td>
+      <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
+      <td>${corso.orario || 'N/D'}</td>
+      <td>${corso.istruttore || 'N/D'}</td>
+      <td class="actions-cell">
+        <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
+          <i class="fas fa-edit"></i> Modifica
+        </button>
+        <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
+          <i class="fas fa-trash-alt"></i> Elimina
+        </button>
+      </td>
+      <td class="actions-cell">
+        ${corso.iscritti && corso.iscritti.length > 0 ? 
+          `<button class="btn btn-small btn-remove" 
+                  onclick="rimuoviTesseratoDalCorso('${corso.id}', '${corso.iscritti[0]}')">
+            <i class="fas fa-user-minus"></i> Rimuovi tesserato
+          </button>` : 
+          'Nessun iscritto'}
+      </td>
+    `;
+    corpoCorsi.appendChild(row);
+  });
+}
+    
 
     // Funzione principale di ricerca
     async function eseguiRicerca() {
@@ -293,61 +302,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzioni per eliminazione
     window.eliminaTesserato = async function(idTesserato) {
-  if (!confirm('Sei sicuro di voler eliminare questo tesserato da tutti i corsi e dal database?')) return;
-  
+  if (!confirm('Sei sicuro di voler ELIMINARE DEFINITIVAMENTE questo tesserato?\n\nVerrà rimosso dal database e da tutti i corsi a cui è iscritto.')) {
+    return;
+  }
+
   try {
-    // 1. Prima rimuovi il tesserato da tutti i corsi a cui è iscritto
+    // 1. Rimuovi il tesserato da tutti i corsi
     const corsiSnapshot = await db.collection("corsi")
       .where("iscritti", "array-contains", idTesserato)
       .get();
 
-    // Aggiorna tutti i corsi in parallelo
-    const updatePromises = corsiSnapshot.docs.map(async (doc) => {
-      const corsoData = doc.data();
-      const updatedIscritti = corsoData.iscritti.filter(id => id !== idTesserato);
-      
-      await db.collection("corsi").doc(doc.id).update({
-        iscritti: updatedIscritti
-      });
+    const batch = db.batch();
+    corsiSnapshot.forEach(doc => {
+      const corsoRef = db.collection("corsi").doc(doc.id);
+      const updatedIscritti = doc.data().iscritti.filter(id => id !== idTesserato);
+      batch.update(corsoRef, { iscritti: updatedIscritti });
     });
+    await batch.commit();
 
-    await Promise.all(updatePromises);
-
-    // 2. Poi elimina il tesserato dalla collezione tesserati
+    // 2. Elimina il tesserato dalla collezione tesserati
     await db.collection("tesserati").doc(idTesserato).delete();
-    
-    showFeedback('Tesserato rimosso con successo da tutti i corsi e dal database!');
-    eseguiRicerca(); // Ricarica i risultati
+
+    showFeedback('Tesserato eliminato definitivamente con successo!', 'success');
+    eseguiRicerca();
     
   } catch (error) {
-    console.error("Errore durante l'eliminazione del tesserato:", error);
+    console.error("Errore eliminazione tesserato:", error);
     showFeedback("Errore durante l'eliminazione del tesserato", 'error');
   }
 };
 
-    window.rimuoviTesseratoDaiCorsi = async function(idTesserato) {
-  if (!confirm('Sei sicuro di voler rimuovere questo tesserato da tutti i corsi?')) return;
-  
+    window.rimuoviTesseratoDalCorso = async function(idCorso, idTesserato) {
+  if (!confirm('Sei sicuro di voler rimuovere questo tesserato dal corso?\n\nIl tesserato rimarrà nel database ma non sarà più iscritto a questo corso specifico.')) {
+    return;
+  }
+
   try {
-    const corsiSnapshot = await db.collection("corsi")
-      .where("iscritti", "array-contains", idTesserato)
-      .get();
+    // Ottieni il corso corrente
+    const corsoRef = db.collection("corsi").doc(idCorso);
+    const corsoDoc = await corsoRef.get();
 
-    const updatePromises = corsiSnapshot.docs.map(async (doc) => {
-      const updatedIscritti = doc.data().iscritti.filter(id => id !== idTesserato);
-      await db.collection("corsi").doc(doc.id).update({
-        iscritti: updatedIscritti
-      });
-    });
+    if (!corsoDoc.exists) {
+      throw new Error('Corso non trovato');
+    }
 
-    await Promise.all(updatePromises);
-    
-    showFeedback('Tesserato rimosso con successo da tutti i corsi!');
+    // Filtra gli iscritti rimuovendo il tesserato
+    const currentIscritti = corsoDoc.data().iscritti || [];
+    const updatedIscritti = currentIscritti.filter(id => id !== idTesserato);
+
+    // Aggiorna il corso
+    await corsoRef.update({ iscritti: updatedIscritti });
+
+    showFeedback('Tesserato rimosso dal corso con successo!', 'success');
     eseguiRicerca();
     
   } catch (error) {
-    console.error("Errore durante la rimozione del tesserato dai corsi:", error);
-    showFeedback("Errore durante la rimozione del tesserato dai corsi", 'error');
+    console.error("Errore rimozione tesserato dal corso:", error);
+    showFeedback("Errore durante la rimozione dal corso", 'error');
   }
 };
 
