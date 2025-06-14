@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const corpoTesserati = document.getElementById('corpoTabellaTesserati');
       corpoTesserati.innerHTML = '';
       
-      if (tesserati.length === 0) {
+      if (!tesserati || tesserati.length === 0) {
           corpoTesserati.innerHTML = `
             <tr>
               <td colspan="7" class="nessun-risultato">
@@ -171,12 +171,12 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // Mostra i corsi filtrati (versione corretta)
+    // Mostra i corsi filtrati
     function mostraCorsiFiltrati(corsi) {
       const corpoCorsi = document.getElementById('corpoTabellaCorsi');
       corpoCorsi.innerHTML = '';
       
-      if (corsi.length === 0) {
+      if (!corsi || corsi.length === 0) {
           corpoCorsi.innerHTML = `
             <tr>
               <td colspan="7" class="nessun-risultato">
@@ -231,16 +231,11 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
           </tr>`;
         
-        // Esegui le query in parallelo solo se ci sono filtri attivi
-        const [tesserati, corsi] = await Promise.all([
-          (filtroNome || filtroCognome || filtroCodiceFiscale) ? 
-            loadTesseratiFiltrati(filtroNome, filtroCognome, filtroCodiceFiscale) : 
-            Promise.resolve([]),
-          
-          filtroCorso ? 
-            loadCorsiFiltrati(filtroCorso) : 
-            Promise.resolve([])
-        ]);
+        // Esegui le query in parallelo
+        const tesserati = (filtroNome || filtroCognome || filtroCodiceFiscale) ? 
+          await loadTesseratiFiltrati(filtroNome, filtroCognome, filtroCodiceFiscale) : [];
+        
+        const corsi = filtroCorso ? await loadCorsiFiltrati(filtroCorso) : [];
         
         // Mostra i risultati
         mostraTesseratiFiltrati(tesserati);
