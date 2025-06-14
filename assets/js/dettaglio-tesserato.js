@@ -31,29 +31,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Carica i dati del tesserato
         async function caricaDatiTesserato() {
-            try {
-                showLoading(true);
-                
-                const doc = await db.collection("tesserati").doc(tesseratoId).get();
-                
-                if (!doc.exists) {
-                    throw new Error('Tesserato non trovato');
-                }
-                
-                const tesserato = doc.data();
-                popolaForm(tesserato);
-                
-                // Carica i corsi del tesserato
-                await caricaCorsiTesserato(tesseratoId);
-                
-                showLoading(false);
-                
-            } catch (error) {
-                console.error("Errore caricamento tesserato:", error);
-                showFeedback("Errore nel caricamento del tesserato", 'error');
-                throw error;
-            }
-        }
+  try {
+    showLoading(true);
+    
+    const doc = await db.collection("tesserati").doc(tesseratoId).get();
+    
+    if (!doc.exists) {
+      throw new Error('Tesserato non trovato');
+    }
+    
+    const tesserato = doc.data();
+    popolaForm(tesserato);
+    
+    // Carica i corsi del tesserato
+    await caricaCorsiTesserato(tesseratoId);
+    
+    showLoading(false);
+    
+  } catch (error) {
+    console.error("Errore caricamento tesserato:", error);
+    showFeedback("Errore nel caricamento del tesserato", 'error');
+  }
+}
         
         // Popola il form con i dati del tesserato
         function popolaForm(tesserato) {
@@ -94,49 +93,66 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Carica i corsi a cui è iscritto il tesserato
         async function caricaCorsiTesserato(tesseratoId) {
-            try {
-                const querySnapshot = await db.collection("iscrizioni")
-                    .where("tesseratoId", "==", tesseratoId)
-                    .where("stato", "==", "Attivo")
-                    .get();
-                
-                if (querySnapshot.empty) {
-                    corsiAttualiContainer.innerHTML = '<p class="no-data">Nessun corso attivo al momento</p>';
-                    return;
-                }
-                
-                let html = '<div class="corsi-grid">';
-                
-                // Per ogni iscrizione, ottieni i dettagli del corso
-                for (const doc of querySnapshot.docs) {
-                    const iscrizione = doc.data();
-                    const corsoDoc = await db.collection("corsi").doc(iscrizione.corsoId).get();
-        
-                    if (corsoDoc.exists) {
-                        const corso = corsoDoc.data();
-                        html += `
-                            <div class="corso-card">
-                                <h3>${corso.nome}</h3>
-                                <p><strong>Livello:</strong> ${corso.livello}</p>
-                                <p><strong>Giorni:</strong> ${corso.giorni.join(', ')}</p>
-                                <p><strong>Orario:</strong> ${corso.orario}</p>
-                                <p><strong>Stagione:</strong> ${corso.stagione}</p>
-                                <button class="btn btn-small" onclick="location.href='dettaglio-corso.html?id=${iscrizione.corsoId}'">
-                                    <i class="fas fa-info-circle"></i> Dettaglio Corso
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-                
-                html += '</div>';
-                corsiAttualiContainer.innerHTML = html;
-                
-            } catch (error) {
-                console.error("Errore caricamento corsi:", error);
-                corsiAttualiContainer.innerHTML = '<p class="error">Errore nel caricamento dei corsi</p>';
+  try {
+    const corsiBody = document.getElementById('corsi-tesserato-body');
+    corsiBody.innerHTML = '<tr><td colspan="6" class="text-center">Caricamento corsi...</td></tr>';
+
+    // 1. Ottieni tutte le iscrizioni attive del tesserato
+    const iscrizioniSnapshot = await db.collection("iscrizioni")
+      .where("tesseratoId", "==", tesseratoId)
+      .where("stato", "==", "Attivo")
+      .get();
+
+    if (iscrizioniSnapshot.empty) {
+      corsiBody.innerHTML = '<tr><td colspan="6" class="text-center">Nessun corso attivo</td></tr>';
+      return;
+    }
+
+    // 2. Per ogni iscrizione, ottieni i dettagli del corso
+    let html = '';
+    const promises = [];
+    
+    iscrizioniSnapshot.forEach(doc => {
+      const iscrizione = doc.data();
+      promises.push(
+        db.collection("corsi").doc(iscrizione.corsoId).get()
+          .then(corsoDoc => {
+            if (corsoDoc.exists) {
+              const corso = corsoDoc.data();
+              html += `
+                <tr>
+                  <td>${corso.nome}</td>
+                  <td>${corso.livello}</td>
+                  <td>${corso.giorni.join(', ')}</td>
+                  <td>${corso.orario}</td>
+                  <td>${corso.stagione}</td>
+                  <td>
+                    <button class="btn btn-small" onclick="location.href='dettaglio-corso.html?id=${iscrizione.corsoId}'">
+                      <i class="fas fa-info-circle"></i> Dettagli
+                    </button>
+                  </td>
+                </tr>
+              `;
             }
-        }
+          })
+      );
+    });
+
+    // 3. Attendi il completamento di tutte le query
+    await Promise.all(promises);
+    
+    if (html === '') {
+      corsiBody.innerHTML = '<tr><td colspan="6" class="text-center">Nessun corso trovato</td></tr>';
+    } else {
+      corsiBody.innerHTML = html;
+    }
+
+  } catch (error) {
+    console.error("Errore caricamento corsi:", error);
+    document.getElementById('corsi-tesserato-body').innerHTML = 
+      '<tr><td colspan="6" class="text-center error">Errore nel caricamento dei corsi</td></tr>';
+  }
+}
         
         // Salva le modifiche al tesserato
         async function salvaModificheTesserato() {

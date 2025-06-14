@@ -168,12 +168,26 @@
         </div>
 
         <!-- Sezione Corsi Attuali -->
-        <div class="form-section full-width">
-          <h3 class="section-title"><i class="fas fa-swimming-pool"></i> Corsi Attuali</h3>
-          <div id="corsi-attuali" class="corsi-grid">
-            <p class="no-data">Caricamento corsi in corso...</p>
-          </div>
-        </div>
+<div class="form-section full-width">
+  <h3 class="section-title"><i class="fas fa-swimming-pool"></i> Corsi Attuali</h3>
+  <div id="corsi-attuali" class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tipo Corso</th>
+          <th>Livello</th>
+          <th>Giorni</th>
+          <th>Orario</th>
+          <th>Stagione</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="corsi-tesserato-body">
+        <!-- Popolato dinamicamente -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
         <div class="form-actions full-width">
           <button type="button" class="btn btn-secondary" id="btn-annulla" onclick="annullaModifiche()">
