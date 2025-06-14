@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Crea Pacchetto - Rari Nantes Trento</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
-  <!-- Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="../assets/js/firebase-config.js"></script> <!-- Solo dopo! -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="../assets/js/firebase-config.js"></script>
 </head>
-
 <body>
   <header>
     <div class="header-container">
@@ -32,20 +31,54 @@
       <h1 class="form-title">Crea Pacchetti</h1>
       <div class="feedback-msg hidden" id="feedbackMessage"></div>
 
-      <form id="tesseratoForm" class="form-grid">
+      <form id="pacchettoForm" class="form-grid">
         <div class="form-section">
+
+          <!-- Nome pacchetto -->
           <div class="form-group required-field">
             <label for="nome">Nome Pacchetto</label>
-            <input type="text" id="nome" name="nome" class="form-control" required 
-  pattern="^[A-Za-zÀ-ÿ0-9\s\-']{3,}$" title="Almeno 3 caratteri. Lettere, numeri, spazio, trattino o apostrofo." />
+            <input type="text" id="nome" name="nome" class="form-control" required
+              pattern="^[A-Za-zÀ-ÿ0-9\s\-']{3,}$"
+              title="Almeno 3 caratteri. Lettere, numeri, spazio, trattino o apostrofo." />
           </div>
 
-          <!-- Campo Data e Pulsante -->
-          <div class="input-section">
-            <input type="date" id="dateInput" class="form-control">
-            <button type="button" onClick="aggiungiData()"class="btn btn-primary">Aggiungi Data</button>
-            <div id="dateContainer"></div>
+          <!-- Date inizio/fine -->
+          <div class="form-group required-field">
+            <label for="startDate">Data Inizio</label>
+            <input type="date" id="startDate" class="form-control" required />
           </div>
+
+          <div class="form-group required-field">
+            <label for="endDate">Data Fine</label>
+            <input type="date" id="endDate" class="form-control" required />
+          </div>
+
+          <!-- Giorni da includere -->
+          <div class="form-group required-field">
+            <label>Giorni della settimana</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" value="1" /> Lunedì</label>
+              <label><input type="checkbox" value="2" /> Martedì</label>
+              <label><input type="checkbox" value="3" /> Mercoledì</label>
+              <label><input type="checkbox" value="4" /> Giovedì</label>
+              <label><input type="checkbox" value="5" /> Venerdì</label>
+              <label><input type="checkbox" value="6" /> Sabato</label>
+              <label><input type="checkbox" value="0" /> Domenica</label>
+            </div>
+          </div>
+
+          <!-- Giorni da evitare -->
+          <div class="form-group">
+            <label for="giorniDaEvitare">Giorni da evitare (opzionale)</label>
+            <input type="text" id="giorniDaEvitare" class="form-control" placeholder="gg/mm/aaaa, separati da virgole" />
+          </div>
+
+          <div class="form-group">
+            <button type="button" class="btn btn-secondary" id="generaDateBtn">Genera Date</button>
+          </div>
+
+          <!-- Date generate -->
+          <div id="dateContainer"></div>
         </div>
 
         <div class="form-actions full-width">
@@ -65,126 +98,120 @@
     </div>
   </footer>
 
- 
-    <script type="module">
-  document.addEventListener('DOMContentLoaded', async () => {
-    const form = document.getElementById('tesseratoForm');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const feedbackElement = document.getElementById('feedbackMessage');
-    const spinner = document.getElementById('formSpinner');
-    const dateInput = document.getElementById('dateInput');
-    const dateContainer = document.getElementById('dateContainer');
+  <script type="module">
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      const feedbackElement = document.getElementById('feedbackMessage');
+      const spinner = document.getElementById('formSpinner');
+      const form = document.getElementById('pacchettoForm');
+      const dateContainer = document.getElementById('dateContainer');
 
-    // Mostra anno corrente (se hai un footer con id 'currentYear')
-    const currentYearEl = document.getElementById('currentYear');
-    if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
+      const formatDate = (dateObj) => {
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
 
-    // Verifica autenticazione e ruolo
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = '../index.html';
-        return;
-      }
+      const parseAvoidDates = (input) => {
+        return input.split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
+          .map(d => {
+            const [day, month, year] = d.split('/');
+            return new Date(`${year}-${month}-${day}`);
+          })
+          .map(d => d.toDateString());
+      };
 
-      try {
-        const idToken = await user.getIdTokenResult();
-        if (!idToken.claims.director) {
-          await firebase.auth().signOut();
-          window.location.href = '../index.html';
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) window.location.href = '../index.html';
+        else {
+          const token = await user.getIdTokenResult();
+          if (!token.claims.director) {
+            await firebase.auth().signOut();
+            window.location.href = '../index.html';
+          }
         }
-      } catch (error) {
-        console.error('Errore verifica ruolo:', error);
-        window.location.href = '../index.html';
-      }
-    });
+      });
 
-    // Logout
-    logoutBtn.addEventListener('click', async () => {
-      try {
+      logoutBtn.addEventListener('click', async () => {
         await firebase.auth().signOut();
         window.location.href = '../index.html';
-      } catch (error) {
-        showFeedback('Errore durante il logout', 'error');
-      }
-    });
+      });
 
-    // Aggiunta data
-    window.aggiungiData = function () {
-      const dateValue = dateInput.value;
-      if (dateValue) {
-        const dateBox = document.createElement('div');
-        dateBox.className = 'date-box';
+      // Generazione automatica date
+      document.getElementById('generaDateBtn').addEventListener('click', () => {
+        dateContainer.innerHTML = '';
+        const startDate = new Date(document.getElementById('startDate').value);
+        const endDate = new Date(document.getElementById('endDate').value);
+        const giorniSelezionati = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
+        const avoidDatesInput = document.getElementById('giorniDaEvitare').value;
+        const giorniDaEvitare = parseAvoidDates(avoidDatesInput);
 
-        const dateText = document.createElement('span');
-        dateText.textContent = dateValue;
+        if (isNaN(startDate) || isNaN(endDate) || giorniSelezionati.length === 0 || endDate < startDate) {
+          showFeedback('Controlla date e seleziona almeno un giorno della settimana.', 'error');
+          return;
+        }
 
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = '❌';
-        removeBtn.className = 'remove-btn';
-        removeBtn.style.marginLeft = '8px';
-        removeBtn.onclick = () => dateBox.remove();
+        let current = new Date(startDate);
+        while (current <= endDate) {
+          if (giorniSelezionati.includes(current.getDay()) && !giorniDaEvitare.includes(current.toDateString())) {
+            const formatted = formatDate(current);
+            const dateBox = document.createElement('div');
+            dateBox.className = 'date-box';
+            dateBox.textContent = formatted;
+            dateContainer.appendChild(dateBox);
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      });
 
-        dateBox.appendChild(dateText);
-        dateBox.appendChild(removeBtn);
-        dateContainer.appendChild(dateBox);
-
-        dateInput.value = '';
-      } else {
-        showFeedback('Seleziona una data prima di aggiungerla.', 'error');
-      }
-    };
-
-    // Salvataggio pacchetto
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      if (!form.checkValidity()) {
-        showFeedback('Compila tutti i campi obbligatori correttamente.', 'error');
-        return;
-      }
-
-      try {
-        toggleLoading(true);
-
-        const user = firebase.auth().currentUser;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
         const nome = document.getElementById('nome').value.trim();
         const dateBoxes = document.querySelectorAll('#dateContainer .date-box');
-        const dateList = Array.from(dateBoxes).map(el => el.querySelector('span').textContent);
+        const dateList = Array.from(dateBoxes).map(el => el.textContent);
 
-        await firebase.firestore().collection('pacchetti').add({
-          nome: nome,
-          date: dateList,
-          creatoIl: firebase.firestore.FieldValue.serverTimestamp(),
-          creatoDa: user.uid
-        });
+        if (!nome || dateList.length === 0) {
+          showFeedback('Inserisci un nome valido e genera almeno una data.', 'error');
+          return;
+        }
 
-        showFeedback('Pacchetto salvato con successo!', 'success');
-        form.reset();
-        dateContainer.innerHTML = '';
-      } catch (err) {
-        console.error('Errore salvataggio pacchetto:', err);
-        showFeedback('Errore durante il salvataggio.', 'error');
-      } finally {
-        toggleLoading(false);
-      }
+        try {
+          toggleLoading(true);
+          const user = firebase.auth().currentUser;
+          await firebase.firestore().collection('pacchetti').add({
+            nome,
+            date: dateList,
+            creatoIl: firebase.firestore.FieldValue.serverTimestamp(),
+            creatoDa: user.uid
+          });
+          showFeedback('Pacchetto salvato con successo!', 'success');
+          form.reset();
+          dateContainer.innerHTML = '';
+        } catch (err) {
+          console.error(err);
+          showFeedback('Errore durante il salvataggio.', 'error');
+        } finally {
+          toggleLoading(false);
+        }
+      });
+
+      const showFeedback = (message, type) => {
+        feedbackElement.textContent = message;
+        feedbackElement.className = `feedback-msg ${type}`;
+        feedbackElement.classList.remove('hidden');
+        setTimeout(() => feedbackElement.classList.add('hidden'), 5000);
+      };
+
+      const toggleLoading = (isLoading) => {
+        document.getElementById('submitBtn').disabled = isLoading;
+        spinner.classList.toggle('hidden', !isLoading);
+      };
+
+      document.getElementById('currentYear').textContent = new Date().getFullYear();
     });
-
-    // Funzioni di supporto
-    function showFeedback(message, type) {
-      feedbackElement.textContent = message;
-      feedbackElement.className = `feedback-msg ${type}`;
-      feedbackElement.classList.remove('hidden');
-      setTimeout(() => {
-        feedbackElement.classList.add('hidden');
-      }, 5000);
-    }
-
-    function toggleLoading(isLoading) {
-      submitBtn.disabled = isLoading;
-      spinner.classList.toggle('hidden', !isLoading);
-    }
-  });
-</script>
+  </script>
 </body>
 </html>
