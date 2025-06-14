@@ -71,7 +71,6 @@ async function loadCorsiPerTesserato(tesseratoId) {
   }
 }
 
-// Carica i pacchetti di un tesserato
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
     console.log(`Caricamento pacchetti per tesserato: ${tesseratoId}`);
