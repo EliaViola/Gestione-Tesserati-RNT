@@ -43,7 +43,7 @@
           <!-- Tesserato -->
           <div class="form-group required-field">
             <label for="tesseratiSelect">Tesserato</label>
-            <select id="tesseratiSelect" name="tesserati" class="form-control" required>
+            <select id="tesseratiSelect" name="tesserati" class="form-control" required aria-required="true">
               <option value="">-- Seleziona --</option>
             </select>
           </div>
@@ -51,7 +51,7 @@
           <!-- Corso -->
           <div class="form-group required-field">
             <label for="corsiSelect">Corso</label>
-            <select id="corsiSelect" name="corsi" class="form-control" required>
+            <select id="corsiSelect" name="corsi" class="form-control" required aria-required="true">
               <option value="">-- Seleziona --</option>
             </select>
           </div>
@@ -59,7 +59,7 @@
           <!-- Pacchetti -->
           <div class="form-group">
             <label for="pacchettiSelect">Pacchetti</label>
-            <select id="pacchettiSelect" name="pacchetti" class="form-control" multiple size="5">
+            <select id="pacchettiSelect" name="pacchetti" class="form-control" multiple size="5" aria-multiselectable="true">
               <option value="">Caricamento pacchetti...</option>
             </select>
             <small class="form-text">Tieni premuto Ctrl/Cmd per selezionare più pacchetti</small>
@@ -68,13 +68,13 @@
           <!-- Importo -->
           <div class="form-group required-field">
             <label for="importo">Importo (€)</label>
-            <input type="number" id="importo" name="importo" class="form-control" placeholder="Es: 50" step="0.01" min="0" required />
+            <input type="number" id="importo" name="importo" class="form-control" placeholder="Es: 50" step="0.01" min="0" required aria-required="true" />
           </div>
 
           <!-- Metodo pagamento -->
           <div class="form-group required-field">
             <label for="metodo">Metodo di pagamento</label>
-            <select id="metodo" name="metodo" class="form-control" required>
+            <select id="metodo" name="metodo" class="form-control" required aria-required="true">
               <option value="" disabled selected>Seleziona</option>
               <option value="Contanti">Contanti</option>
               <option value="Carta">Carta</option>
@@ -85,7 +85,7 @@
           <!-- Data pagamento -->
           <div class="form-group required-field">
             <label for="data">Data del pagamento</label>
-            <input type="date" id="data" name="data" class="form-control" required max="<?= new Date().toISOString().split('T')[0] ?>" />
+            <input type="date" id="data" name="data" class="form-control" required aria-required="true" />
           </div>
         </div>
 
@@ -97,24 +97,24 @@
         <div id="feedback" class="form-feedback" role="alert" aria-live="polite"></div>
       </form>
 
-      <section class="storico-container">
-  <h3>Storico Pagamenti</h3>
-  <div class="table-wrapper">
-    <table class="storico-pagamenti">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Corso</th>
-          <th>Importo (€)</th>
-          <th>Metodo</th>
-        </tr>
-      </thead>
-      <tbody id="storicoPagamentiBody">
-        <tr><td colspan="4">Seleziona un tesserato</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+      <section class="storico-container" aria-labelledby="storicoTitle">
+        <h3 id="storicoTitle">Storico Pagamenti</h3>
+        <div class="table-wrapper">
+          <table class="storico-pagamenti" aria-describedby="storicoTitle">
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Corso</th>
+                <th scope="col">Importo (€)</th>
+                <th scope="col">Metodo</th>
+              </tr>
+            </thead>
+            <tbody id="storicoPagamentiBody">
+              <tr><td colspan="4">Seleziona un tesserato</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </main>
 
@@ -125,7 +125,16 @@
   </footer>
 
   <script>
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    // Imposta la data massima come oggi
+    document.addEventListener('DOMContentLoaded', function() {
+      const today = new Date();
+      document.getElementById('currentYear').textContent = today.getFullYear();
+      
+      // Formatta la data come YYYY-MM-DD
+      const formattedDate = today.toISOString().split('T')[0];
+      document.getElementById('data').max = formattedDate;
+      document.getElementById('data').value = formattedDate;
+    });
   </script>
 </body>
 </html>

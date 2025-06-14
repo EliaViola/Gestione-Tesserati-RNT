@@ -1,9 +1,9 @@
-// gestione-pagamenti.js
 const db = firebase.firestore();
 const auth = firebase.auth();
 
 // Variabile globale per memorizzare i pacchetti del tesserato
 let tuttiPacchettiTesserato = [];
+let currentTesseratoId = null;
 
 // Carica l'elenco dei tesserati attivi
 async function loadTesserati() {
@@ -14,7 +14,11 @@ async function loadTesserati() {
       .orderBy("anagrafica.nome")
       .get();
     
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data(),
+      nomeCompleto: `${doc.data().anagrafica?.cognome || ''} ${doc.data().anagrafica?.nome || ''}`.trim()
+    }));
   } catch (error) {
     console.error("Errore nel caricamento tesserati:", error);
     throw new Error("Impossibile caricare l'elenco dei tesserati");
@@ -25,15 +29,27 @@ async function loadTesserati() {
 async function loadCorsiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    const corsi = doc.data()?.corsi || [];
+    if (!doc.exists) throw new Error("Tesserato non trovato");
     
+    const corsi = doc.data()?.corsi || [];
     if (corsi.length === 0) return [];
     
+    // Ottimizzazione: carica solo i campi necessari
     const snap = await db.collection("corsi")
       .where(firebase.firestore.FieldPath.documentId(), "in", corsi)
+      .select("tipologia", "livello", "nome")
       .get();
     
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snap.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id, 
+        ...data,
+        nomeCorso: data.tipologia && data.livello 
+          ? `${data.tipologia} - ${data.livello}` 
+          : (data.nome || `Corso ${doc.id}`)
+      };
+    });
   } catch (error) {
     console.error("Errore nel caricamento corsi:", error);
     throw new Error("Impossibile caricare i corsi del tesserato");
@@ -44,18 +60,21 @@ async function loadCorsiPerTesserato(tesseratoId) {
 async function loadPacchettiPerTesserato(tesseratoId) {
   try {
     const doc = await db.collection("tesserati").doc(tesseratoId).get();
-    const pacchetti = doc.data()?.pacchetti || [];
+    if (!doc.exists) throw new Error("Tesserato non trovato");
     
+    const pacchetti = doc.data()?.pacchetti || [];
     if (pacchetti.length === 0) return [];
     
+    // Ottimizzazione: carica solo i campi necessari
     const snap = await db.collection("pacchetti")
       .where(firebase.firestore.FieldPath.documentId(), "in", pacchetti)
+      .select("nome", "corsoId")
       .get();
     
     return snap.docs.map(doc => ({ 
       id: doc.id, 
       ...doc.data(),
-      corsoId: doc.data().corsoId || null
+      nome: doc.data().nome || `Pacchetto ${doc.id}`
     }));
   } catch (error) {
     console.error("Errore nel caricamento pacchetti:", error);
@@ -67,6 +86,9 @@ async function loadPacchettiPerTesserato(tesseratoId) {
 function updatePacchettiList() {
   const corsoSelezionato = document.getElementById("corsiSelect").value;
   const pSelect = document.getElementById("pacchettiSelect");
+  
+  // Pulisci la select mantenendo le opzioni selezionate
+  const selectedOptions = Array.from(pSelect.selectedOptions).map(o => o.value);
   pSelect.innerHTML = "";
 
   if (tuttiPacchettiTesserato.length === 0) {
@@ -91,7 +113,13 @@ function updatePacchettiList() {
   pacchettiFiltrati.forEach(p => {
     const op = document.createElement("option");
     op.value = p.id;
-    op.textContent = p.nome || `Pacchetto ${p.id}`;
+    op.textContent = p.nome;
+    
+    // Mantieni le opzioni precedentemente selezionate
+    if (selectedOptions.includes(p.id)) {
+      op.selected = true;
+    }
+    
     pSelect.appendChild(op);
   });
 }
@@ -102,52 +130,51 @@ async function caricaStoricoPagamenti(tesseratoId) {
   storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Caricamento storico pagamenti...</td></tr>';
 
   try {
-    // Query modificata per evitare necessità di indici complessi
+    // Query ottimizzata con limit e ordinamento
     const pagamentiSnapshot = await db.collection("pagamenti")
       .where("tesseratoId", "==", tesseratoId)
+      .orderBy("data", "desc")
+      .limit(50)
       .get();
     
-    // Ordinamento lato client
-    const pagamenti = pagamentiSnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => b.data.toDate() - a.data.toDate());
-
-    if (pagamenti.length === 0) {
+    if (pagamentiSnapshot.empty) {
       storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Nessun pagamento registrato.</td></tr>';
       return;
     }
 
-    // Carica i dettagli dei corsi in parallelo
-    const pagamentiPromises = pagamenti.map(async pagamento => {
-      const corsoId = pagamento.corsoId;
-      let nomeCorso = corsoId;
+    // Prepara i dati per il rendering
+    const pagamenti = pagamentiSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      dataFormattata: doc.data().data.toDate().toLocaleDateString('it-IT')
+    }));
 
-      try {
-        const corsoDoc = await db.collection("corsi").doc(corsoId).get();
-        if (corsoDoc.exists) {
-          const corsoData = corsoDoc.data();
-          nomeCorso = corsoData.tipologia && corsoData.livello 
-            ? `${corsoData.tipologia} - ${corsoData.livello}` 
-            : (corsoData.nome || corsoId);
-        }
-      } catch (e) {
-        console.warn("Corso non trovato:", corsoId);
-      }
-
-      const dataPag = pagamento.data.toDate().toLocaleDateString('it-IT');
-      return `
-        <tr>
-          <td>${dataPag}</td>
-          <td>${nomeCorso}</td>
-          <td>€${pagamento.importo.toFixed(2)}</td>
-          <td>${pagamento.metodo}</td>
-        </tr>
-      `;
+    // Raggruppa le richieste dei corsi per minimizzare le chiamate
+    const corsiIds = [...new Set(pagamenti.map(p => p.corsoId))];
+    const corsiSnapshot = await db.collection("corsi")
+      .where(firebase.firestore.FieldPath.documentId(), "in", corsiIds)
+      .select("tipologia", "livello", "nome")
+      .get();
+    
+    const corsiMap = {};
+    corsiSnapshot.forEach(doc => {
+      const data = doc.data();
+      corsiMap[doc.id] = data.tipologia && data.livello 
+        ? `${data.tipologia} - ${data.livello}` 
+        : (data.nome || doc.id);
     });
 
-    const rows = await Promise.all(pagamentiPromises);
-    storicoPagamentiBody.innerHTML = rows.join('');
+    // Genera le righe della tabella
+    const rows = pagamenti.map(pagamento => `
+      <tr>
+        <td>${pagamento.dataFormattata}</td>
+        <td>${corsiMap[pagamento.corsoId] || pagamento.corsoId}</td>
+        <td>€${pagamento.importo.toFixed(2)}</td>
+        <td>${pagamento.metodo}</td>
+      </tr>
+    `);
 
+    storicoPagamentiBody.innerHTML = rows.join('');
   } catch (error) {
     console.error("Errore nel caricamento storico:", error);
     storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Errore nel caricamento dei pagamenti.</td></tr>';
@@ -162,9 +189,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const form = document.getElementById("pagamentoForm");
   const feedback = document.getElementById("feedback");
 
-  // Imposta la data di oggi come valore predefinito
-  document.getElementById("data").valueAsDate = new Date();
-
   // Gestione autenticazione
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -173,16 +197,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      feedback.textContent = "Caricamento tesserati in corso...";
+      feedback.classList.remove("error", "success");
+      
       const tesserati = await loadTesserati();
       tSelect.innerHTML = '<option value="">-- Seleziona --</option>';
       
       tesserati.forEach(t => {
-        const a = t.anagrafica || {};
         const op = document.createElement("option");
         op.value = t.id;
-        op.textContent = `${a.cognome || ''} ${a.nome || ''} (${a.codice_fiscale || 'N/D'})`.trim();
+        op.textContent = `${t.nomeCompleto} (${t.anagrafica?.codice_fiscale || 'N/D'})`;
         tSelect.appendChild(op);
       });
+      
+      feedback.textContent = "";
     } catch (error) {
       feedback.textContent = error.message;
       feedback.classList.add("error");
@@ -192,9 +220,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Gestione cambio tesserato
   tSelect.addEventListener("change", async () => {
     const id = tSelect.value;
-    if (!id) return;
+    if (!id) {
+      currentTesseratoId = null;
+      return;
+    }
+    
+    currentTesseratoId = id;
 
     try {
+      feedback.textContent = "Caricamento dati tesserato...";
+      feedback.classList.remove("error", "success");
+      
       // Reset campi dipendenti
       cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
       pSelect.innerHTML = '<option value="">Caricamento...</option>';
@@ -209,18 +245,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       tuttiPacchettiTesserato = pacchetti;
 
       // Popola corsi
+      if (corsi.length === 0) {
+        cSelect.innerHTML = '<option value="" disabled>Nessun corso associato</option>';
+        feedback.textContent = "Il tesserato non è iscritto a nessun corso";
+        feedback.classList.add("error");
+        return;
+      }
+
       corsi.forEach(c => {
         const op = document.createElement("option");
         op.value = c.id;
-        let nomeCorso = "";
-        if (c.tipologia && c.livello) {
-          nomeCorso = `${c.tipologia} - ${c.livello}`;
-        } else if (c.nome) {
-          nomeCorso = c.nome;
-        } else {
-          nomeCorso = `Corso ${c.id}`;
-        }
-        op.textContent = nomeCorso;
+        op.textContent = c.nomeCorso;
         cSelect.appendChild(op);
       });
 
@@ -229,6 +264,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       // Carica storico
       await caricaStoricoPagamenti(id);
+      
+      feedback.textContent = "";
     } catch (error) {
       feedback.textContent = error.message;
       feedback.classList.add("error");
@@ -249,7 +286,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const importo = parseFloat(document.getElementById("importo").value);
     const metodo = document.getElementById("metodo").value;
     const data = document.getElementById("data").value;
-    const pacchettiSelezionati = Array.from(pSelect.selectedOptions).map(o => o.value);
+    const pacchettiSelezionati = Array.from(pSelect.selectedOptions).map(o => o.value).filter(Boolean);
 
     // Validazione campi obbligatori
     if (!tId || !cId || !metodo || isNaN(importo) || !data) {
@@ -261,6 +298,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Validazione importo
     if (importo <= 0) {
       feedback.textContent = "L'importo deve essere maggiore di zero.";
+      feedback.classList.add("error");
+      return;
+    }
+
+    // Validazione data (non futura)
+    const today = new Date().toISOString().split('T')[0];
+    if (data > today) {
+      feedback.textContent = "La data non può essere futura.";
       feedback.classList.add("error");
       return;
     }
@@ -283,7 +328,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const pagamentoData = {
       tesseratoId: tId,
       corsoId: cId,
-      pacchetti: pacchettiSelezionati.filter(p => p), // Rimuovi valori vuoti
+      pacchetti: pacchettiSelezionati,
       importo,
       metodo,
       data: firebase.firestore.Timestamp.fromDate(new Date(data)),
@@ -291,31 +336,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     try {
+      feedback.textContent = "Registrazione pagamento in corso...";
+      feedback.classList.remove("error", "success");
+
       // Esegui operazioni in batch per consistenza dati
       const batch = db.batch();
       const pagamentoRef = db.collection("pagamenti").doc();
       batch.set(pagamentoRef, pagamentoData);
 
-      // Aggiorna il tesserato
+      // Aggiorna il tesserato con il riferimento al pagamento
       const tesseratoRef = db.collection("tesserati").doc(tId);
-      batch.set(tesseratoRef, {
-        pagamenti: {
-          [cId]: {
-            [pagamentoRef.id]: pagamentoData
-          }
+      batch.update(tesseratoRef, {
+        [`pagamenti.${cId}.${pagamentoRef.id}`]: {
+          importo,
+          data: pagamentoData.data,
+          metodo
         }
-      }, { merge: true });
+      });
+
+      // Se sono stati selezionati pacchetti, aggiorna il loro stato
+      if (pacchettiSelezionati.length > 0) {
+        pacchettiSelezionati.forEach(pId => {
+          const pacchettoRef = db.collection("pacchetti").doc(pId);
+          batch.update(pacchettoRef, {
+            pagato: true,
+            dataPagamento: pagamentoData.data
+          });
+        });
+      }
 
       await batch.commit();
 
-      // Reset form e feedback
+      // Reset form (mantenendo il tesserato selezionato)
       form.reset();
       document.getElementById("data").valueAsDate = new Date();
       feedback.textContent = "Pagamento registrato con successo!";
       feedback.classList.add("success");
 
-      // Ricarica storico
-      await caricaStoricoPagamenti(tId);
+      // Ricarica storico e pacchetti
+      await Promise.all([
+        caricaStoricoPagamenti(tId),
+        loadPacchettiPerTesserato(tId).then(pacchetti => {
+          tuttiPacchettiTesserato = pacchetti;
+          updatePacchettiList();
+        })
+      ]);
     } catch (err) {
       console.error("Errore:", err);
       feedback.textContent = "Errore durante la registrazione. Riprova più tardi.";
