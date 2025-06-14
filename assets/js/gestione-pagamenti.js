@@ -32,7 +32,12 @@ async function loadCorsiPerTesserato(tesseratoId) {
     if (!doc.exists) throw new Error("Tesserato non trovato");
     
     const corsi = doc.data()?.corsi || [];
-    if (corsi.length === 0) return [];
+    
+    // Aggiungi questo controllo per array vuoto
+    if (corsi.length === 0) {
+      console.log("Nessun corso associato al tesserato");
+      return [];
+    }
     
     // Ottimizzazione: carica solo i campi necessari
     const snap = await db.collection("corsi")
@@ -63,7 +68,12 @@ async function loadPacchettiPerTesserato(tesseratoId) {
     if (!doc.exists) throw new Error("Tesserato non trovato");
     
     const pacchetti = doc.data()?.pacchetti || [];
-    if (pacchetti.length === 0) return [];
+    
+    // Aggiungi questo controllo per array vuoto
+    if (pacchetti.length === 0) {
+      console.log("Nessun pacchetto associato al tesserato");
+      return [];
+    }
     
     // Ottimizzazione: carica solo i campi necessari
     const snap = await db.collection("pacchetti")
@@ -91,6 +101,7 @@ function updatePacchettiList() {
   const selectedOptions = Array.from(pSelect.selectedOptions).map(o => o.value);
   pSelect.innerHTML = "";
 
+  // Gestisci caso in cui non ci sono pacchetti
   if (tuttiPacchettiTesserato.length === 0) {
     pSelect.innerHTML = '<option disabled>Nessun pacchetto associato</option>';
     return;
@@ -101,6 +112,7 @@ function updatePacchettiList() {
     ? tuttiPacchettiTesserato.filter(p => p.corsoId === corsoSelezionato)
     : tuttiPacchettiTesserato;
 
+  // Gestisci caso in cui non ci sono pacchetti per il corso selezionato
   if (pacchettiFiltrati.length === 0) {
     const msg = corsoSelezionato 
       ? 'Nessun pacchetto per questo corso' 
@@ -219,58 +231,61 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Gestione cambio tesserato
   tSelect.addEventListener("change", async () => {
-    const id = tSelect.value;
-    if (!id) {
-      currentTesseratoId = null;
-      return;
-    }
+  const id = tSelect.value;
+  if (!id) {
+    currentTesseratoId = null;
+    // Resetta i campi quando nessun tesserato è selezionato
+    cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    pSelect.innerHTML = '<option value="">Seleziona un tesserato</option>';
+    storicoPagamentiBody.innerHTML = '<tr><td colspan="4">Seleziona un tesserato</td></tr>';
+    return;
+  }
+  
+  currentTesseratoId = id;
+
+  try {
+    feedback.textContent = "Caricamento dati tesserato...";
+    feedback.classList.remove("error", "success");
     
-    currentTesseratoId = id;
+    // Reset campi dipendenti
+    cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    pSelect.innerHTML = '<option value="">Caricamento...</option>';
 
-    try {
-      feedback.textContent = "Caricamento dati tesserato...";
-      feedback.classList.remove("error", "success");
-      
-      // Reset campi dipendenti
-      cSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-      pSelect.innerHTML = '<option value="">Caricamento...</option>';
+    // Carica dati in parallelo
+    const [corsi, pacchetti] = await Promise.all([
+      loadCorsiPerTesserato(id),
+      loadPacchettiPerTesserato(id)
+    ]);
 
-      // Carica dati in parallelo
-      const [corsi, pacchetti] = await Promise.all([
-        loadCorsiPerTesserato(id),
-        loadPacchettiPerTesserato(id)
-      ]);
+    // Memorizza tutti i pacchetti
+    tuttiPacchettiTesserato = pacchetti;
 
-      // Memorizza tutti i pacchetti
-      tuttiPacchettiTesserato = pacchetti;
-
-      // Popola corsi
-      if (corsi.length === 0) {
-        cSelect.innerHTML = '<option value="" disabled>Nessun corso associato</option>';
-        feedback.textContent = "Il tesserato non è iscritto a nessun corso";
-        feedback.classList.add("error");
-        return;
-      }
-
+    // Popola corsi - gestisci caso array vuoto
+    if (corsi.length === 0) {
+      cSelect.innerHTML = '<option value="" disabled>Nessun corso associato</option>';
+      feedback.textContent = "Il tesserato non è iscritto a nessun corso";
+      feedback.classList.add("error");
+    } else {
       corsi.forEach(c => {
         const op = document.createElement("option");
         op.value = c.id;
         op.textContent = c.nomeCorso;
         cSelect.appendChild(op);
       });
-
-      // Mostra tutti i pacchetti inizialmente
-      updatePacchettiList();
-      
-      // Carica storico
-      await caricaStoricoPagamenti(id);
-      
-      feedback.textContent = "";
-    } catch (error) {
-      feedback.textContent = error.message;
-      feedback.classList.add("error");
     }
-  });
+
+    // Mostra tutti i pacchetti inizialmente
+    updatePacchettiList();
+    
+    // Carica storico
+    await caricaStoricoPagamenti(id);
+    
+    feedback.textContent = "";
+  } catch (error) {
+    feedback.textContent = error.message;
+    feedback.classList.add("error");
+  }
+});
 
   // Gestione cambio corso (filtra pacchetti)
   cSelect.addEventListener("change", updatePacchettiList);
