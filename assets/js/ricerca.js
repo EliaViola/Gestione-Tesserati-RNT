@@ -163,6 +163,105 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    // Aggiungi questa funzione PRIMA di dove viene usata (prima di mostraCorsiFiltrati)
+function getCorsoName(tipo) {
+  const names = {
+    'avviamento': 'Avviamento',
+    'principianti': 'Principianti',
+    'intermedio': 'Intermedio',
+    'perfezionamento': 'Perfezionamento',
+    'cuffiegb': 'Cuffie Giallo Blu',
+    'calottegb': 'Calottine Giallo Blu',
+    'propaganda': 'Propaganda',
+    'agonisti': 'Agonisti',
+    'pallanuoto': 'Pallanuoto'
+  };
+  return names[tipo] || tipo;
+}
+
+// Aggiungi anche questa funzione per formattare i giorni
+function formatGiorni(giorni) {
+  const giorniMap = {
+    'lun': 'Lunedì',
+    'mar': 'Martedì',
+    'mer': 'Mercoledì',
+    'gio': 'Giovedì',
+    'ven': 'Venerdì'
+  };
+  
+  return Array.isArray(giorni) ? 
+    giorni.map(g => giorniMap[g] || g).join(', ') : 
+    'N/D';
+}
+
+// Poi modifica la funzione mostraCorsiFiltrati così:
+function mostraCorsiFiltrati(corsi) {
+  const corpoCorsi = document.getElementById('corpoTabellaCorsi');
+  corpoCorsi.innerHTML = '';
+  
+  if (corsi.length === 0) {
+    corpoCorsi.innerHTML = `
+      <tr>
+        <td colspan="7" class="nessun-risultato">
+          Nessun corso trovato con i filtri selezionati
+        </td>
+      </tr>`;
+    return;
+  }
+
+  corsi.forEach(corso => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${corso.iscritti?.length ? corso.iscritti[0] : 'N/D'}</td>
+      <td>${getCorsoName(corso.tipologia)}</td>
+      <td>${corso.livello || 'N/D'}</td>
+      <td>${corso.giorni ? formatGiorni(corso.giorni) : 'N/D'}</td>
+      <td>${corso.orario || 'N/D'}</td>
+      <td>${corso.istruttore || 'N/D'}</td>
+      <td class="actions-cell">
+        <button class="btn btn-small btn-edit" onclick="modificaCorso('${corso.id}')">
+          <i class="fas fa-edit"></i> Modifica
+        </button>
+        <button class="btn btn-small btn-delete" onclick="eliminaCorso('${corso.id}')">
+          <i class="fas fa-trash-alt"></i> Elimina
+        </button>
+      </td>
+    `;
+    corpoCorsi.appendChild(row);
+  });
+}
+
+// Funzione helper per i nomi dei corsi
+function getCorsoName(tipo) {
+  const names = {
+    'avviamento': 'Avviamento',
+    'principianti': 'Principianti',
+    'intermedio': 'Intermedio',
+    'perfezionamento': 'Perfezionamento',
+    'cuffiegb': 'Cuffie Giallo Blu',
+    'calottegb': 'Calottine Giallo Blu',
+    'propaganda': 'Propaganda',
+    'agonisti': 'Agonisti',
+    'pallanuoto': 'Pallanuoto'
+  };
+  return names[tipo] || tipo;
+}
+
+// Funzione helper per formattare i giorni
+function formatGiorni(giorni) {
+  const giorniMap = {
+    'lun': 'Lunedì',
+    'mar': 'Martedì',
+    'mer': 'Mercoledì',
+    'gio': 'Giovedì',
+    'ven': 'Venerdì'
+  };
+  
+  return Array.isArray(giorni) ? 
+    giorni.map(g => giorniMap[g] || g).join(', ') : 
+    'N/D';
+} 
+
     // Mostra i corsi filtrati
     function mostraCorsiFiltrati(corsi) {
       const corpoCorsi = document.getElementById('corpoTabellaCorsi');
