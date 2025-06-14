@@ -1,115 +1,144 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Dettaglio Tesserato</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Firebase compat 10.12.0 -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="/firebase-config.js"></script>
+  <meta charset="UTF-8" />
+  <title>Dettaglio Tesserato</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Stile -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Firebase compat 10.12.0 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="../assets/js/firebase-config.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Dettaglio Tesserato</h1>
-        
-        <form id="form-tesserato">
-            <fieldset>
-                <legend>Anagrafica</legend>
-                <input id="nome" placeholder="Nome">
-                <input id="cognome" placeholder="Cognome">
-                <input id="codice-fiscale" placeholder="Codice Fiscale">
-                <input id="data-nascita" type="date" placeholder="Data di Nascita">
-                <input id="luogo-nascita" placeholder="Luogo di Nascita">
-                <select id="sesso">
-                    <option value="">Sesso</option>
-                    <option value="M">M</option>
-                    <option value="F">F</option>
-                </select>
-                <input id="nazionalita" placeholder="Nazionalità">
-            </fieldset>
 
-            <fieldset>
-                <legend>Contatti</legend>
-                <input id="indirizzo" placeholder="Indirizzo">
-                <input id="citta" placeholder="Città">
-                <input id="provincia" placeholder="Provincia">
-                <input id="cap" placeholder="CAP">
-                <input id="telefono" placeholder="Telefono">
-                <input id="email" type="email" placeholder="Email">
-            </fieldset>
+  <!-- INTESTAZIONE -->
+  <header class="header">
+    <h1>Gestione Tesserati RNT</h1>
+    <nav>
+      <a href="dettaglio-tesserato.html"class="active" aria-current="page">Home</a>  
+      <a href="index.html">Home</a>
+      <a href="ricerca-tesserati.html">Ricerca</a>
+      <a href="gestione-corsi.html">Corsi</a>
+      <a href="pagamenti.html">Pagamenti</a>
+    </nav>
+  </header>
 
-            <fieldset>
-                <legend>Documenti</legend>
-                <select id="tipo-documento">
-                    <option value="">Tipo Documento</option>
-                    <option value="Carta Identità">Carta Identità</option>
-                    <option value="Passaporto">Passaporto</option>
-                </select>
-                <input id="numero-documento" placeholder="Numero Documento">
-                <input id="rilasciato-da" placeholder="Rilasciato da">
-                <input id="data-rilascio" type="date" placeholder="Data Rilascio">
-                <input id="data-scadenza" type="date" placeholder="Data Scadenza">
-            </fieldset>
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="main-card">
+    <h2>Dettaglio Tesserato</h2>
 
-            <fieldset>
-                <legend>Tesseramento</legend>
-                <input id="data-tesseramento" type="date" placeholder="Data Tesseramento">
-                <input id="tipo-tessera" placeholder="Tipo Tessera">
-                <input id="numero-tessera" placeholder="Numero Tessera">
-                <select id="stato-tessera">
-                    <option value="">Stato Tessera</option>
-                    <option value="Attiva">Attiva</option>
-                    <option value="Scaduta">Scaduta</option>
-                </select>
-            </fieldset>
+    <form id="form-tesserato" class="form-grid">
+      <!-- ANAGRAFICA -->
+      <fieldset>
+        <legend>Anagrafica</legend>
+        <input id="nome" placeholder="Nome" />
+        <input id="cognome" placeholder="Cognome" />
+        <input id="codice-fiscale" placeholder="Codice Fiscale" />
+        <input id="data-nascita" type="date" placeholder="Data di Nascita" />
+        <input id="luogo-nascita" placeholder="Luogo di Nascita" />
+        <select id="sesso">
+          <option value="">Sesso</option>
+          <option value="M">M</option>
+          <option value="F">F</option>
+        </select>
+        <input id="nazionalita" placeholder="Nazionalità" />
+      </fieldset>
 
-            <fieldset>
-                <legend>Medica</legend>
-                <select id="certificato-medico">
-                    <option value="">Certificato Medico</option>
-                    <option value="Agonistico">Agonistico</option>
-                    <option value="Non Agonistico">Non Agonistico</option>
-                </select>
-                <input id="data-certificato" type="date" placeholder="Data Certificato">
-                <input id="scadenza-certificato" type="date" placeholder="Scadenza Certificato">
-                <textarea id="note-mediche" placeholder="Note Mediche"></textarea>
-            </fieldset>
+      <!-- CONTATTI -->
+      <fieldset>
+        <legend>Contatti</legend>
+        <input id="indirizzo" placeholder="Indirizzo" />
+        <input id="citta" placeholder="Città" />
+        <input id="provincia" placeholder="Provincia" />
+        <input id="cap" placeholder="CAP" />
+        <input id="telefono" placeholder="Telefono" />
+        <input id="email" type="email" placeholder="Email" />
+      </fieldset>
 
-            <fieldset>
-                <legend>Pagamenti</legend>
-                <input id="quota-iscrizione" type="number" placeholder="Quota Iscrizione">
-                <input id="data-pagamento" type="date" placeholder="Data Pagamento">
-                <select id="metodo-pagamento">
-                    <option value="">Metodo</option>
-                    <option value="Contanti">Contanti</option>
-                    <option value="Bonifico">Bonifico</option>
-                    <option value="POS">POS</option>
-                </select>
-                <select id="stato-pagamento">
-                    <option value="">Stato</option>
-                    <option value="Pagato">Pagato</option>
-                    <option value="Non Pagato">Non Pagato</option>
-                </select>
-                <textarea id="note-pagamenti" placeholder="Note"></textarea>
-            </fieldset>
+      <!-- DOCUMENTI -->
+      <fieldset>
+        <legend>Documenti</legend>
+        <select id="tipo-documento">
+          <option value="">Tipo Documento</option>
+          <option value="Carta Identità">Carta Identità</option>
+          <option value="Passaporto">Passaporto</option>
+        </select>
+        <input id="numero-documento" placeholder="Numero Documento" />
+        <input id="rilasciato-da" placeholder="Rilasciato da" />
+        <input id="data-rilascio" type="date" placeholder="Data Rilascio" />
+        <input id="data-scadenza" type="date" placeholder="Data Scadenza" />
+      </fieldset>
 
-            <div class="form-actions">
-                <button type="button" id="btn-salva" onclick="salvaModificheTesserato()">Salva</button>
-                <button type="button" id="btn-annulla" onclick="annullaModifiche()">Annulla</button>
-            </div>
-        </form>
+      <!-- TESSERAMENTO -->
+      <fieldset>
+        <legend>Tesseramento</legend>
+        <input id="data-tesseramento" type="date" placeholder="Data Tesseramento" />
+        <input id="tipo-tessera" placeholder="Tipo Tessera" />
+        <input id="numero-tessera" placeholder="Numero Tessera" />
+        <select id="stato-tessera">
+          <option value="">Stato Tessera</option>
+          <option value="Attiva">Attiva</option>
+          <option value="Scaduta">Scaduta</option>
+        </select>
+      </fieldset>
 
-        <div id="loading-indicator" style="display: none;">Caricamento...</div>
-        <div id="feedback-msg" class="feedback-msg"></div>
+      <!-- CERTIFICATO MEDICO -->
+      <fieldset>
+        <legend>Certificato Medico</legend>
+        <select id="certificato-medico">
+          <option value="">Tipo</option>
+          <option value="Agonistico">Agonistico</option>
+          <option value="Non Agonistico">Non Agonistico</option>
+        </select>
+        <input id="data-certificato" type="date" placeholder="Data Certificato" />
+        <input id="scadenza-certificato" type="date" placeholder="Scadenza Certificato" />
+        <textarea id="note-mediche" placeholder="Note Mediche"></textarea>
+      </fieldset>
 
-        <h2>Corsi Attivi</h2>
-        <div id="corsi-attuali"></div>
-    </div>
+      <!-- PAGAMENTI -->
+      <fieldset>
+        <legend>Pagamenti</legend>
+        <input id="quota-iscrizione" type="number" placeholder="Quota Iscrizione" />
+        <input id="data-pagamento" type="date" placeholder="Data Pagamento" />
+        <select id="metodo-pagamento">
+          <option value="">Metodo</option>
+          <option value="Contanti">Contanti</option>
+          <option value="Bonifico">Bonifico</option>
+          <option value="POS">POS</option>
+        </select>
+        <select id="stato-pagamento">
+          <option value="">Stato</option>
+          <option value="Pagato">Pagato</option>
+          <option value="Non Pagato">Non Pagato</option>
+        </select>
+        <textarea id="note-pagamenti" placeholder="Note"></textarea>
+      </fieldset>
 
-    <script src="dettaglio-tesserato.js"></script>
+      <!-- AZIONI -->
+      <div class="form-actions">
+        <button type="button" onclick="salvaModificheTesserato()">Salva</button>
+        <button type="button" onclick="annullaModifiche()">Annulla</button>
+      </div>
+    </form>
+
+    <!-- CORSI ATTUALI -->
+    <h3>Corsi Attivi</h3>
+    <div id="corsi-attuali" class="corsi-grid"></div>
+
+    <!-- FEEDBACK -->
+    <div id="loading-indicator" style="display: none;">Caricamento...</div>
+    <div id="feedback-msg" class="feedback-msg"></div>
+  </main>
+
+  <!-- PIE DI PAGINA -->
+  <footer class="footer">
+    <p>&copy; 2025 Rari Nantes Torino | Tutti i diritti riservati</p>
+  </footer>
+
+  <!-- JS -->
+  <script src="../assets/js/dettaglio-tesserato.js"></script>
 </body>
 </html>
