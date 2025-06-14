@@ -39,7 +39,8 @@
     <p>&copy; <span id="currentYear"></span> Rari Nantes Trento</p>
   </footer>
 
-  <script type="module">
+  
+    <script type="module">
     document.addEventListener('DOMContentLoaded', () => {
       const logoutBtn = document.getElementById('logoutBtn');
       const pacchettiList = document.getElementById('pacchettiList');
@@ -61,48 +62,14 @@
           const anno = dateObj.getFullYear();
           return `${giorno}/${mese}/${anno}`;
         } catch (e) {
-          console.error('Errore formattazione data:', data, e);
           return 'Data non valida';
         }
       };
 
-      // Converte qualsiasi formato di data in oggetto Date
-      const convertiInData = (item) => {
-        try {
-          // Se è un timestamp Firebase
-          if (item && typeof item === 'object' && 'toDate' in item) {
-            return item.toDate();
-          }
-          // Se è già un oggetto Date
-          if (item instanceof Date) {
-            return item;
-          }
-          // Se è una stringa nel formato ISO
-          if (typeof item === 'string') {
-            // Prova il formato ISO standard
-            const isoDate = new Date(item);
-            if (!isNaN(isoDate.getTime())) return isoDate;
-            
-            // Prova il formato gg/mm/aaaa
-            const parts = item.split('/');
-            if (parts.length === 3) {
-              return new Date(parts[2], parts[1] - 1, parts[0]);
-            }
-            
-            // Prova il formato aaaa-mm-gg
-            const parts2 = item.split('-');
-            if (parts2.length === 3) {
-              return new Date(parts2[0], parts2[1] - 1, parts2[2]);
-            }
-          }
-          // Se è un numero (timestamp)
-          if (typeof item === 'number') {
-            return new Date(item);
-          }
-        } catch (e) {
-          console.error('Errore conversione data:', item, e);
-        }
-        return null;
+      // Converte una data nel formato gg/mm/aaaa in oggetto Date
+      const convertiGGMMAAAA = (dataStr) => {
+        const [giorno, mese, anno] = dataStr.split('/');
+        return new Date(anno, mese - 1, giorno);
       };
 
       // Mostra messaggi di feedback
@@ -153,7 +120,7 @@
       async function caricaPacchetti() {
         try {
           toggleLoading(true);
-          const snapshot = await firebase.firestore().collection('pacchetti').orderBy('creatoIl', 'desc').get();
+          const snapshot = await firebase.firestore().collection('pacchetti').get();
           pacchettiList.innerHTML = '';
 
           if (snapshot.empty) {
@@ -161,34 +128,59 @@
             return;
           }
 
+          // Prepara i pacchetti per l'ordinamento
+          const pacchettiConDate = [];
+          
           snapshot.forEach(doc => {
             const data = doc.data();
-            
-            // Processa tutte le date
-            let dateOrdinate = [];
+            const dateFormattate = [];
+            let dataMax = null;
+
             if (data.date && Array.isArray(data.date)) {
-              dateOrdinate = data.date
-                .map(item => convertiInData(item))
+              // Converti e ordina le date
+              const dateConvertite = data.date
+                .map(dataStr => convertiGGMMAAAA(dataStr))
                 .filter(date => date && !isNaN(date.getTime()))
-                .sort((a, b) => a - b)
-                .map(date => {
-                  const giorno = String(date.getDate()).padStart(2, '0');
-                  const mese = String(date.getMonth() + 1).padStart(2, '0');
-                  const anno = date.getFullYear();
-                  return `${giorno}/${mese}/${anno}`;
-                });
+                .sort((a, b) => b - a); // Ordine decrescente
+              
+              if (dateConvertite.length > 0) {
+                dataMax = dateConvertite[0]; // Prendi la data più recente
+              }
+
+              // Formatta le date per la visualizzazione
+              dateFormattate = dateConvertite
+                .map(date => formattaData(date))
+                .reverse(); // Per visualizzazione in ordine crescente
             }
 
+            pacchettiConDate.push({
+              id: doc.id,
+              ...data,
+              dateFormattate,
+              dataMax // Usata per l'ordinamento
+            });
+          });
+
+          // Ordina i pacchetti in base alla data più recente contenuta
+          pacchettiConDate.sort((a, b) => {
+            if (!a.dataMax && !b.dataMax) return 0;
+            if (!a.dataMax) return 1;
+            if (!b.dataMax) return -1;
+            return b.dataMax - a.dataMax; // Ordine decrescente
+          });
+
+          // Visualizza i pacchetti ordinati
+          pacchettiConDate.forEach(pacchetto => {
             const div = document.createElement('div');
             div.className = 'pacchetto-item';
             div.innerHTML = `
               <div class="pacchetto-header">
-                <h3>${data.nome || 'Pacchetto senza nome'}</h3>
-                <button class="btn btn-danger" data-id="${doc.id}">Elimina</button>
+                <h3>${pacchetto.nome || 'Pacchetto senza nome'}</h3>
+                <button class="btn btn-danger" data-id="${pacchetto.id}">Elimina</button>
               </div>
               <div class="pacchetto-body">
-                <p><strong>Date:</strong> ${dateOrdinate.length > 0 ? dateOrdinate.join(', ') : 'Nessuna data specificata'}</p>
-                <p><strong>Creato il:</strong> ${formattaData(data.creatoIl)}</p>
+                <p><strong>Date:</strong> ${pacchetto.dateFormattate.length > 0 ? pacchetto.dateFormattate.join(', ') : 'Nessuna data specificata'}</p>
+                <p><strong>Creato il:</strong> ${formattaData(pacchetto.creatoIl)}</p>
               </div>
             `;
             pacchettiList.appendChild(div);
@@ -225,5 +217,6 @@
       }
     });
   </script>
+  
 </body>
 </html>
